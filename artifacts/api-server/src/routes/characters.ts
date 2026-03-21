@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { charactersTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { requireAuth, requireCampaignMember } from "../middlewares/auth";
+import { requireAuth, requireCampaignMember, getEffectiveUserId } from "../middlewares/auth";
 import { param } from "../types";
 
 const router: IRouter = Router();
@@ -17,7 +17,7 @@ router.get("/campaigns/:campaignId/characters", requireAuth, requireCampaignMemb
 });
 
 router.post("/campaigns/:campaignId/characters", requireAuth, requireCampaignMember, async (req, res) => {
-  const userId = req.session.userId!;
+  const userId = getEffectiveUserId(req)!;
   const campaignId = param(req.params.campaignId);
   const { name, race, class: charClass, background, subrace, subclass, level, hp, maxHp, ac, speed, stats, sheetData, tokenColor, isNpc } = req.body;
 
@@ -74,7 +74,7 @@ router.get("/campaigns/:campaignId/characters/:characterId", requireAuth, requir
 });
 
 router.put("/campaigns/:campaignId/characters/:characterId", requireAuth, requireCampaignMember, async (req, res) => {
-  const userId = req.session.userId!;
+  const userId = getEffectiveUserId(req)!;
   const campaignId = param(req.params.campaignId);
   const characterId = param(req.params.characterId);
   const member = req.campaignMember;
@@ -115,7 +115,7 @@ router.put("/campaigns/:campaignId/characters/:characterId", requireAuth, requir
 });
 
 router.delete("/campaigns/:campaignId/characters/:characterId", requireAuth, requireCampaignMember, async (req, res) => {
-  const userId = req.session.userId!;
+  const userId = getEffectiveUserId(req)!;
   const campaignId = param(req.params.campaignId);
   const characterId = param(req.params.characterId);
   const member = req.campaignMember;

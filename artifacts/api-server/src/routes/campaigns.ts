@@ -3,13 +3,13 @@ import { db } from "@workspace/db";
 import { campaignsTable, campaignMembersTable, gameSessionsTable, charactersTable, mapsTable, messagesTable } from "@workspace/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { requireAuth } from "../middlewares/auth";
+import { requireAuth, getEffectiveUserId } from "../middlewares/auth";
 import { param } from "../types";
 
 const router: IRouter = Router();
 
 router.get("/campaigns", requireAuth, async (req, res) => {
-  const userId = req.session.userId!;
+  const userId = getEffectiveUserId(req)!;
   const memberships = await db
     .select()
     .from(campaignMembersTable)
@@ -36,7 +36,7 @@ router.get("/campaigns", requireAuth, async (req, res) => {
 });
 
 router.post("/campaigns", requireAuth, async (req, res) => {
-  const userId = req.session.userId!;
+  const userId = getEffectiveUserId(req)!;
   const { name, description, gameSystem } = req.body;
   if (!name || typeof name !== "string" || name.trim().length === 0) {
     res.status(400).json({ error: "Name is required" });
@@ -64,7 +64,7 @@ router.post("/campaigns", requireAuth, async (req, res) => {
 });
 
 router.post("/campaigns/join", requireAuth, async (req, res) => {
-  const userId = req.session.userId!;
+  const userId = getEffectiveUserId(req)!;
   const { inviteCode } = req.body;
   if (!inviteCode) {
     res.status(400).json({ error: "Invite code is required" });
@@ -95,7 +95,7 @@ router.post("/campaigns/join", requireAuth, async (req, res) => {
 });
 
 router.get("/campaigns/:campaignId", requireAuth, async (req, res) => {
-  const userId = req.session.userId!;
+  const userId = getEffectiveUserId(req)!;
   const campaignId = param(req.params.campaignId);
 
   const [campaign] = await db.select().from(campaignsTable).where(eq(campaignsTable.id, campaignId));
@@ -118,7 +118,7 @@ router.get("/campaigns/:campaignId", requireAuth, async (req, res) => {
 });
 
 router.put("/campaigns/:campaignId", requireAuth, async (req, res) => {
-  const userId = req.session.userId!;
+  const userId = getEffectiveUserId(req)!;
   const campaignId = param(req.params.campaignId);
 
   const [campaign] = await db.select().from(campaignsTable).where(eq(campaignsTable.id, campaignId));
@@ -153,7 +153,7 @@ router.put("/campaigns/:campaignId", requireAuth, async (req, res) => {
 });
 
 router.delete("/campaigns/:campaignId", requireAuth, async (req, res) => {
-  const userId = req.session.userId!;
+  const userId = getEffectiveUserId(req)!;
   const campaignId = param(req.params.campaignId);
 
   const [campaign] = await db.select().from(campaignsTable).where(eq(campaignsTable.id, campaignId));
