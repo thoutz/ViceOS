@@ -1,42 +1,25 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { charactersTable, campaignMembersTable } from "@workspace/db/schema";
+import { charactersTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
+import { requireAuth, requireCampaignMember } from "../middlewares/auth";
+import "../types";
 
 const router: IRouter = Router();
 
-function requireAuth(req: any, res: any, next: any) {
-  if (!(req.session as any)?.userId) {
-    res.status(401).json({ error: "Not authenticated" });
-    return;
-  }
-  next();
-}
-
-async function requireCampaignMember(req: any, res: any, next: any) {
-  const userId = (req.session as any).userId;
-  const { campaignId } = req.params;
-  const [member] = await db.select().from(campaignMembersTable).where(
-    and(eq(campaignMembersTable.campaignId, campaignId), eq(campaignMembersTable.userId, userId))
-  );
-  if (!member) {
-    res.status(403).json({ error: "Not a member of this campaign" });
-    return;
-  }
-  (req as any).campaignMember = member;
-  next();
-}
-
 router.get("/campaigns/:campaignId/characters", requireAuth, requireCampaignMember, async (req, res) => {
   const { campaignId } = req.params;
-  const characters = await db.select().from(charactersTable).where(eq(charactersTable.campaignId, campaignId));
+  const characters = await db
+    .select()
+    .from(charactersTable)
+    .where(eq(charactersTable.campaignId, campaignId));
   res.json(characters);
 });
 
 router.post("/campaigns/:campaignId/characters", requireAuth, requireCampaignMember, async (req, res) => {
-  const userId = (req.session as any).userId;
+  const userId = req.session.userId!;
   const { campaignId } = req.params;
-  const { name, race, class: charClass, background, level, hp, maxHp, ac, speed, stats, sheetData, tokenColor, isNpc } = req.body;
+  const { name, race, class: charClass, background, subrace, subclass, level, hp, maxHp, ac, speed, stats, sheetData, tokenColor, isNpc } = req.body;
 
   if (!name) {
     res.status(400).json({ error: "Name is required" });
@@ -45,34 +28,43 @@ router.post("/campaigns/:campaignId/characters", requireAuth, requireCampaignMem
 
   const abilityScores = stats || { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
   const dexMod = Math.floor((abilityScores.dex - 10) / 2);
-  const calculatedMaxHp = maxHp || hp || 10;
+  const conMod = Math.floor((abilityScores.con - 10) / 2);
+  const calculatedMaxHp = maxHp || hp || Math.max(1, (level || 1) * 5 + conMod);
 
-  const [character] = await db.insert(charactersTable).values({
-    campaignId,
-    userId,
-    name,
-    race,
-    class: charClass,
-    background,
-    level: level || 1,
-    hp: hp || calculatedMaxHp,
-    maxHp: calculatedMaxHp,
-    tempHp: 0,
-    ac: ac || 10,
-    speed: speed || 30,
-    initiativeBonus: dexMod,
-    stats: abilityScores,
-    sheetData: sheetData || {},
-    tokenColor: tokenColor || "#C9A84C",
-    isNpc: isNpc || false,
-  }).returning();
+  const [character] = await db
+    .insert(charactersTable)
+    .values({
+      campaignId,
+      userId,
+      name,
+      race: race || null,
+      subrace: subrace || null,
+      class: charClass || null,
+      subclass: subclass || null,
+      background: background || null,
+      level: level || 1,
+      hp: hp || calculatedMaxHp,
+      maxHp: calculatedMaxHp,
+      tempHp: 0,
+      ac: ac || 10,
+      speed: speed || 30,
+      initiativeBonus: dexMod,
+      stats: abilityScores,
+      sheetData: sheetData || {},
+      tokenColor: tokenColor || "#C9A84C",
+      isNpc: isNpc || false,
+    })
+    .returning();
 
   res.status(201).json(character);
 });
 
 router.get("/campaigns/:campaignId/characters/:characterId", requireAuth, requireCampaignMember, async (req, res) => {
-  const { characterId } = req.params;
-  const [character] = await db.select().from(charactersTable).where(eq(charactersTable.id, characterId));
+  const { campaignId, characterId } = req.params;
+  const [character] = await db
+    .select()
+    .from(charactersTable)
+    .where(and(eq(charactersTable.id, characterId), eq(charactersTable.campaignId, campaignId)));
   if (!character) {
     res.status(404).json({ error: "Character not found" });
     return;
@@ -81,20 +73,70 @@ router.get("/campaigns/:campaignId/characters/:characterId", requireAuth, requir
 });
 
 router.put("/campaigns/:campaignId/characters/:characterId", requireAuth, requireCampaignMember, async (req, res) => {
-  const { characterId } = req.params;
-  const updates = req.body;
+  const userId = req.session.userId!;
+  const { campaignId, characterId } = req.params;
+  const member = (req as any).campaignMember;
 
-  if (updates.stats) {
-    const dexMod = Math.floor((updates.stats.dex - 10) / 2);
-    updates.initiativeBonus = dexMod;
-  }
+  const [existing] = await db
+    .select()
+    .from(charactersTable)
+    .where(and(eq(charactersTable.id, characterId), eq(charactersTable.campaignId, campaignId)));
 
-  const [character] = await db.update(charactersTable).set(updates).where(eq(charactersTable.id, characterId)).returning();
-  if (!character) {
+  if (!existing) {
     res.status(404).json({ error: "Character not found" });
     return;
   }
+
+  if (existing.userId !== userId && member.role !== "dm") {
+    res.status(403).json({ error: "Cannot modify another player's character" });
+    return;
+  }
+
+  const allowed = ['name', 'race', 'subrace', 'class', 'subclass', 'background', 'level', 'hp', 'maxHp', 'tempHp', 'ac', 'speed', 'initiativeBonus', 'stats', 'sheetData', 'tokenColor', 'isNpc'];
+  const updates: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) updates[key] = req.body[key];
+  }
+
+  if (updates.stats) {
+    const s = updates.stats as any;
+    updates.initiativeBonus = Math.floor((s.dex - 10) / 2);
+  }
+
+  const [character] = await db
+    .update(charactersTable)
+    .set(updates)
+    .where(and(eq(charactersTable.id, characterId), eq(charactersTable.campaignId, campaignId)))
+    .returning();
+
   res.json(character);
+});
+
+router.delete("/campaigns/:campaignId/characters/:characterId", requireAuth, requireCampaignMember, async (req, res) => {
+  const userId = req.session.userId!;
+  const { campaignId, characterId } = req.params;
+  const member = (req as any).campaignMember;
+
+  const [existing] = await db
+    .select()
+    .from(charactersTable)
+    .where(and(eq(charactersTable.id, characterId), eq(charactersTable.campaignId, campaignId)));
+
+  if (!existing) {
+    res.status(404).json({ error: "Character not found" });
+    return;
+  }
+
+  if (existing.userId !== userId && member.role !== "dm") {
+    res.status(403).json({ error: "Cannot delete another player's character" });
+    return;
+  }
+
+  await db
+    .delete(charactersTable)
+    .where(and(eq(charactersTable.id, characterId), eq(charactersTable.campaignId, campaignId)));
+
+  res.json({ ok: true });
 });
 
 export default router;

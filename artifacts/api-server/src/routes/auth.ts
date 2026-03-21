@@ -2,6 +2,8 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
+import { requireAuth } from "../middlewares/auth";
+import "../types";
 
 const router: IRouter = Router();
 
@@ -18,19 +20,14 @@ router.post("/auth/login", async (req, res) => {
     [user] = await db.insert(usersTable).values({ username: trimmed }).returning();
   }
 
-  (req.session as any).userId = user.id;
-  (req.session as any).username = user.username;
+  req.session.userId = user.id;
+  req.session.username = user.username;
 
   res.json({ id: user.id, username: user.username });
 });
 
-router.get("/auth/me", async (req, res) => {
-  const userId = (req.session as any)?.userId;
-  if (!userId) {
-    res.status(401).json({ error: "Not authenticated" });
-    return;
-  }
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+router.get("/auth/me", requireAuth, async (req, res) => {
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!));
   if (!user) {
     res.status(401).json({ error: "User not found" });
     return;
@@ -39,7 +36,7 @@ router.get("/auth/me", async (req, res) => {
 });
 
 router.post("/auth/logout", (req, res) => {
-  req.session?.destroy(() => {
+  req.session.destroy(() => {
     res.json({ ok: true });
   });
 });
