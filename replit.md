@@ -1,8 +1,29 @@
-# Workspace
+# TavernOS — Virtual Tabletop Platform
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+TavernOS is a full-featured browser-based virtual tabletop (VTT) platform for D&D 5e. Built as a pnpm workspace monorepo using TypeScript.
+
+## Features
+
+- **Login**: Simple username-based auth (no password), session cookies
+- **Campaign Management**: Create/join campaigns with invite codes
+- **Game Table**: 3-column layout (character sheet, map canvas, chat)
+- **Initiative Tracker**: Top bar initiative strip with round counter and turn management
+- **Konva.js Map Canvas**: Drag-and-drop tokens, grid overlay, fog of war (structure in place)
+- **Character Sheet**: Full D&D 5e character data model with HP tracking
+- **Dice Roller**: rpg-dice-roller integration with expression parsing
+- **Chat Panel**: Real-time chat messages with dice roll results
+- **Socket.IO**: Real-time sync events (token_move, hp_update, chat_message, fog_update, etc.)
+- **Dark Fantasy Theme**: Cinzel/Crimson Pro fonts, gold/parchment color palette
+
+## Design System
+
+- Background: `#0E0B06` (very dark brown-black)
+- Gold: `#C9A84C`, Gold light: `#E8CC7A`, Gold dim: `#7A6228`
+- Parchment: `#F2E8CE`, Card bg: `#1A1208`
+- Ember: `#E07B39`, Magic: `#5B3FA6`
+- Fonts: Cinzel Decorative (headings), Cinzel (labels), Crimson Pro (body)
 
 ## Stack
 
@@ -10,18 +31,20 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
-- **API framework**: Express 5
+- **API framework**: Express 5 + Socket.IO
 - **Database**: PostgreSQL + Drizzle ORM
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
+- **Frontend**: React + Vite + TanStack Query + Zustand + react-konva + framer-motion
 
 ## Structure
 
 ```text
 artifacts-monorepo/
 ├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
+│   ├── api-server/         # Express API server + Socket.IO
+│   └── tavernos/           # React + Vite frontend
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks

@@ -1,0 +1,27 @@
+packages:
+  "zustand": "State management for transient VTT UI state"
+  "konva": "Core canvas rendering engine for the map"
+  "react-konva": "React bindings for Konva canvas"
+  "use-image": "Hook for loading images in react-konva"
+  "rpg-dice-roller": "Robust dice expression parsing and evaluation"
+  "socket.io-client": "Real-time bidirectional event communication for VTT sync"
+  "framer-motion": "Animations for dice rolls, UI panels, and initiative turns"
+  "uuid": "Generating local IDs for optimistic UI updates"
+  "@types/uuid": "TypeScript definitions for uuid"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility to merge tailwind classes safely"
+
+images:
+  - path: "artifacts/tavernos/public/images/tavern-bg.png"
+    description: "Dark atmospheric medieval tavern interior, warm fireplace glow, cinematic lighting, conceptual fantasy art, out of focus background"
+    aspect_ratio: "16:9"
+  - path: "artifacts/tavernos/public/images/map-placeholder.png"
+    description: "Top-down D&D battlemap of a generic dungeon ruin, stone floors, 5ft square grid overlay faintly visible, dark fantasy style"
+    aspect_ratio: "16:9"
+  - path: "artifacts/tavernos/public/images/parchment.png"
+    description: "Old ancient blank parchment paper texture, warm yellow-brown hues, aged edges, seamless texture"
+    aspect_ratio: "1:1"
+
+notes:
+  - "Assuming Socket.IO server is running on the same origin at /socket.io"
+  - "Using generated hooks from @workspace/api-client-react"

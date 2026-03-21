@@ -3,13 +3,25 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: TavernOS API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Session/user auth operations
+  - name: campaigns
+    description: Campaign management
+  - name: characters
+    description: Character management
+  - name: sessions
+    description: Game session management
+  - name: maps
+    description: Map management
+  - name: messages
+    description: Chat messages
 paths:
   /healthz:
     get:
@@ -24,6 +36,456 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with username
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /campaigns:
+    get:
+      operationId: listCampaigns
+      tags: [campaigns]
+      summary: List user campaigns
+      responses:
+        "200":
+          description: List of campaigns
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CampaignWithRole"
+    post:
+      operationId: createCampaign
+      tags: [campaigns]
+      summary: Create a campaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCampaignRequest"
+      responses:
+        "201":
+          description: Campaign created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign"
+
+  /campaigns/join:
+    post:
+      operationId: joinCampaign
+      tags: [campaigns]
+      summary: Join a campaign via invite code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinCampaignRequest"
+      responses:
+        "200":
+          description: Joined campaign
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign"
+
+  /campaigns/{campaignId}:
+    get:
+      operationId: getCampaign
+      tags: [campaigns]
+      summary: Get a campaign
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Campaign details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampaignWithRole"
+
+  /campaigns/{campaignId}/characters:
+    get:
+      operationId: listCharacters
+      tags: [characters]
+      summary: List characters in campaign
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of characters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Character"
+    post:
+      operationId: createCharacter
+      tags: [characters]
+      summary: Create a character
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCharacterRequest"
+      responses:
+        "201":
+          description: Character created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Character"
+
+  /campaigns/{campaignId}/characters/{characterId}:
+    get:
+      operationId: getCharacter
+      tags: [characters]
+      summary: Get a character
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: characterId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Character details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Character"
+    put:
+      operationId: updateCharacter
+      tags: [characters]
+      summary: Update a character
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: characterId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCharacterRequest"
+      responses:
+        "200":
+          description: Character updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Character"
+
+  /campaigns/{campaignId}/sessions:
+    get:
+      operationId: listSessions
+      tags: [sessions]
+      summary: List sessions in campaign
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GameSession"
+    post:
+      operationId: createSession
+      tags: [sessions]
+      summary: Create a session
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameSession"
+
+  /campaigns/{campaignId}/sessions/{sessionId}:
+    get:
+      operationId: getSession
+      tags: [sessions]
+      summary: Get a session
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameSession"
+    put:
+      operationId: updateSession
+      tags: [sessions]
+      summary: Update session state
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSessionRequest"
+      responses:
+        "200":
+          description: Session updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameSession"
+
+  /campaigns/{campaignId}/maps:
+    get:
+      operationId: listMaps
+      tags: [maps]
+      summary: List maps in campaign
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of maps
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GameMap"
+    post:
+      operationId: createMap
+      tags: [maps]
+      summary: Create a map
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMapRequest"
+      responses:
+        "201":
+          description: Map created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameMap"
+
+  /campaigns/{campaignId}/maps/{mapId}:
+    get:
+      operationId: getMap
+      tags: [maps]
+      summary: Get a map
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: mapId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Map details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameMap"
+    put:
+      operationId: updateMap
+      tags: [maps]
+      summary: Update map state
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: mapId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMapRequest"
+      responses:
+        "200":
+          description: Map updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameMap"
+
+  /campaigns/{campaignId}/sessions/{sessionId}/messages:
+    get:
+      operationId: listMessages
+      tags: [messages]
+      summary: List chat messages in session
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
+    post:
+      operationId: postMessage
+      tags: [messages]
+      summary: Post a chat message
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostMessageRequest"
+      responses:
+        "201":
+          description: Message posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatMessage"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +496,490 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+      required:
+        - username
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+      required:
+        - id
+        - username
+
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        gameSystem:
+          type: string
+        inviteCode:
+          type: string
+        dmUserId:
+          type: string
+        settings:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - gameSystem
+        - inviteCode
+        - dmUserId
+        - createdAt
+
+    CampaignWithRole:
+      allOf:
+        - $ref: "#/components/schemas/Campaign"
+        - type: object
+          properties:
+            role:
+              type: string
+              enum: [dm, player]
+          required:
+            - role
+
+    CreateCampaignRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        gameSystem:
+          type: string
+          default: "D&D 5e"
+      required:
+        - name
+
+    JoinCampaignRequest:
+      type: object
+      properties:
+        inviteCode:
+          type: string
+      required:
+        - inviteCode
+
+    AbilityScores:
+      type: object
+      properties:
+        str:
+          type: integer
+        dex:
+          type: integer
+        con:
+          type: integer
+        int:
+          type: integer
+        wis:
+          type: integer
+        cha:
+          type: integer
+      required:
+        - str
+        - dex
+        - con
+        - int
+        - wis
+        - cha
+
+    Character:
+      type: object
+      properties:
+        id:
+          type: string
+        campaignId:
+          type: string
+        userId:
+          type: string
+        name:
+          type: string
+        race:
+          type: string
+        class:
+          type: string
+        background:
+          type: string
+        level:
+          type: integer
+        hp:
+          type: integer
+        maxHp:
+          type: integer
+        tempHp:
+          type: integer
+        ac:
+          type: integer
+        speed:
+          type: integer
+        initiativeBonus:
+          type: integer
+        stats:
+          $ref: "#/components/schemas/AbilityScores"
+        sheetData:
+          type: object
+          additionalProperties: true
+        tokenColor:
+          type: string
+        isNpc:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - campaignId
+        - userId
+        - name
+        - level
+        - hp
+        - maxHp
+        - ac
+        - speed
+        - stats
+        - createdAt
+
+    CreateCharacterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        race:
+          type: string
+        class:
+          type: string
+        background:
+          type: string
+        level:
+          type: integer
+          default: 1
+        hp:
+          type: integer
+        maxHp:
+          type: integer
+        ac:
+          type: integer
+        speed:
+          type: integer
+          default: 30
+        stats:
+          $ref: "#/components/schemas/AbilityScores"
+        sheetData:
+          type: object
+          additionalProperties: true
+        tokenColor:
+          type: string
+        isNpc:
+          type: boolean
+          default: false
+      required:
+        - name
+        - stats
+
+    UpdateCharacterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        race:
+          type: string
+        class:
+          type: string
+        background:
+          type: string
+        level:
+          type: integer
+        hp:
+          type: integer
+        maxHp:
+          type: integer
+        tempHp:
+          type: integer
+        ac:
+          type: integer
+        speed:
+          type: integer
+        stats:
+          $ref: "#/components/schemas/AbilityScores"
+        sheetData:
+          type: object
+          additionalProperties: true
+        tokenColor:
+          type: string
+
+    InitiativeCombatant:
+      type: object
+      properties:
+        characterId:
+          type: string
+        name:
+          type: string
+        initiative:
+          type: integer
+        hp:
+          type: integer
+        maxHp:
+          type: integer
+        ac:
+          type: integer
+        conditions:
+          type: array
+          items:
+            type: string
+        isNpc:
+          type: boolean
+        tokenColor:
+          type: string
+      required:
+        - characterId
+        - name
+        - initiative
+        - hp
+        - maxHp
+        - ac
+
+    GameSession:
+      type: object
+      properties:
+        id:
+          type: string
+        campaignId:
+          type: string
+        name:
+          type: string
+        activeMapId:
+          type: string
+        initiativeOrder:
+          type: array
+          items:
+            $ref: "#/components/schemas/InitiativeCombatant"
+        currentTurnIndex:
+          type: integer
+        roundNumber:
+          type: integer
+        status:
+          type: string
+          enum: [active, paused, ended]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - campaignId
+        - status
+        - currentTurnIndex
+        - roundNumber
+        - createdAt
+
+    UpdateSessionRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        activeMapId:
+          type: string
+        initiativeOrder:
+          type: array
+          items:
+            $ref: "#/components/schemas/InitiativeCombatant"
+        currentTurnIndex:
+          type: integer
+        roundNumber:
+          type: integer
+        status:
+          type: string
+          enum: [active, paused, ended]
+
+    Token:
+      type: object
+      properties:
+        id:
+          type: string
+        characterId:
+          type: string
+        name:
+          type: string
+        x:
+          type: number
+        y:
+          type: number
+        color:
+          type: string
+        hp:
+          type: integer
+        maxHp:
+          type: integer
+        ac:
+          type: integer
+        conditions:
+          type: array
+          items:
+            type: string
+        visible:
+          type: boolean
+        isNpc:
+          type: boolean
+      required:
+        - id
+        - name
+        - x
+        - y
+
+    GridConfig:
+      type: object
+      properties:
+        size:
+          type: integer
+          default: 50
+        type:
+          type: string
+          enum: [square, hex]
+          default: square
+        visible:
+          type: boolean
+          default: true
+        snapToGrid:
+          type: boolean
+          default: true
+        cellFeet:
+          type: integer
+          default: 5
+      required:
+        - size
+        - type
+
+    GameMap:
+      type: object
+      properties:
+        id:
+          type: string
+        campaignId:
+          type: string
+        name:
+          type: string
+        imageData:
+          type: string
+        gridConfig:
+          $ref: "#/components/schemas/GridConfig"
+        fogData:
+          type: object
+          additionalProperties: true
+        tokens:
+          type: array
+          items:
+            $ref: "#/components/schemas/Token"
+        dmNotes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - campaignId
+        - name
+        - createdAt
+
+    CreateMapRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        imageData:
+          type: string
+        gridConfig:
+          $ref: "#/components/schemas/GridConfig"
+      required:
+        - name
+
+    UpdateMapRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        imageData:
+          type: string
+        gridConfig:
+          $ref: "#/components/schemas/GridConfig"
+        fogData:
+          type: object
+          additionalProperties: true
+        tokens:
+          type: array
+          items:
+            $ref: "#/components/schemas/Token"
+        dmNotes:
+          type: string
+
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        sessionId:
+          type: string
+        senderId:
+          type: string
+        senderName:
+          type: string
+        recipientId:
+          type: string
+        content:
+          type: string
+        type:
+          type: string
+          enum: [chat, dice, system, whisper]
+        diceData:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sessionId
+        - senderId
+        - senderName
+        - content
+        - type
+        - createdAt
+
+    PostMessageRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        type:
+          type: string
+          enum: [chat, dice, system, whisper]
+          default: chat
+        recipientId:
+          type: string
+        diceData:
+          type: object
+          additionalProperties: true
+      required:
+        - content
