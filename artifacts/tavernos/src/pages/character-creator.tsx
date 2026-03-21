@@ -57,6 +57,31 @@ const SKILL_NAMES = [
   'Sleight of Hand','Stealth','Survival',
 ];
 
+const SKILL_NAME_TO_KEY: Record<string, string> = {
+  'Acrobatics': 'acrobatics',
+  'Animal Handling': 'animal_handling',
+  'Arcana': 'arcana',
+  'Athletics': 'athletics',
+  'Deception': 'deception',
+  'History': 'history',
+  'Insight': 'insight',
+  'Intimidation': 'intimidation',
+  'Investigation': 'investigation',
+  'Medicine': 'medicine',
+  'Nature': 'nature',
+  'Perception': 'perception',
+  'Performance': 'performance',
+  'Persuasion': 'persuasion',
+  'Religion': 'religion',
+  'Sleight of Hand': 'sleight_of_hand',
+  'Stealth': 'stealth',
+  'Survival': 'survival',
+};
+
+function skillNameToKey(name: string): string {
+  return SKILL_NAME_TO_KEY[name] ?? name.toLowerCase().replace(/\s+/g, '_');
+}
+
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 const STAT_KEYS = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
 const STAT_NAMES: Record<string, string> = { str:'Strength', dex:'Dexterity', con:'Constitution', int:'Intelligence', wis:'Wisdom', cha:'Charisma' };
@@ -205,8 +230,8 @@ export default function CharacterCreator() {
     if (!campaignId || !form.name.trim()) return;
 
     const stats = finalStats();
-    const bgSkills = selectedBackground.skills;
-    const allSkillProfs = [...new Set([...bgSkills, ...form.selectedSkills])];
+    const bgSkills = selectedBackground.skills.map(skillNameToKey);
+    const allSkillProfs = [...new Set([...bgSkills, ...form.selectedSkills.map(skillNameToKey)])];
     const savingThrowProfs = selectedClass.savingThrows;
 
     const features: Array<{ name: string; source: string; desc: string }> = [

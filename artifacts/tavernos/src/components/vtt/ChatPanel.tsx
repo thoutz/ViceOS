@@ -306,6 +306,10 @@ function DmToolsPanel({
   const [mapName, setMapName] = useState('');
   const [mapImageData, setMapImageData] = useState('');
   const [mapCreating, setMapCreating] = useState(false);
+  const [secretLayerVisible, setSecretLayerVisible] = useState(false);
+  const [secretNote, setSecretNote] = useState('');
+  const [activeAmbient, setActiveAmbient] = useState<string | null>(null);
+  const mapFileRef = useRef<HTMLInputElement>(null);
 
   const searchNpc = useCallback(async (query: string) => {
     if (!query.trim()) { setNpcResults([]); return; }
@@ -518,6 +522,75 @@ function DmToolsPanel({
         )}
       </section>
 
+      {/* Secret Layer */}
+      <section>
+        <h3 className="text-[10px] font-label font-bold uppercase tracking-widest text-primary/80 mb-2 flex items-center gap-1">
+          <EyeOff className="w-3.5 h-3.5" /> Secret Layer
+        </h3>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSecretLayerVisible(v => !v)}
+              className={`flex items-center gap-1.5 text-xs font-label font-bold px-3 py-1.5 rounded border transition-colors ${secretLayerVisible ? 'bg-magic/20 border-magic/50 text-magic' : 'bg-background border-border text-muted-foreground hover:border-primary/40'}`}
+            >
+              {secretLayerVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              {secretLayerVisible ? 'Secret Shown' : 'Secret Hidden'}
+            </button>
+            <span className="text-[10px] text-muted-foreground">(DM only)</span>
+          </div>
+          {secretLayerVisible && (
+            <div className="bg-magic/5 border border-magic/20 rounded p-2">
+              <textarea
+                value={secretNote}
+                onChange={e => setSecretNote(e.target.value)}
+                placeholder="DM secret notes — hidden from players..."
+                rows={3}
+                className="w-full bg-transparent text-xs font-sans text-foreground resize-none focus:outline-none placeholder:text-muted-foreground/50"
+              />
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Ambient Scene */}
+      <section>
+        <h3 className="text-[10px] font-label font-bold uppercase tracking-widest text-primary/80 mb-2 flex items-center gap-1">
+          <span className="text-xs">🎭</span> Ambient Scene
+        </h3>
+        <div className="grid grid-cols-2 gap-1.5 mb-2">
+          {[
+            { id: 'tavern', label: 'Tavern', desc: 'Warm, lively', icon: '🍺' },
+            { id: 'dungeon', label: 'Dungeon', desc: 'Dark, damp', icon: '⛓' },
+            { id: 'forest', label: 'Forest', desc: 'Rustling leaves', icon: '🌲' },
+            { id: 'combat', label: 'Combat', desc: 'Tense battle', icon: '⚔️' },
+            { id: 'market', label: 'Market', desc: 'Bustling crowd', icon: '🏪' },
+            { id: 'mystery', label: 'Mystery', desc: 'Eerie silence', icon: '🔮' },
+          ].map(scene => (
+            <button
+              key={scene.id}
+              onClick={() => {
+                const next = activeAmbient === scene.id ? null : scene.id;
+                setActiveAmbient(next);
+                if (next) {
+                  onSendMessage(`🎭 Scene: ${scene.label} — ${scene.desc}`, 'system');
+                }
+              }}
+              className={`text-left p-2 rounded border transition-colors ${activeAmbient === scene.id ? 'bg-primary/20 border-primary/50 text-primary' : 'bg-background border-border/50 hover:border-primary/30 text-muted-foreground'}`}
+            >
+              <div className="text-sm">{scene.icon}</div>
+              <div className="font-label font-bold text-[10px]">{scene.label}</div>
+              <div className="text-[9px] opacity-70">{scene.desc}</div>
+            </button>
+          ))}
+        </div>
+        {activeAmbient && (
+          <div className="flex items-center justify-between bg-primary/10 border border-primary/20 rounded p-2">
+            <span className="text-[10px] font-label text-primary">Active scene: <strong>{activeAmbient}</strong></span>
+            <button onClick={() => setActiveAmbient(null)} className="text-[10px] text-muted-foreground hover:text-foreground">Clear</button>
+          </div>
+        )}
+      </section>
+
       {/* Map Management */}
       <section>
         <h3 className="text-[10px] font-label font-bold uppercase tracking-widest text-primary/80 mb-2 flex items-center gap-1">
@@ -531,12 +604,42 @@ function DmToolsPanel({
               placeholder="Map name (e.g. Dungeon Level 1)..."
               className="flex-1 bg-background border border-border rounded px-2 py-1.5 text-xs font-sans focus:outline-none focus:border-primary/50"
             />
+            <div className="flex gap-1.5">
+              <input
+                value={mapImageData}
+                onChange={e => setMapImageData(e.target.value)}
+                placeholder="Image URL (optional)..."
+                className="flex-1 bg-background border border-border rounded px-2 py-1.5 text-xs font-sans focus:outline-none focus:border-primary/50"
+              />
+              <button
+                type="button"
+                title="Upload local image"
+                onClick={() => mapFileRef.current?.click()}
+                className="h-[30px] px-2 bg-background border border-border rounded text-[10px] font-label text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors flex items-center gap-1"
+              >
+                📁
+              </button>
+            </div>
             <input
-              value={mapImageData}
-              onChange={e => setMapImageData(e.target.value)}
-              placeholder="Image URL (optional)..."
-              className="flex-1 bg-background border border-border rounded px-2 py-1.5 text-xs font-sans focus:outline-none focus:border-primary/50"
+              ref={mapFileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = ev => {
+                  const result = ev.target?.result as string;
+                  setMapImageData(result);
+                };
+                reader.readAsDataURL(file);
+                e.target.value = '';
+              }}
             />
+            {mapImageData && mapImageData.startsWith('data:') && (
+              <div className="text-[10px] text-green-500 font-label flex items-center gap-1">✓ Image loaded from file</div>
+            )}
             <button
               disabled={!mapName.trim() || mapCreating}
               onClick={() => {

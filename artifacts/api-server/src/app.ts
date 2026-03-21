@@ -182,6 +182,66 @@ io.on("connection", (socket) => {
   );
 
   socket.on(
+    "token_place",
+    async (data: { mapId: string; token: { id: string; name: string; x: number; y: number; color?: string; hp?: number; maxHp?: number; characterId?: string } }) => {
+      const sd = socket.data as SocketData;
+      if (!sd.sessionId || !sd.campaignId) return;
+      if (sd.role !== "dm") {
+        socket.emit("error", { message: "Only the DM can place tokens" });
+        return;
+      }
+      const room = `session:${sd.sessionId}`;
+      try {
+        const [map] = await db
+          .select()
+          .from(mapsTable)
+          .where(and(eq(mapsTable.id, data.mapId), eq(mapsTable.campaignId, sd.campaignId)));
+        if (map) {
+          const tokens = (map.tokens as Array<Record<string, unknown>>) || [];
+          const updated = [...tokens, data.token];
+          await db
+            .update(mapsTable)
+            .set({ tokens: updated })
+            .where(and(eq(mapsTable.id, data.mapId), eq(mapsTable.campaignId, sd.campaignId)));
+          io.to(room).emit("token_placed", { mapId: data.mapId, token: data.token });
+        }
+      } catch (err) {
+        logger.error({ err }, "Failed to place token");
+      }
+    }
+  );
+
+  socket.on(
+    "token_remove",
+    async (data: { mapId: string; tokenId: string }) => {
+      const sd = socket.data as SocketData;
+      if (!sd.sessionId || !sd.campaignId) return;
+      if (sd.role !== "dm") {
+        socket.emit("error", { message: "Only the DM can remove tokens" });
+        return;
+      }
+      const room = `session:${sd.sessionId}`;
+      try {
+        const [map] = await db
+          .select()
+          .from(mapsTable)
+          .where(and(eq(mapsTable.id, data.mapId), eq(mapsTable.campaignId, sd.campaignId)));
+        if (map) {
+          const tokens = (map.tokens as Array<{ id: string }>) || [];
+          const updated = tokens.filter((t) => t.id !== data.tokenId);
+          await db
+            .update(mapsTable)
+            .set({ tokens: updated })
+            .where(and(eq(mapsTable.id, data.mapId), eq(mapsTable.campaignId, sd.campaignId)));
+          io.to(room).emit("token_removed", { mapId: data.mapId, tokenId: data.tokenId });
+        }
+      } catch (err) {
+        logger.error({ err }, "Failed to remove token");
+      }
+    }
+  );
+
+  socket.on(
     "hp_update",
     (data: { characterId: string; hp: number; maxHp: number }) => {
       const sd = socket.data as SocketData;

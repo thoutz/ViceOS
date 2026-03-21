@@ -15,8 +15,21 @@ interface FogData {
   hidden: FogRect[];
 }
 
+interface TokenData {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  color?: string;
+  hp?: number;
+  maxHp?: number;
+  characterId?: string;
+}
+
 export interface VttSocketEmitEvents {
   token_move: (data: { mapId: string; tokenId: string; x: number; y: number }) => void;
+  token_place: (data: { mapId: string; token: TokenData }) => void;
+  token_remove: (data: { mapId: string; tokenId: string }) => void;
   initiative_advance: (data: { direction: "next" | "prev" }) => void;
   initiative_order_update: (data: { initiativeOrder: InitiativeCombatant[] }) => void;
   chat_message: (data: { message: unknown }) => void;
@@ -50,6 +63,14 @@ export function useVttSocket(campaignId: string, sessionId: string) {
     });
 
     socket.on("token_moved", () => {
+      void queryClient.invalidateQueries({ queryKey: [`/api/campaigns/${campaignId}/maps`] });
+    });
+
+    socket.on("token_placed", () => {
+      void queryClient.invalidateQueries({ queryKey: [`/api/campaigns/${campaignId}/maps`] });
+    });
+
+    socket.on("token_removed", () => {
       void queryClient.invalidateQueries({ queryKey: [`/api/campaigns/${campaignId}/maps`] });
     });
 

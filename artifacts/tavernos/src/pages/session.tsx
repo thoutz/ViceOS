@@ -183,6 +183,14 @@ export default function Session() {
     refetchMaps();
   };
 
+  const handleTokenPlace = (mapId: string, token: { id: string; name: string; x: number; y: number; color?: string; hp?: number; maxHp?: number; characterId?: string }) => {
+    emit('token_place', { mapId, token });
+  };
+
+  const handleTokenRemove = (mapId: string, tokenId: string) => {
+    emit('token_remove', { mapId, tokenId });
+  };
+
   const handleFogUpdate = (mapId: string, fogData: { revealed: FogRect[]; hidden: FogRect[] }) => {
     emit('fog_update', { mapId, fogData });
   };
@@ -340,6 +348,8 @@ export default function Session() {
             characters={characters || []}
             onTokenMove={handleTokenMove}
             onFogUpdate={handleFogUpdate}
+            onTokenPlace={handleTokenPlace}
+            onTokenRemove={handleTokenRemove}
             isDm={isDm}
           />
         </div>

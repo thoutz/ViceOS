@@ -4,7 +4,7 @@ import type { Stage as KonvaStageType } from 'konva/lib/Stage';
 import { Stage, Layer, Image as KonvaImage, Rect, Line, Circle, Text, Group } from 'react-konva';
 import useImage from 'use-image';
 import { GameMap, Character } from '@workspace/api-client-react';
-import { Eye, EyeOff, Grid3X3, Ruler, MousePointer2, Plus, Minus } from 'lucide-react';
+import { Eye, EyeOff, Grid3X3, Ruler, MousePointer2, Plus, Minus, UserPlus, Trash2 } from 'lucide-react';
 
 type KonvaEvent = KonvaEventObject<MouseEvent> & {
   target: KonvaEventObject<MouseEvent>['target'] & {
@@ -28,10 +28,12 @@ interface MapCanvasProps {
   characters: Character[];
   onTokenMove: (mapId: string, tokenId: string, x: number, y: number) => void;
   onFogUpdate: (mapId: string, fogData: { revealed: FogRect[]; hidden: FogRect[] }) => void;
+  onTokenPlace?: (mapId: string, token: Token) => void;
+  onTokenRemove?: (mapId: string, tokenId: string) => void;
   isDm: boolean;
 }
 
-type Tool = 'select' | 'fog_add' | 'fog_erase' | 'measure';
+type Tool = 'select' | 'fog_add' | 'fog_erase' | 'measure' | 'place_token';
 
 interface FogRect {
   x: number;
@@ -57,7 +59,7 @@ function useResizeObserver(ref: React.RefObject<HTMLDivElement | null>) {
   return size;
 }
 
-export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: MapCanvasProps) {
+export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, onTokenPlace, onTokenRemove, isDm }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { width: canvasW, height: canvasH } = useResizeObserver(containerRef);
 
@@ -67,6 +69,11 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
   const [showGrid, setShowGrid] = useState(true);
   const [showFog, setShowFog] = useState(true);
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
+
+  // Token placement
+  const [newTokenName, setNewTokenName] = useState('');
+  const [newTokenColor, setNewTokenColor] = useState('#C9A84C');
+  const [newTokenHp, setNewTokenHp] = useState('');
 
   // Fog painting
   const [fogRects, setFogRects] = useState<FogRect[]>([]);
@@ -133,6 +140,24 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
     const stage = e.target.getStage();
     if (!stage) return;
     const pos = stageToCanvas(stage);
+
+    if (isDm && activeTool === 'place_token') {
+      if (!map || !newTokenName.trim()) return;
+      const sx = snapToGrid(pos.x);
+      const sy = snapToGrid(pos.y);
+      const hp = newTokenHp ? parseInt(newTokenHp, 10) : undefined;
+      const token: Token = {
+        id: `token-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        name: newTokenName.trim(),
+        x: sx,
+        y: sy,
+        color: newTokenColor,
+        hp,
+        maxHp: hp,
+      };
+      onTokenPlace?.(map.id, token);
+      return;
+    }
 
     if (isDm && (activeTool === 'fog_add' || activeTool === 'fog_erase')) {
       setIsPainting(true);
@@ -341,6 +366,7 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
       {/* Tool Palette */}
       <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-card/90 border border-border rounded-lg px-2 py-1.5 shadow-xl backdrop-blur-sm">
         <ToolButton icon={<MousePointer2 />} label="Select" active={activeTool === 'select'} onClick={() => setActiveTool('select')} />
+        {isDm && <ToolButton icon={<UserPlus />} label="Place Token" active={activeTool === 'place_token'} onClick={() => setActiveTool('place_token')} className="text-amber-400" />}
         {isDm && <ToolButton icon={<EyeOff />} label="Hide Fog" active={activeTool === 'fog_add'} onClick={() => setActiveTool('fog_add')} className="text-slate-400" />}
         {isDm && <ToolButton icon={<Eye />} label="Reveal Fog" active={activeTool === 'fog_erase'} onClick={() => setActiveTool('fog_erase')} className="text-yellow-400" />}
         <ToolButton icon={<Ruler />} label="Measure" active={activeTool === 'measure'} onClick={() => setActiveTool('measure')} />
@@ -359,6 +385,40 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
           </button>
         )}
       </div>
+
+      {/* Token Placement Panel (DM only, when place_token tool active) */}
+      {isDm && activeTool === 'place_token' && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-card/95 border border-amber-500/50 rounded-lg px-4 py-3 shadow-xl backdrop-blur-sm flex items-center gap-3 flex-wrap">
+          <span className="text-[10px] font-label font-bold text-amber-400 uppercase">Place Token</span>
+          <input
+            value={newTokenName}
+            onChange={e => setNewTokenName(e.target.value)}
+            placeholder="Token name..."
+            className="bg-background border border-border rounded px-2 py-1 text-xs font-sans w-32 focus:outline-none focus:border-amber-500/50"
+          />
+          <label className="flex items-center gap-1 text-[10px] font-label text-muted-foreground">
+            Color
+            <input type="color" value={newTokenColor} onChange={e => setNewTokenColor(e.target.value)} className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
+          </label>
+          <input
+            value={newTokenHp}
+            onChange={e => setNewTokenHp(e.target.value)}
+            placeholder="HP (opt)"
+            type="number"
+            min={1}
+            className="bg-background border border-border rounded px-2 py-1 text-xs font-sans w-20 focus:outline-none focus:border-amber-500/50"
+          />
+          <span className="text-[10px] text-muted-foreground italic">Click map to place</span>
+          {selectedTokenId && map && (
+            <button
+              onClick={() => { onTokenRemove?.(map.id, selectedTokenId); setSelectedTokenId(null); }}
+              className="flex items-center gap-1 text-[10px] font-label text-destructive border border-destructive/40 rounded px-2 py-1 hover:bg-destructive/10 transition-colors"
+            >
+              <Trash2 className="w-3 h-3" /> Remove Selected
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Zoom controls */}
       <div className="absolute bottom-4 right-4 flex flex-col gap-1">
