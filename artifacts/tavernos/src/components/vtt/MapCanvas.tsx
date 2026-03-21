@@ -20,6 +20,7 @@ interface Token {
   color?: string;
   hp?: number;
   maxHp?: number;
+  ac?: number;
   characterId?: string;
 }
 
@@ -563,6 +564,23 @@ function TokenShape({
         <>
           <Rect x={2} y={gridSize - 7} width={gridSize - 4} height={5} fill="rgba(0,0,0,0.5)" cornerRadius={2} listening={false} />
           <Rect x={2} y={gridSize - 7} width={Math.max(0, (gridSize - 4) * hpPct)} height={5} fill={hpColor!} cornerRadius={2} listening={false} />
+        </>
+      )}
+      {/* AC badge (top-left corner) */}
+      {token.ac !== undefined && (
+        <>
+          <Circle x={9} y={9} radius={9} fill="rgba(30,60,120,0.85)" listening={false} />
+          <Text
+            x={0} y={2} width={18} height={14}
+            text={String(token.ac)}
+            fontSize={Math.max(7, gridSize / 7)}
+            fontFamily="Cinzel"
+            fontStyle="bold"
+            fill="#FFFFFF"
+            align="center"
+            verticalAlign="middle"
+            listening={false}
+          />
         </>
       )}
     </Group>

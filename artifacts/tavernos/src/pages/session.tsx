@@ -35,6 +35,7 @@ const QUICK_ROLL_HOTBAR = [
   { label: 'd10', expr: '1d10' },
   { label: 'd12', expr: '1d12' },
   { label: 'd20', expr: '1d20' },
+  { label: 'd100', expr: '1d100' },
   { label: '2d6', expr: '2d6' },
   { label: 'Adv', expr: '2d20kh1' },
   { label: 'Dis', expr: '2d20kl1' },
@@ -94,6 +95,8 @@ export default function Session() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessions, campaign, sessionId, campaignId]);
 
+  const prevRoundRef = useRef<number>(1);
+
   const { data: characters, refetch: refetchCharacters } = useListCharacters(campaignId || '');
   const { data: maps, refetch: refetchMaps } = useListMaps(campaignId || '');
   const createMap = useCreateMap();
@@ -120,7 +123,7 @@ export default function Session() {
 
   const [hotbarDiceExpr, setHotbarDiceExpr] = useState('');
   const [hotbarLastRoll, setHotbarLastRoll] = useState<{ total: number; output: string } | null>(null);
-  const [activeConditions, setActiveConditions] = useState<string[]>([]);
+  const [activeConditions, setActiveConditions] = useState<Array<{ name: string; expiresRound: number | null }>>([]);
   const [quickNotes, setQuickNotes] = useState('');
   const [showConditions, setShowConditions] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
@@ -228,11 +231,33 @@ export default function Session() {
     }
   };
 
-  const toggleCondition = (c: string) => {
-    setActiveConditions(prev =>
-      prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]
-    );
+  const toggleCondition = (c: string, durationRounds?: number) => {
+    setActiveConditions(prev => {
+      const existing = prev.find(x => x.name === c);
+      if (existing) return prev.filter(x => x.name !== c);
+      const currentRound = activeSession?.roundNumber || 1;
+      return [...prev, { name: c, expiresRound: durationRounds != null ? currentRound + durationRounds : null }];
+    });
   };
+
+  const tickConditions = (newRound: number) => {
+    setActiveConditions(prev => {
+      const expired = prev.filter(x => x.expiresRound !== null && x.expiresRound <= newRound);
+      if (expired.length > 0) {
+        expired.forEach(e => handleSendMessage(`⚠️ Condition expired: ${e.name}`, 'system'));
+      }
+      return prev.filter(x => x.expiresRound === null || x.expiresRound > newRound);
+    });
+  };
+
+  useEffect(() => {
+    const round = activeSession?.roundNumber || 1;
+    if (round > prevRoundRef.current) {
+      prevRoundRef.current = round;
+      tickConditions(round);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSession?.roundNumber]);
 
   if (!campaign || !activeSession) {
     return (
@@ -389,21 +414,30 @@ export default function Session() {
         {/* Popups */}
         {showConditions && (
           <div className="absolute bottom-full left-0 right-0 bg-card border border-border/50 shadow-2xl p-3 z-50">
-            <div className="text-xs font-label font-bold text-primary uppercase mb-2">Conditions</div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs font-label font-bold text-primary uppercase">Conditions</div>
+              <div className="text-[10px] text-muted-foreground font-label">Round {activeSession?.roundNumber || 1} · Click to toggle · Shift+click for 1-round timer</div>
+            </div>
             <div className="flex flex-wrap gap-1.5">
-              {CONDITIONS.map(c => (
-                <button
-                  key={c}
-                  onClick={() => toggleCondition(c)}
-                  className={`text-xs px-2.5 py-1 rounded border font-label font-bold transition-all ${
-                    activeConditions.includes(c)
-                      ? 'bg-destructive/20 border-destructive text-destructive'
-                      : 'border-border text-muted-foreground hover:border-border/80'
-                  }`}
-                >
-                  {c}
-                </button>
-              ))}
+              {CONDITIONS.map(c => {
+                const active = activeConditions.find(x => x.name === c);
+                return (
+                  <button
+                    key={c}
+                    onClick={e => toggleCondition(c, e.shiftKey ? 1 : undefined)}
+                    className={`text-xs px-2.5 py-1 rounded border font-label font-bold transition-all flex flex-col items-center gap-0 ${
+                      active
+                        ? 'bg-destructive/20 border-destructive text-destructive'
+                        : 'border-border text-muted-foreground hover:border-border/80'
+                    }`}
+                  >
+                    <span>{c}</span>
+                    {active?.expiresRound != null && (
+                      <span className="text-[9px] opacity-70">R{active.expiresRound}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -469,13 +503,14 @@ export default function Session() {
           {/* Active conditions chips */}
           {activeConditions.length > 0 && (
             <div className="flex gap-1 items-center mr-2 flex-wrap">
-              {activeConditions.map(c => (
+              {activeConditions.map(({ name, expiresRound }) => (
                 <span
-                  key={c}
-                  onClick={() => toggleCondition(c)}
+                  key={name}
+                  onClick={() => toggleCondition(name)}
+                  title={expiresRound != null ? `Expires round ${expiresRound}` : 'Indefinite'}
                   className="text-[10px] font-label font-bold px-2 py-0.5 rounded bg-destructive/20 border border-destructive/60 text-destructive cursor-pointer hover:bg-destructive/30 transition-colors"
                 >
-                  {c}
+                  {name}{expiresRound != null ? ` (R${expiresRound})` : ''}
                 </span>
               ))}
             </div>
