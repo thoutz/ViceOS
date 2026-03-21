@@ -25,6 +25,10 @@ interface Open5eMonster {
 
 type MessageType = 'chat' | 'dice' | 'system' | 'whisper';
 
+type Tab = 'chat' | 'dice' | 'dm';
+
+interface MapRef { id: string; name: string; }
+
 interface ChatPanelProps {
   messages: ChatMessage[];
   onSendMessage: (content: string, type: MessageType, diceData?: { total: number; output: string; expr: string }, recipientId?: string) => void;
@@ -35,9 +39,10 @@ interface ChatPanelProps {
   campaignId: string;
   onOrderUpdate: (order: InitiativeCombatant[]) => void;
   onCreateMap?: (name: string, imageData?: string) => void;
+  onSwitchMap?: (mapId: string) => void;
+  allMaps?: MapRef[];
+  defaultTab?: Tab;
 }
-
-type Tab = 'chat' | 'dice' | 'dm';
 
 const QUICK_ROLLS = [
   { label: 'd4', expr: '1d4' },
@@ -62,9 +67,9 @@ function mod(score: number) { return Math.floor((score - 10) / 2); }
 function fmtMod(n: number) { return n >= 0 ? `+${n}` : `${n}`; }
 
 export function ChatPanel({
-  messages, onSendMessage, isDm, myCharacter, allCharacters, activeSession, campaignId, onOrderUpdate, onCreateMap,
+  messages, onSendMessage, isDm, myCharacter, allCharacters, activeSession, campaignId, onOrderUpdate, onCreateMap, onSwitchMap, allMaps, defaultTab,
 }: ChatPanelProps) {
-  const [tab, setTab] = useState<Tab>('chat');
+  const [tab, setTab] = useState<Tab>(defaultTab ?? 'chat');
   const [input, setInput] = useState('');
   const [whisperTo, setWhisperTo] = useState<string>('all');
   const [showDiceHistory, setShowDiceHistory] = useState(false);
@@ -241,6 +246,8 @@ export function ChatPanel({
           performRoll={performRoll}
           campaignId={campaignId}
           onCreateMap={onCreateMap}
+          onSwitchMap={onSwitchMap}
+          allMaps={allMaps}
         />
       )}
     </div>
@@ -292,7 +299,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
 }
 
 function DmToolsPanel({
-  allCharacters, activeSession, onOrderUpdate, onSendMessage, performRoll, onCreateMap, campaignId,
+  allCharacters, activeSession, onOrderUpdate, onSendMessage, performRoll, onCreateMap, onSwitchMap, allMaps, campaignId,
 }: {
   allCharacters: Character[];
   activeSession: GameSession;
@@ -300,6 +307,8 @@ function DmToolsPanel({
   onSendMessage: (content: string, type: MessageType, diceData?: { total: number; output: string; expr: string }) => void;
   performRoll: (expr: string, label: string) => void;
   onCreateMap?: (name: string, imageData?: string) => void;
+  onSwitchMap?: (mapId: string) => void;
+  allMaps?: MapRef[];
   campaignId: string;
 }) {
   const [announcement, setAnnouncement] = useState('');
@@ -659,6 +668,26 @@ function DmToolsPanel({
               {mapCreating ? 'Creating...' : 'Create Map'}
             </button>
           </div>
+          {allMaps && allMaps.length > 1 && (
+            <div className="mt-2">
+              <div className="text-[10px] font-label text-muted-foreground mb-1">Switch Active Map:</div>
+              <div className="flex flex-col gap-1">
+                {allMaps.map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => onSwitchMap?.(m.id)}
+                    className={`text-xs font-label text-left px-2 py-1.5 rounded border transition-colors ${
+                      activeSession.activeMapId === m.id
+                        ? 'border-primary/60 bg-primary/10 text-primary'
+                        : 'border-border/40 text-muted-foreground hover:border-border/80 hover:text-foreground'
+                    }`}
+                  >
+                    {activeSession.activeMapId === m.id ? '▶ ' : ''}{m.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

@@ -11,6 +11,7 @@ import {
   useListMessages,
   usePostMessage,
   useUpdateCharacter,
+  useUpdateSession,
   Character,
   GameSession,
 } from '@workspace/api-client-react';
@@ -20,7 +21,7 @@ import { CharacterSheet } from '@/components/vtt/CharacterSheet';
 import { InitiativeBar, type InitiativeCombatant } from '@/components/vtt/InitiativeBar';
 import { ChatPanel } from '@/components/vtt/ChatPanel';
 import { DiceRoll } from 'rpg-dice-roller';
-import { LogOut, Menu, X, Wifi, WifiOff, Dices, StickyNote, Shield } from 'lucide-react';
+import { LogOut, Menu, X, Wifi, WifiOff, Dices, StickyNote, Shield, Swords } from 'lucide-react';
 
 const CONDITIONS = [
   'Blinded','Charmed','Deafened','Exhaustion','Frightened',
@@ -100,6 +101,7 @@ export default function Session() {
   const { data: characters, refetch: refetchCharacters } = useListCharacters(campaignId || '');
   const { data: maps, refetch: refetchMaps } = useListMaps(campaignId || '');
   const createMap = useCreateMap();
+  const updateSession = useUpdateSession();
   const messagesQueryKey = [
     `/api/campaigns/${campaignId}/sessions/${activeSession?.id}/messages`,
   ] as const;
@@ -114,12 +116,16 @@ export default function Session() {
 
   const isDm = campaign?.role === 'dm';
   const myCharacter = characters?.find((c) => c.userId === user?.id) ?? null;
-  const activeMap = maps?.[0] ?? null;
+  // Prefer the session's pinned activeMapId; fall back to the first available map
+  const activeMap = (maps && activeSession?.activeMapId
+    ? (maps.find(m => m.id === activeSession.activeMapId) ?? maps[0])
+    : maps?.[0]) ?? null;
 
   const { isConnected, emit } = useVttSocket(campaignId || '', activeSession?.id || '');
 
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [dmDrawerOpen, setDmDrawerOpen] = useState(false);
 
   const [hotbarDiceExpr, setHotbarDiceExpr] = useState('');
   const [hotbarLastRoll, setHotbarLastRoll] = useState<{ total: number; output: string } | null>(null);
@@ -217,7 +223,24 @@ export default function Session() {
     if (!campaignId) return;
     createMap.mutate(
       { campaignId, data: { name, ...(imageData ? { imageData } : {}) } },
-      { onSuccess: () => refetchMaps() }
+      { onSuccess: (newMap) => {
+        refetchMaps();
+        // Auto-switch to the newly created map
+        if (activeSession && campaignId) {
+          updateSession.mutate(
+            { campaignId, sessionId: activeSession.id, data: { activeMapId: newMap.id } },
+            { onSuccess: () => refetchSessions() }
+          );
+        }
+      } }
+    );
+  };
+
+  const handleSwitchMap = (mapId: string) => {
+    if (!activeSession || !campaignId) return;
+    updateSession.mutate(
+      { campaignId, sessionId: activeSession.id, data: { activeMapId: mapId } },
+      { onSuccess: () => refetchSessions() }
     );
   };
 
@@ -310,6 +333,15 @@ export default function Session() {
           <span className="text-xs text-muted-foreground font-label hidden md:block">
             {activeSession.name}
           </span>
+          {isDm && (
+            <button
+              onClick={() => setDmDrawerOpen(true)}
+              className="flex items-center gap-1.5 text-sm text-destructive/80 hover:text-destructive border border-destructive/30 hover:border-destructive/60 px-2.5 py-1 rounded font-label font-bold transition-colors"
+              title="DM Command Center"
+            >
+              <Swords className="w-4 h-4" /> DM
+            </button>
+          )}
           <button
             onClick={() => setLocation('/dashboard')}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors font-label font-bold"
@@ -403,11 +435,64 @@ export default function Session() {
                 campaignId={campaignId || ''}
                 onOrderUpdate={handleInitiativeOrderUpdate}
                 onCreateMap={isDm ? handleCreateMap : undefined}
+                onSwitchMap={isDm ? handleSwitchMap : undefined}
+                allMaps={maps ?? []}
               />
             </>
           )}
         </div>
       </div>
+
+      {/* DM COMMAND CENTER DRAWER OVERLAY */}
+      {isDm && (
+        <>
+          {/* Backdrop */}
+          {dmDrawerOpen && (
+            <div
+              className="fixed inset-0 bg-black/60 z-40"
+              onClick={() => setDmDrawerOpen(false)}
+            />
+          )}
+          {/* Drawer */}
+          <div
+            className={`fixed top-0 right-0 h-full w-[380px] max-w-full z-50 bg-background border-l border-border/50 shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out ${
+              dmDrawerOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
+          >
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-card shrink-0">
+              <div className="flex items-center gap-2">
+                <Swords className="w-5 h-5 text-destructive" />
+                <span className="font-display text-lg text-primary">Command Center</span>
+                <span className="text-[10px] font-label uppercase bg-destructive/20 text-destructive border border-destructive/40 px-1.5 py-0.5 rounded">DM Only</span>
+              </div>
+              <button
+                onClick={() => setDmDrawerOpen(false)}
+                className="p-1.5 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {/* Drawer Content — reuse ChatPanel locked to DM tab */}
+            <div className="flex-1 overflow-y-auto">
+              <ChatPanel
+                messages={messages || []}
+                onSendMessage={handleSendMessage}
+                isDm={true}
+                myCharacter={myCharacter}
+                allCharacters={characters || []}
+                activeSession={activeSession}
+                campaignId={campaignId || ''}
+                onOrderUpdate={handleInitiativeOrderUpdate}
+                onCreateMap={handleCreateMap}
+                onSwitchMap={handleSwitchMap}
+                allMaps={maps ?? []}
+                defaultTab="dm"
+              />
+            </div>
+          </div>
+        </>
+      )}
 
       {/* BOTTOM HOTBAR */}
       <div className="h-auto shrink-0 bg-card border-t border-border/50 z-30 relative">
