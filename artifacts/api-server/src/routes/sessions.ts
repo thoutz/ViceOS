@@ -72,4 +72,25 @@ router.put("/campaigns/:campaignId/sessions/:sessionId", requireAuth, requireCam
   res.json(session);
 });
 
+router.delete("/campaigns/:campaignId/sessions/:sessionId", requireAuth, requireCampaignMember, requireDm, async (req, res) => {
+  const campaignId = param(req.params.campaignId);
+  const sessionId = param(req.params.sessionId);
+
+  const [session] = await db
+    .select()
+    .from(gameSessionsTable)
+    .where(and(eq(gameSessionsTable.id, sessionId), eq(gameSessionsTable.campaignId, campaignId)));
+
+  if (!session) {
+    res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  await db
+    .delete(gameSessionsTable)
+    .where(and(eq(gameSessionsTable.id, sessionId), eq(gameSessionsTable.campaignId, campaignId)));
+
+  res.status(204).send();
+});
+
 export default router;

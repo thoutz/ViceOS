@@ -27,13 +27,14 @@ type MessageType = 'chat' | 'dice' | 'system' | 'whisper';
 
 interface ChatPanelProps {
   messages: ChatMessage[];
-  onSendMessage: (content: string, type: MessageType, diceData?: { total: number; output: string; expr: string }) => void;
+  onSendMessage: (content: string, type: MessageType, diceData?: { total: number; output: string; expr: string }, recipientId?: string) => void;
   isDm: boolean;
   myCharacter: Character | null;
   allCharacters: Character[];
   activeSession: GameSession;
   campaignId: string;
   onOrderUpdate: (order: InitiativeCombatant[]) => void;
+  onCreateMap?: (name: string, imageData?: string) => void;
 }
 
 type Tab = 'chat' | 'dice' | 'dm';
@@ -61,7 +62,7 @@ function mod(score: number) { return Math.floor((score - 10) / 2); }
 function fmtMod(n: number) { return n >= 0 ? `+${n}` : `${n}`; }
 
 export function ChatPanel({
-  messages, onSendMessage, isDm, myCharacter, allCharacters, activeSession, campaignId, onOrderUpdate,
+  messages, onSendMessage, isDm, myCharacter, allCharacters, activeSession, campaignId, onOrderUpdate, onCreateMap,
 }: ChatPanelProps) {
   const [tab, setTab] = useState<Tab>('chat');
   const [input, setInput] = useState('');
@@ -96,10 +97,12 @@ export function ChatPanel({
       performRoll(expr, expr);
     } else if (text.startsWith('/w ') && isDm) {
       const content = text.replace(/^\/w\s+/, '');
-      onSendMessage(content, 'whisper');
+      const recipientId = whisperTo !== 'all' ? whisperTo : undefined;
+      onSendMessage(content, 'whisper', undefined, recipientId);
     } else {
       const type = whisperTo !== 'all' ? 'whisper' : 'chat';
-      onSendMessage(text, type);
+      const recipientId = whisperTo !== 'all' ? whisperTo : undefined;
+      onSendMessage(text, type, undefined, recipientId);
     }
     setInput('');
   };
@@ -232,6 +235,8 @@ export function ChatPanel({
           onOrderUpdate={onOrderUpdate}
           onSendMessage={onSendMessage}
           performRoll={performRoll}
+          campaignId={campaignId}
+          onCreateMap={onCreateMap}
         />
       )}
     </div>
@@ -283,19 +288,24 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
 }
 
 function DmToolsPanel({
-  allCharacters, activeSession, onOrderUpdate, onSendMessage, performRoll,
+  allCharacters, activeSession, onOrderUpdate, onSendMessage, performRoll, onCreateMap, campaignId,
 }: {
   allCharacters: Character[];
   activeSession: GameSession;
   onOrderUpdate: (order: InitiativeCombatant[]) => void;
   onSendMessage: (content: string, type: MessageType, diceData?: { total: number; output: string; expr: string }) => void;
   performRoll: (expr: string, label: string) => void;
+  onCreateMap?: (name: string, imageData?: string) => void;
+  campaignId: string;
 }) {
   const [announcement, setAnnouncement] = useState('');
   const [npcQuery, setNpcQuery] = useState('');
   const [npcResults, setNpcResults] = useState<Open5eMonster[]>([]);
   const [npcLoading, setNpcLoading] = useState(false);
   const [npcSelected, setNpcSelected] = useState<Open5eMonster | null>(null);
+  const [mapName, setMapName] = useState('');
+  const [mapImageData, setMapImageData] = useState('');
+  const [mapCreating, setMapCreating] = useState(false);
 
   const searchNpc = useCallback(async (query: string) => {
     if (!query.trim()) { setNpcResults([]); return; }
@@ -506,6 +516,43 @@ function DmToolsPanel({
             </button>
           </div>
         )}
+      </section>
+
+      {/* Map Management */}
+      <section>
+        <h3 className="text-[10px] font-label font-bold uppercase tracking-widest text-primary/80 mb-2 flex items-center gap-1">
+          <Eye className="w-3.5 h-3.5" /> Map Management
+        </h3>
+        <div className="space-y-2">
+          <div className="flex flex-col gap-1.5">
+            <input
+              value={mapName}
+              onChange={e => setMapName(e.target.value)}
+              placeholder="Map name (e.g. Dungeon Level 1)..."
+              className="flex-1 bg-background border border-border rounded px-2 py-1.5 text-xs font-sans focus:outline-none focus:border-primary/50"
+            />
+            <input
+              value={mapImageData}
+              onChange={e => setMapImageData(e.target.value)}
+              placeholder="Image URL (optional)..."
+              className="flex-1 bg-background border border-border rounded px-2 py-1.5 text-xs font-sans focus:outline-none focus:border-primary/50"
+            />
+            <button
+              disabled={!mapName.trim() || mapCreating}
+              onClick={() => {
+                if (!mapName.trim() || !onCreateMap) return;
+                setMapCreating(true);
+                onCreateMap(mapName.trim(), mapImageData.trim() || undefined);
+                setMapName('');
+                setMapImageData('');
+                setTimeout(() => setMapCreating(false), 1500);
+              }}
+              className="w-full text-xs font-label font-bold py-1.5 bg-primary/20 border border-primary/40 text-primary rounded hover:bg-primary/30 transition-colors disabled:opacity-50"
+            >
+              {mapCreating ? 'Creating...' : 'Create Map'}
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* Encounter Builder */}

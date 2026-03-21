@@ -7,6 +7,7 @@ import {
   useCreateSession,
   useListCharacters,
   useListMaps,
+  useCreateMap,
   useListMessages,
   usePostMessage,
   useUpdateCharacter,
@@ -95,11 +96,15 @@ export default function Session() {
 
   const { data: characters, refetch: refetchCharacters } = useListCharacters(campaignId || '');
   const { data: maps, refetch: refetchMaps } = useListMaps(campaignId || '');
+  const createMap = useCreateMap();
+  const messagesQueryKey = [
+    `/api/campaigns/${campaignId}/sessions/${activeSession?.id}/messages`,
+  ] as const;
   const { data: messages, refetch: refetchMessages } = useListMessages(
     campaignId || '',
     activeSession?.id || '',
     undefined,
-    { query: { enabled: !!activeSession?.id, queryKey: ['messages', campaignId, activeSession?.id] } }
+    { query: { enabled: !!activeSession?.id, queryKey: messagesQueryKey } }
   );
   const postMessage = usePostMessage();
   const updateChar = useUpdateCharacter();
@@ -123,14 +128,15 @@ export default function Session() {
   const handleSendMessage = (
     content: string,
     type: 'chat' | 'dice' | 'system' | 'whisper',
-    diceData?: { total: number; output: string; expr?: string }
+    diceData?: { total: number; output: string; expr?: string },
+    recipientId?: string
   ) => {
     if (!activeSession) return;
     postMessage.mutate(
       {
         campaignId: campaignId || '',
         sessionId: activeSession.id,
-        data: { content, type, diceData },
+        data: { content, type, diceData, recipientId },
       },
       {
         onSuccess: (msg) => {
@@ -194,6 +200,14 @@ export default function Session() {
   const handleInitiativeOrderUpdate = (order: InitiativeCombatant[]) => {
     if (!activeSession || !campaignId) return;
     emit('initiative_order_update', { initiativeOrder: order });
+  };
+
+  const handleCreateMap = (name: string, imageData?: string) => {
+    if (!campaignId) return;
+    createMap.mutate(
+      { campaignId, data: { name, ...(imageData ? { imageData } : {}) } },
+      { onSuccess: () => refetchMaps() }
+    );
   };
 
   const handleHotbarRoll = (expr: string, label?: string) => {
@@ -353,6 +367,7 @@ export default function Session() {
                 activeSession={activeSession}
                 campaignId={campaignId || ''}
                 onOrderUpdate={handleInitiativeOrderUpdate}
+                onCreateMap={isDm ? handleCreateMap : undefined}
               />
             </>
           )}

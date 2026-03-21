@@ -211,9 +211,8 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
 
   const renderFog = () => {
     if (!showFog) return null;
-    // DM sees fog semi-transparent (can see beneath it); players see it fully opaque
     const fogOpacity = isDm ? 0.55 : 1.0;
-    return hiddenRects.map((r, i) => (
+    const hidden = hiddenRects.map((r, i) => (
       <Rect
         key={`fog-${i}`}
         x={r.x}
@@ -224,6 +223,19 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
         listening={false}
       />
     ));
+    const revealed = fogRects.map((r, i) => (
+      <Rect
+        key={`rev-${i}`}
+        x={r.x}
+        y={r.y}
+        width={r.w}
+        height={r.h}
+        fill="rgba(0,0,0,1)"
+        globalCompositeOperation="destination-out"
+        listening={false}
+      />
+    ));
+    return [...hidden, ...revealed];
   };
 
   const renderFogPreview = () => {

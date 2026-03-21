@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { campaignsTable, campaignMembersTable } from "@workspace/db/schema";
+import { campaignsTable, campaignMembersTable, gameSessionsTable, charactersTable, mapsTable, messagesTable } from "@workspace/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { requireAuth } from "../middlewares/auth";
@@ -115,6 +115,68 @@ router.get("/campaigns/:campaignId", requireAuth, async (req, res) => {
   }
 
   res.json({ ...campaign, role: member.role });
+});
+
+router.put("/campaigns/:campaignId", requireAuth, async (req, res) => {
+  const userId = req.session.userId!;
+  const campaignId = param(req.params.campaignId);
+
+  const [campaign] = await db.select().from(campaignsTable).where(eq(campaignsTable.id, campaignId));
+  if (!campaign) {
+    res.status(404).json({ error: "Campaign not found" });
+    return;
+  }
+  if (campaign.dmUserId !== userId) {
+    res.status(403).json({ error: "Only the DM can update the campaign" });
+    return;
+  }
+
+  const { name, description, gameSystem, settings } = req.body;
+  const updates: Record<string, unknown> = {};
+  if (name !== undefined) updates.name = name;
+  if (description !== undefined) updates.description = description;
+  if (gameSystem !== undefined) updates.gameSystem = gameSystem;
+  if (settings !== undefined) updates.settings = settings;
+
+  const [updated] = await db
+    .update(campaignsTable)
+    .set(updates)
+    .where(eq(campaignsTable.id, campaignId))
+    .returning();
+
+  const [member] = await db
+    .select()
+    .from(campaignMembersTable)
+    .where(and(eq(campaignMembersTable.campaignId, campaignId), eq(campaignMembersTable.userId, userId)));
+
+  res.json({ ...updated, role: member?.role || "dm" });
+});
+
+router.delete("/campaigns/:campaignId", requireAuth, async (req, res) => {
+  const userId = req.session.userId!;
+  const campaignId = param(req.params.campaignId);
+
+  const [campaign] = await db.select().from(campaignsTable).where(eq(campaignsTable.id, campaignId));
+  if (!campaign) {
+    res.status(404).json({ error: "Campaign not found" });
+    return;
+  }
+  if (campaign.dmUserId !== userId) {
+    res.status(403).json({ error: "Only the DM can delete the campaign" });
+    return;
+  }
+
+  const sessions = await db.select({ id: gameSessionsTable.id }).from(gameSessionsTable).where(eq(gameSessionsTable.campaignId, campaignId));
+  const sessionIds = sessions.map((s) => s.id);
+  if (sessionIds.length > 0) {
+    await db.delete(messagesTable).where(inArray(messagesTable.sessionId, sessionIds));
+  }
+  await db.delete(gameSessionsTable).where(eq(gameSessionsTable.campaignId, campaignId));
+  await db.delete(charactersTable).where(eq(charactersTable.campaignId, campaignId));
+  await db.delete(mapsTable).where(eq(mapsTable.campaignId, campaignId));
+  await db.delete(campaignMembersTable).where(eq(campaignMembersTable.campaignId, campaignId));
+  await db.delete(campaignsTable).where(eq(campaignsTable.id, campaignId));
+  res.status(204).send();
 });
 
 export default router;
