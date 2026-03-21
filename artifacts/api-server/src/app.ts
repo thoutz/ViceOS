@@ -122,6 +122,21 @@ io.on("connection", (socket) => {
         return;
       }
 
+      // Verify that the sessionId actually belongs to the claimed campaignId
+      const [sessionRow] = await db
+        .select({ id: gameSessionsTable.id })
+        .from(gameSessionsTable)
+        .where(
+          and(
+            eq(gameSessionsTable.id, data.sessionId),
+            eq(gameSessionsTable.campaignId, data.campaignId)
+          )
+        );
+      if (!sessionRow) {
+        socket.emit("error", { message: "Session does not belong to this campaign" });
+        return;
+      }
+
       const room = `session:${data.sessionId}`;
       socket.join(room);
 
