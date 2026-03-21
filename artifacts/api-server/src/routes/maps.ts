@@ -3,12 +3,12 @@ import { db } from "@workspace/db";
 import { mapsTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireCampaignMember, requireDm } from "../middlewares/auth";
-import "../types";
+import { param } from "../types";
 
 const router: IRouter = Router();
 
 router.get("/campaigns/:campaignId/maps", requireAuth, requireCampaignMember, async (req, res) => {
-  const { campaignId } = req.params;
+  const campaignId = param(req.params.campaignId);
   const maps = await db
     .select()
     .from(mapsTable)
@@ -17,7 +17,7 @@ router.get("/campaigns/:campaignId/maps", requireAuth, requireCampaignMember, as
 });
 
 router.post("/campaigns/:campaignId/maps", requireAuth, requireCampaignMember, requireDm, async (req, res) => {
-  const { campaignId } = req.params;
+  const campaignId = param(req.params.campaignId);
   const { name, imageData, gridConfig } = req.body;
   if (!name) {
     res.status(400).json({ error: "Map name is required" });
@@ -38,7 +38,8 @@ router.post("/campaigns/:campaignId/maps", requireAuth, requireCampaignMember, r
 });
 
 router.get("/campaigns/:campaignId/maps/:mapId", requireAuth, requireCampaignMember, async (req, res) => {
-  const { campaignId, mapId } = req.params;
+  const campaignId = param(req.params.campaignId);
+  const mapId = param(req.params.mapId);
   const [map] = await db
     .select()
     .from(mapsTable)
@@ -51,7 +52,8 @@ router.get("/campaigns/:campaignId/maps/:mapId", requireAuth, requireCampaignMem
 });
 
 router.put("/campaigns/:campaignId/maps/:mapId", requireAuth, requireCampaignMember, requireDm, async (req, res) => {
-  const { campaignId, mapId } = req.params;
+  const campaignId = param(req.params.campaignId);
+  const mapId = param(req.params.mapId);
 
   const allowed = ['name', 'imageData', 'gridConfig', 'tokens', 'fogData'];
   const updates: Record<string, unknown> = {};
@@ -72,7 +74,8 @@ router.put("/campaigns/:campaignId/maps/:mapId", requireAuth, requireCampaignMem
 });
 
 router.delete("/campaigns/:campaignId/maps/:mapId", requireAuth, requireCampaignMember, requireDm, async (req, res) => {
-  const { campaignId, mapId } = req.params;
+  const campaignId = param(req.params.campaignId);
+  const mapId = param(req.params.mapId);
   const [existing] = await db
     .select()
     .from(mapsTable)

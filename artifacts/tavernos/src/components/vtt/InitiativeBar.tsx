@@ -31,7 +31,7 @@ interface InitiativeBarProps {
 const CONDITIONS = ['Blinded', 'Charmed', 'Deafened', 'Frightened', 'Grappled', 'Incapacitated', 'Invisible', 'Paralyzed', 'Petrified', 'Poisoned', 'Prone', 'Restrained', 'Stunned', 'Unconscious', 'Exhaustion'];
 
 function rollInitiative(character: Character): number {
-  const stats = (character.stats as Record<string, number>) || {};
+  const stats = (character.stats as unknown as Record<string, number>) || {};
   const dex = stats.dex || 10;
   const mod = Math.floor((dex - 10) / 2);
   const bonus = (character.initiativeBonus as number | undefined) ?? mod;

@@ -74,7 +74,9 @@ export interface Character {
   userId: string;
   name: string;
   race?: string;
+  subrace?: string;
   class?: string;
+  subclass?: string;
   background?: string;
   level: number;
   hp: number;
@@ -95,7 +97,9 @@ export type CreateCharacterRequestSheetData = { [key: string]: unknown };
 export interface CreateCharacterRequest {
   name: string;
   race?: string;
+  subrace?: string;
   class?: string;
+  subclass?: string;
   background?: string;
   level?: number;
   hp?: number;

@@ -61,6 +61,31 @@ const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 const STAT_KEYS = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
 const STAT_NAMES: Record<string, string> = { str:'Strength', dex:'Dexterity', con:'Constitution', int:'Intelligence', wis:'Wisdom', cha:'Charisma' };
 
+const EQUIPMENT_PACKS: Record<string, string[]> = {
+  "Dungeoneer's Pack": ["Backpack", "Crowbar", "Hammer", "10 Pitons", "10 Torches", "Tinderbox", "10 days rations", "Waterskin", "50ft Hemp Rope"],
+  "Burglar's Pack": ["Backpack", "1000 Ball Bearings", "String (10ft)", "Bell", "5 Candles", "Crowbar", "Hammer", "10 Pitons", "Hooded Lantern", "2 Flasks Oil", "5 Days Rations", "Tinderbox", "Waterskin", "50ft Hemp Rope"],
+  "Explorer's Pack": ["Backpack", "Bedroll", "Mess Kit", "Tinderbox", "10 Torches", "10 Days Rations", "Waterskin", "50ft Hemp Rope"],
+  "Scholar's Pack": ["Backpack", "Book of Lore", "Ink Bottle", "Ink Pen", "10 Sheets Parchment", "Bag of Sand", "Small Knife"],
+  "Entertainer's Pack": ["Backpack", "Bedroll", "2 Costumes", "5 Candles", "5 Days Rations", "Waterskin", "Disguise Kit"],
+  "Diplomat's Pack": ["Chest", "2 Map Cases", "2 Sets Fine Clothes", "Ink & Pen", "Lamp", "2 Flasks Oil", "5 Sheets Paper", "Perfume", "Wax & Seal", "Soap"],
+  "Priest's Pack": ["Backpack", "Blanket", "10 Candles", "Tinderbox", "Alms Box", "2 Blocks Incense", "Censer", "Vestments", "2 Days Rations", "Waterskin"],
+};
+
+const CLASS_EQUIPMENT: Record<string, { weapons: string[]; armor: string[]; packs: string[] }> = {
+  Barbarian: { weapons: ["Greataxe", "Two Handaxes", "4 Javelins"], armor: ["No armor (Unarmored Defense)"], packs: ["Explorer's Pack"] },
+  Bard: { weapons: ["Rapier", "Shortbow (20 arrows)"], armor: ["Leather Armor"], packs: ["Entertainer's Pack", "Diplomat's Pack"] },
+  Cleric: { weapons: ["Mace", "Light Crossbow (20 bolts)"], armor: ["Scale Mail", "Leather Armor", "Chain Mail"], packs: ["Priest's Pack", "Explorer's Pack"] },
+  Druid: { weapons: ["Wooden Shield", "Scimitar", "Quarterstaff"], armor: ["Leather Armor"], packs: ["Explorer's Pack"] },
+  Fighter: { weapons: ["Longsword & Shield", "Two Handaxes", "Crossbow (20 bolts)", "Longbow (20 arrows)"], armor: ["Chain Mail", "Leather Armor"], packs: ["Dungeoneer's Pack", "Explorer's Pack"] },
+  Monk: { weapons: ["Shortsword", "10 Darts"], armor: ["No armor (Unarmored Defense)"], packs: ["Dungeoneer's Pack", "Explorer's Pack"] },
+  Paladin: { weapons: ["Longsword & Shield", "5 Javelins", "Martial Weapon"], armor: ["Chain Mail"], packs: ["Priest's Pack", "Explorer's Pack"] },
+  Ranger: { weapons: ["Two Shortswords", "Two Handaxes", "Longbow (20 arrows)"], armor: ["Scale Mail", "Leather Armor"], packs: ["Dungeoneer's Pack", "Explorer's Pack"] },
+  Rogue: { weapons: ["Rapier", "Shortbow (20 arrows)", "Shortsword"], armor: ["Leather Armor"], packs: ["Burglar's Pack", "Dungeoneer's Pack", "Explorer's Pack"] },
+  Sorcerer: { weapons: ["Light Crossbow (20 bolts)", "Quarterstaff", "Dagger"], armor: ["No armor"], packs: ["Dungeoneer's Pack", "Explorer's Pack"] },
+  Warlock: { weapons: ["Light Crossbow (20 bolts)", "Simple Weapon", "Arcane Focus"], armor: ["Leather Armor"], packs: ["Dungeoneer's Pack", "Scholar's Pack"] },
+  Wizard: { weapons: ["Quarterstaff", "Dagger"], armor: ["No armor"], packs: ["Scholar's Pack", "Explorer's Pack"] },
+};
+
 function mod(score: number) { return Math.floor((score - 10) / 2); }
 function fmtMod(n: number) { return n >= 0 ? `+${n}` : `${n}`; }
 
@@ -77,7 +102,8 @@ const STEPS = [
   { num: 3, label: 'Background' },
   { num: 4, label: 'Abilities' },
   { num: 5, label: 'Skills' },
-  { num: 6, label: 'Finish' },
+  { num: 6, label: 'Equipment' },
+  { num: 7, label: 'Finish' },
 ];
 
 interface FormState {
@@ -94,6 +120,10 @@ interface FormState {
   tokenColor: string;
   alignment: string;
   personalityTrait: string;
+  selectedWeapon: string;
+  selectedArmor: string;
+  selectedPack: string;
+  extraItems: string;
 }
 
 export default function CharacterCreator() {
@@ -117,6 +147,10 @@ export default function CharacterCreator() {
     tokenColor: '#C9A84C',
     alignment: 'Neutral',
     personalityTrait: '',
+    selectedWeapon: '',
+    selectedArmor: '',
+    selectedPack: '',
+    extraItems: '',
   });
 
   const selectedRace = RACES.find(r => r.name === form.race) || RACES[0];
@@ -181,6 +215,14 @@ export default function CharacterCreator() {
       ...selectedRace.traits.map(t => ({ name: t, source: form.race, desc: '' })),
     ];
 
+    const packItems = form.selectedPack ? (EQUIPMENT_PACKS[form.selectedPack] || []) : [];
+    const inventoryItems = [
+      ...(form.selectedWeapon ? [{ name: form.selectedWeapon, type: 'weapon', qty: 1 }] : []),
+      ...(form.selectedArmor ? [{ name: form.selectedArmor, type: 'armor', qty: 1 }] : []),
+      ...(form.selectedPack ? [{ name: form.selectedPack, type: 'pack', qty: 1 }] : []),
+      ...packItems.map(item => ({ name: item, type: 'item', qty: 1 })),
+      ...form.extraItems.split('\n').filter(Boolean).map(item => ({ name: item.trim(), type: 'item', qty: 1 })),
+    ];
     createMutation.mutate(
       {
         campaignId,
@@ -203,7 +245,7 @@ export default function CharacterCreator() {
             skillExpertise: [],
             spellSlots: {},
             spells: [],
-            inventory: [],
+            inventory: inventoryItems,
             features,
             alignment: form.alignment,
             personalityTrait: form.personalityTrait,
@@ -229,7 +271,8 @@ export default function CharacterCreator() {
       return true;
     }
     if (step === 5) return true;
-    if (step === 6) return !!form.name.trim();
+    if (step === 6) return true;
+    if (step === 7) return !!form.name.trim();
     return true;
   })();
 
@@ -316,8 +359,16 @@ export default function CharacterCreator() {
                   selectedClass={selectedClass}
                 />
               )}
-              {/* Step 6: Finish */}
+              {/* Step 6: Equipment */}
               {step === 6 && (
+                <StepEquipment
+                  form={form}
+                  setForm={setForm}
+                  selectedClass={selectedClass}
+                />
+              )}
+              {/* Step 7: Finish */}
+              {step === 7 && (
                 <StepFinish
                   form={form}
                   setForm={setForm}
@@ -339,7 +390,7 @@ export default function CharacterCreator() {
               <ChevronLeft className="w-4 h-4" /> Back
             </button>
 
-            {step < 6 ? (
+            {step < 7 ? (
               <button
                 disabled={!canProceed}
                 onClick={() => setStep(s => s + 1)}
@@ -673,6 +724,106 @@ function StepSkills({
               );
             })}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StepEquipment({
+  form, setForm, selectedClass,
+}: {
+  form: FormState;
+  setForm: React.Dispatch<React.SetStateAction<FormState>>;
+  selectedClass: typeof CLASSES[0];
+}) {
+  const classEquip = CLASS_EQUIPMENT[selectedClass.name] || { weapons: [], armor: [], packs: [] };
+
+  return (
+    <div className="flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
+      <div>
+        <h2 className="font-display text-2xl text-primary mb-1">Starting Equipment</h2>
+        <p className="text-xs text-muted-foreground font-sans">Choose your {selectedClass.name}'s starting gear.</p>
+      </div>
+
+      <div className="space-y-4">
+        {/* Weapon choice */}
+        <div>
+          <label className="text-xs font-label font-bold text-primary/80 uppercase mb-1.5 block">Weapon</label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {classEquip.weapons.map(w => (
+              <button
+                key={w}
+                onClick={() => setForm(f => ({ ...f, selectedWeapon: f.selectedWeapon === w ? '' : w }))}
+                className={`px-3 py-2 border rounded text-left text-xs font-label transition-all ${
+                  form.selectedWeapon === w
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border text-muted-foreground hover:border-border/80 hover:bg-card/30'
+                }`}
+              >
+                <span className="font-bold">{w}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Armor choice */}
+        <div>
+          <label className="text-xs font-label font-bold text-primary/80 uppercase mb-1.5 block">Armor</label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {classEquip.armor.map(a => (
+              <button
+                key={a}
+                onClick={() => setForm(f => ({ ...f, selectedArmor: f.selectedArmor === a ? '' : a }))}
+                className={`px-3 py-2 border rounded text-left text-xs font-label transition-all ${
+                  form.selectedArmor === a
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border text-muted-foreground hover:border-border/80 hover:bg-card/30'
+                }`}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Pack choice */}
+        <div>
+          <label className="text-xs font-label font-bold text-primary/80 uppercase mb-1.5 block">Adventuring Pack</label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {classEquip.packs.map(p => (
+              <button
+                key={p}
+                onClick={() => setForm(f => ({ ...f, selectedPack: f.selectedPack === p ? '' : p }))}
+                className={`px-3 py-2 border rounded text-left text-xs font-label transition-all ${
+                  form.selectedPack === p
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border text-muted-foreground hover:border-border/80 hover:bg-card/30'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+          {form.selectedPack && EQUIPMENT_PACKS[form.selectedPack] && (
+            <div className="mt-2 p-2 bg-card/30 rounded border border-border/20">
+              <div className="text-[10px] font-label text-muted-foreground">
+                {EQUIPMENT_PACKS[form.selectedPack].join(' · ')}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Extra items */}
+        <div>
+          <label className="text-xs font-label font-bold text-primary/80 uppercase mb-1 block">Additional Items (optional, one per line)</label>
+          <textarea
+            value={form.extraItems}
+            onChange={e => setForm(f => ({ ...f, extraItems: e.target.value }))}
+            placeholder="Holy symbol&#10;Thieves' tools&#10;..."
+            rows={3}
+            className="w-full bg-background border border-border rounded px-3 py-2 text-xs font-sans text-foreground focus:outline-none focus:border-primary resize-none"
+          />
         </div>
       </div>
     </div>

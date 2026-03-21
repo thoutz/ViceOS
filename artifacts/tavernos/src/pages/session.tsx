@@ -19,7 +19,25 @@ import { CharacterSheet } from '@/components/vtt/CharacterSheet';
 import { InitiativeBar, type InitiativeCombatant } from '@/components/vtt/InitiativeBar';
 import { ChatPanel } from '@/components/vtt/ChatPanel';
 import { DiceRoll } from 'rpg-dice-roller';
-import { LogOut, Menu, X, Wifi, WifiOff } from 'lucide-react';
+import { LogOut, Menu, X, Wifi, WifiOff, Dices, StickyNote, Shield } from 'lucide-react';
+
+const CONDITIONS = [
+  'Blinded','Charmed','Deafened','Exhaustion','Frightened',
+  'Grappled','Incapacitated','Invisible','Paralyzed','Petrified',
+  'Poisoned','Prone','Restrained','Stunned','Unconscious',
+];
+
+const QUICK_ROLL_HOTBAR = [
+  { label: 'd4', expr: '1d4' },
+  { label: 'd6', expr: '1d6' },
+  { label: 'd8', expr: '1d8' },
+  { label: 'd10', expr: '1d10' },
+  { label: 'd12', expr: '1d12' },
+  { label: 'd20', expr: '1d20' },
+  { label: '2d6', expr: '2d6' },
+  { label: 'Adv', expr: '2d20kh1' },
+  { label: 'Dis', expr: '2d20kl1' },
+];
 
 interface FogRect {
   x: number;
@@ -81,7 +99,7 @@ export default function Session() {
     campaignId || '',
     activeSession?.id || '',
     undefined,
-    { query: { enabled: !!activeSession?.id } }
+    { query: { enabled: !!activeSession?.id, queryKey: ['messages', campaignId, activeSession?.id] } }
   );
   const postMessage = usePostMessage();
   const updateChar = useUpdateCharacter();
@@ -94,6 +112,13 @@ export default function Session() {
 
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+
+  const [hotbarDiceExpr, setHotbarDiceExpr] = useState('');
+  const [hotbarLastRoll, setHotbarLastRoll] = useState<{ total: number; output: string } | null>(null);
+  const [activeConditions, setActiveConditions] = useState<string[]>([]);
+  const [quickNotes, setQuickNotes] = useState('');
+  const [showConditions, setShowConditions] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
 
   const handleSendMessage = (
     content: string,
@@ -169,6 +194,22 @@ export default function Session() {
   const handleInitiativeOrderUpdate = (order: InitiativeCombatant[]) => {
     if (!activeSession || !campaignId) return;
     emit('initiative_order_update', { initiativeOrder: order });
+  };
+
+  const handleHotbarRoll = (expr: string, label?: string) => {
+    try {
+      const roll = new DiceRoll(expr);
+      setHotbarLastRoll({ total: roll.total, output: roll.output });
+      handleRoll(expr, label || expr);
+    } catch (e) {
+      console.error('Hotbar roll error:', e);
+    }
+  };
+
+  const toggleCondition = (c: string) => {
+    setActiveConditions(prev =>
+      prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]
+    );
   };
 
   if (!campaign || !activeSession) {
@@ -315,6 +356,134 @@ export default function Session() {
               />
             </>
           )}
+        </div>
+      </div>
+
+      {/* BOTTOM HOTBAR */}
+      <div className="h-auto shrink-0 bg-card border-t border-border/50 z-30 relative">
+        {/* Popups */}
+        {showConditions && (
+          <div className="absolute bottom-full left-0 right-0 bg-card border border-border/50 shadow-2xl p-3 z-50">
+            <div className="text-xs font-label font-bold text-primary uppercase mb-2">Conditions</div>
+            <div className="flex flex-wrap gap-1.5">
+              {CONDITIONS.map(c => (
+                <button
+                  key={c}
+                  onClick={() => toggleCondition(c)}
+                  className={`text-xs px-2.5 py-1 rounded border font-label font-bold transition-all ${
+                    activeConditions.includes(c)
+                      ? 'bg-destructive/20 border-destructive text-destructive'
+                      : 'border-border text-muted-foreground hover:border-border/80'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {showNotes && (
+          <div className="absolute bottom-full left-0 right-0 bg-card border border-border/50 shadow-2xl p-3 z-50">
+            <div className="text-xs font-label font-bold text-primary uppercase mb-2">Quick Notes</div>
+            <textarea
+              value={quickNotes}
+              onChange={e => setQuickNotes(e.target.value)}
+              placeholder="Jot down notes, reminders, or anything else..."
+              rows={4}
+              className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground focus:outline-none focus:border-primary resize-none"
+            />
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 px-3 py-2 h-12">
+          {/* Dice expr input + roll */}
+          <div className="flex items-center gap-1.5 mr-1">
+            <input
+              type="text"
+              value={hotbarDiceExpr}
+              onChange={e => setHotbarDiceExpr(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && hotbarDiceExpr.trim()) handleHotbarRoll(hotbarDiceExpr.trim()); }}
+              placeholder="1d20+5"
+              className="w-24 bg-background border border-border/60 rounded px-2 py-1 text-xs font-mono text-foreground focus:outline-none focus:border-primary h-7"
+            />
+            <button
+              onClick={() => hotbarDiceExpr.trim() && handleHotbarRoll(hotbarDiceExpr.trim())}
+              className="flex items-center gap-1 h-7 px-2.5 bg-primary/20 border border-primary/40 text-primary rounded text-xs font-label font-bold hover:bg-primary/30 transition-colors"
+            >
+              <Dices className="w-3.5 h-3.5" /> Roll
+            </button>
+          </div>
+
+          {/* Separator */}
+          <div className="w-px h-6 bg-border/50" />
+
+          {/* Quick-roll buttons */}
+          <div className="flex items-center gap-1 flex-wrap">
+            {QUICK_ROLL_HOTBAR.map(({ label, expr }) => (
+              <button
+                key={label}
+                onClick={() => handleHotbarRoll(expr, label)}
+                title={expr}
+                className="h-7 px-2 rounded border border-border/40 text-[11px] font-label font-bold text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/10 transition-all"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Last roll result */}
+          {hotbarLastRoll && (
+            <div className="ml-2 flex items-center gap-1.5 bg-primary/10 border border-primary/30 rounded px-2 py-1 flex-shrink-0">
+              <span className="text-primary font-bold text-base font-serif leading-none">{hotbarLastRoll.total}</span>
+              <span className="text-muted-foreground text-[10px] font-mono hidden md:block">{hotbarLastRoll.output}</span>
+            </div>
+          )}
+
+          <div className="flex-1" />
+
+          {/* Active conditions chips */}
+          {activeConditions.length > 0 && (
+            <div className="flex gap-1 items-center mr-2 flex-wrap">
+              {activeConditions.map(c => (
+                <span
+                  key={c}
+                  onClick={() => toggleCondition(c)}
+                  className="text-[10px] font-label font-bold px-2 py-0.5 rounded bg-destructive/20 border border-destructive/60 text-destructive cursor-pointer hover:bg-destructive/30 transition-colors"
+                >
+                  {c}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Conditions toggle */}
+          <button
+            onClick={() => { setShowConditions(v => !v); setShowNotes(false); }}
+            title="Conditions"
+            className={`flex items-center gap-1 h-7 px-2.5 rounded border text-xs font-label font-bold transition-all ${
+              showConditions || activeConditions.length > 0
+                ? 'border-destructive/60 text-destructive bg-destructive/10'
+                : 'border-border/40 text-muted-foreground hover:text-foreground hover:border-border/80'
+            }`}
+          >
+            <Shield className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Conditions</span>
+            {activeConditions.length > 0 && <span className="text-destructive font-bold">({activeConditions.length})</span>}
+          </button>
+
+          {/* Notes toggle */}
+          <button
+            onClick={() => { setShowNotes(v => !v); setShowConditions(false); }}
+            title="Quick Notes"
+            className={`flex items-center gap-1 h-7 px-2.5 rounded border text-xs font-label font-bold transition-all ${
+              showNotes || quickNotes
+                ? 'border-primary/60 text-primary bg-primary/10'
+                : 'border-border/40 text-muted-foreground hover:text-foreground hover:border-border/80'
+            }`}
+          >
+            <StickyNote className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Notes</span>
+          </button>
         </div>
       </div>
     </div>

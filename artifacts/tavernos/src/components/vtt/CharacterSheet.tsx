@@ -111,7 +111,7 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
     );
   }
 
-  const stats = (viewed.stats as Record<string, number>) || {};
+  const stats = (viewed.stats as unknown as Record<string, number>) || {};
   const sheetData = (viewed.sheetData as Record<string, unknown>) || {};
   const prof = profBonus(viewed.level || 1);
   const saveProficiencies = (sheetData.saveProficiencies as string[]) || [];

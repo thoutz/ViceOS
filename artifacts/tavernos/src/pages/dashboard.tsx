@@ -12,9 +12,7 @@ import { Book, Plus, Users, Swords, LogOut } from 'lucide-react';
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
-  const { data: user, isLoading: userLoading, isError } = useGetMe({
-    query: { retry: false }
-  });
+  const { data: user, isLoading: userLoading, isError } = useGetMe();
   
   const { data: campaigns, refetch: refetchCampaigns } = useListCampaigns();
   const createMutation = useCreateCampaign();

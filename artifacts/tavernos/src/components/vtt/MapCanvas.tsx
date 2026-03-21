@@ -130,7 +130,9 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
 
   const handleStageMouseDown = (e: KonvaEvent) => {
     if (e.target !== e.target.getStage() && activeTool === 'select') return;
-    const pos = stageToCanvas(e.target.getStage());
+    const stage = e.target.getStage();
+    if (!stage) return;
+    const pos = stageToCanvas(stage);
 
     if (isDm && (activeTool === 'fog_add' || activeTool === 'fog_erase')) {
       setIsPainting(true);
@@ -143,7 +145,9 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
   };
 
   const handleStageMouseMove = (e: KonvaEvent) => {
-    const pos = stageToCanvas(e.target.getStage());
+    const stage = e.target.getStage();
+    if (!stage) return;
+    const pos = stageToCanvas(stage);
     if (isPainting && paintStart) {
       setPaintCurrent({ x: snapToGrid(pos.x), y: snapToGrid(pos.y) });
     }
@@ -408,7 +412,9 @@ function ToolButton({
           : `text-muted-foreground hover:text-foreground hover:bg-white/5 ${className}`
       }`}
     >
-      {React.cloneElement(icon as React.ReactElement, { className: 'w-4 h-4' })}
+      <span className="w-4 h-4 flex items-center justify-center [&>svg]:w-4 [&>svg]:h-4">
+        {icon}
+      </span>
     </button>
   );
 }

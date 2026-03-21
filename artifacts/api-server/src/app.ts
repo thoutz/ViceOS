@@ -42,8 +42,12 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
+const sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret) {
+  console.warn("[SECURITY] SESSION_SECRET env var is not set. Using insecure default — set this in production.");
+}
 const sessionMiddleware = session({
-  secret: process.env.SESSION_SECRET || "tavern-os-secret-key-change-in-production",
+  secret: sessionSecret || "tavern-os-secret-key-change-in-production",
   resave: false,
   saveUninitialized: false,
   cookie: {

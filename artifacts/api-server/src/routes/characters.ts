@@ -3,12 +3,12 @@ import { db } from "@workspace/db";
 import { charactersTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireCampaignMember } from "../middlewares/auth";
-import "../types";
+import { param } from "../types";
 
 const router: IRouter = Router();
 
 router.get("/campaigns/:campaignId/characters", requireAuth, requireCampaignMember, async (req, res) => {
-  const { campaignId } = req.params;
+  const campaignId = param(req.params.campaignId);
   const characters = await db
     .select()
     .from(charactersTable)
@@ -18,7 +18,7 @@ router.get("/campaigns/:campaignId/characters", requireAuth, requireCampaignMemb
 
 router.post("/campaigns/:campaignId/characters", requireAuth, requireCampaignMember, async (req, res) => {
   const userId = req.session.userId!;
-  const { campaignId } = req.params;
+  const campaignId = param(req.params.campaignId);
   const { name, race, class: charClass, background, subrace, subclass, level, hp, maxHp, ac, speed, stats, sheetData, tokenColor, isNpc } = req.body;
 
   if (!name) {
@@ -60,7 +60,8 @@ router.post("/campaigns/:campaignId/characters", requireAuth, requireCampaignMem
 });
 
 router.get("/campaigns/:campaignId/characters/:characterId", requireAuth, requireCampaignMember, async (req, res) => {
-  const { campaignId, characterId } = req.params;
+  const campaignId = param(req.params.campaignId);
+  const characterId = param(req.params.characterId);
   const [character] = await db
     .select()
     .from(charactersTable)
@@ -74,8 +75,9 @@ router.get("/campaigns/:campaignId/characters/:characterId", requireAuth, requir
 
 router.put("/campaigns/:campaignId/characters/:characterId", requireAuth, requireCampaignMember, async (req, res) => {
   const userId = req.session.userId!;
-  const { campaignId, characterId } = req.params;
-  const member = (req as any).campaignMember;
+  const campaignId = param(req.params.campaignId);
+  const characterId = param(req.params.characterId);
+  const member = req.campaignMember;
 
   const [existing] = await db
     .select()
@@ -87,7 +89,7 @@ router.put("/campaigns/:campaignId/characters/:characterId", requireAuth, requir
     return;
   }
 
-  if (existing.userId !== userId && member.role !== "dm") {
+  if (existing.userId !== userId && member?.role !== "dm") {
     res.status(403).json({ error: "Cannot modify another player's character" });
     return;
   }
@@ -99,7 +101,7 @@ router.put("/campaigns/:campaignId/characters/:characterId", requireAuth, requir
   }
 
   if (updates.stats) {
-    const s = updates.stats as any;
+    const s = updates.stats as { dex: number };
     updates.initiativeBonus = Math.floor((s.dex - 10) / 2);
   }
 
@@ -114,8 +116,9 @@ router.put("/campaigns/:campaignId/characters/:characterId", requireAuth, requir
 
 router.delete("/campaigns/:campaignId/characters/:characterId", requireAuth, requireCampaignMember, async (req, res) => {
   const userId = req.session.userId!;
-  const { campaignId, characterId } = req.params;
-  const member = (req as any).campaignMember;
+  const campaignId = param(req.params.campaignId);
+  const characterId = param(req.params.characterId);
+  const member = req.campaignMember;
 
   const [existing] = await db
     .select()
@@ -127,7 +130,7 @@ router.delete("/campaigns/:campaignId/characters/:characterId", requireAuth, req
     return;
   }
 
-  if (existing.userId !== userId && member.role !== "dm") {
+  if (existing.userId !== userId && member?.role !== "dm") {
     res.status(403).json({ error: "Cannot delete another player's character" });
     return;
   }

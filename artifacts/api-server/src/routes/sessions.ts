@@ -3,12 +3,12 @@ import { db } from "@workspace/db";
 import { gameSessionsTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireCampaignMember, requireDm } from "../middlewares/auth";
-import "../types";
+import { param } from "../types";
 
 const router: IRouter = Router();
 
 router.get("/campaigns/:campaignId/sessions", requireAuth, requireCampaignMember, async (req, res) => {
-  const { campaignId } = req.params;
+  const campaignId = param(req.params.campaignId);
   const sessions = await db
     .select()
     .from(gameSessionsTable)
@@ -17,7 +17,7 @@ router.get("/campaigns/:campaignId/sessions", requireAuth, requireCampaignMember
 });
 
 router.post("/campaigns/:campaignId/sessions", requireAuth, requireCampaignMember, requireDm, async (req, res) => {
-  const { campaignId } = req.params;
+  const campaignId = param(req.params.campaignId);
   const name = req.body?.name || `Session ${new Date().toLocaleDateString()}`;
   const [session] = await db
     .insert(gameSessionsTable)
@@ -34,7 +34,8 @@ router.post("/campaigns/:campaignId/sessions", requireAuth, requireCampaignMembe
 });
 
 router.get("/campaigns/:campaignId/sessions/:sessionId", requireAuth, requireCampaignMember, async (req, res) => {
-  const { campaignId, sessionId } = req.params;
+  const campaignId = param(req.params.campaignId);
+  const sessionId = param(req.params.sessionId);
   const [session] = await db
     .select()
     .from(gameSessionsTable)
@@ -47,7 +48,8 @@ router.get("/campaigns/:campaignId/sessions/:sessionId", requireAuth, requireCam
 });
 
 router.put("/campaigns/:campaignId/sessions/:sessionId", requireAuth, requireCampaignMember, requireDm, async (req, res) => {
-  const { campaignId, sessionId } = req.params;
+  const campaignId = param(req.params.campaignId);
+  const sessionId = param(req.params.sessionId);
   const { name, status, activeMapId, initiativeOrder, currentTurnIndex, roundNumber } = req.body;
 
   const updates: Record<string, unknown> = {};

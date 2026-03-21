@@ -1,10 +1,27 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChatMessage, Character, GameSession } from '@workspace/api-client-react';
 import { DiceRoll } from 'rpg-dice-roller';
-import { Send, Dices, Users, MessageSquare, Swords, Heart, ShieldAlert, Eye, EyeOff } from 'lucide-react';
+import { Send, Dices, Users, MessageSquare, Swords, Heart, ShieldAlert, Eye, EyeOff, Search, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { VttButton } from '../VttButton';
 import type { InitiativeCombatant } from './InitiativeBar';
+
+interface Open5eMonster {
+  name: string;
+  hit_points: number;
+  armor_class: number;
+  challenge_rating: string;
+  type: string;
+  size: string;
+  speed: { walk?: string };
+  dexterity: number;
+  strength: number;
+  constitution: number;
+  intelligence: number;
+  wisdom: number;
+  charisma: number;
+  document__slug: string;
+}
 
 type MessageType = 'chat' | 'dice' | 'system' | 'whisper';
 
@@ -91,7 +108,7 @@ export function ChatPanel({
     ? messages.filter(m => m.type === 'dice')
     : messages;
 
-  const stats = (myCharacter?.stats as Record<string, number>) || {};
+  const stats = (myCharacter?.stats as unknown as Record<string, number>) || {};
 
   return (
     <div className="h-full flex flex-col bg-card">
@@ -275,6 +292,46 @@ function DmToolsPanel({
   performRoll: (expr: string, label: string) => void;
 }) {
   const [announcement, setAnnouncement] = useState('');
+  const [npcQuery, setNpcQuery] = useState('');
+  const [npcResults, setNpcResults] = useState<Open5eMonster[]>([]);
+  const [npcLoading, setNpcLoading] = useState(false);
+  const [npcSelected, setNpcSelected] = useState<Open5eMonster | null>(null);
+
+  const searchNpc = useCallback(async (query: string) => {
+    if (!query.trim()) { setNpcResults([]); return; }
+    setNpcLoading(true);
+    try {
+      const res = await fetch(`https://api.open5e.com/v1/monsters/?search=${encodeURIComponent(query)}&limit=8&format=json`);
+      const data = await res.json() as { results?: Open5eMonster[] };
+      setNpcResults(data.results || []);
+    } catch {
+      setNpcResults([]);
+    } finally {
+      setNpcLoading(false);
+    }
+  }, []);
+
+  const addNpcToInitiative = (monster: Open5eMonster) => {
+    const dexMod = Math.floor(((monster.dexterity || 10) - 10) / 2);
+    const initRoll = Math.floor(Math.random() * 20) + 1 + dexMod;
+    const existing = (activeSession.initiativeOrder as InitiativeCombatant[]) || [];
+    const newCombatant: InitiativeCombatant = {
+      characterId: `${monster.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+      name: monster.name,
+      initiative: initRoll,
+      hp: monster.hit_points,
+      maxHp: monster.hit_points,
+      ac: monster.armor_class,
+      tokenColor: '#8B1A1A',
+      isNpc: true,
+    };
+    const newOrder = [...existing, newCombatant].sort((a, b) => b.initiative - a.initiative);
+    onOrderUpdate(newOrder);
+    onSendMessage(`${monster.name} enters the fray! (Init: ${initRoll}, HP: ${monster.hit_points}, AC: ${monster.armor_class})`, 'system');
+    setNpcSelected(null);
+    setNpcQuery('');
+    setNpcResults([]);
+  };
 
   const sendAnnouncement = () => {
     if (!announcement.trim()) return;
@@ -386,13 +443,78 @@ function DmToolsPanel({
         </div>
       </section>
 
+      {/* Open5e NPC Lookup */}
+      <section>
+        <h3 className="text-[10px] font-label font-bold uppercase tracking-widest text-primary/80 mb-2 flex items-center gap-1">
+          <Search className="w-3.5 h-3.5" /> NPC / Monster Lookup
+        </h3>
+        <div className="flex gap-1.5 mb-2">
+          <input
+            value={npcQuery}
+            onChange={e => setNpcQuery(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && searchNpc(npcQuery)}
+            placeholder="Search monsters... (e.g. goblin)"
+            className="flex-1 bg-background border border-border rounded px-2 py-1.5 text-xs font-sans focus:outline-none focus:border-primary/50"
+          />
+          <button
+            onClick={() => searchNpc(npcQuery)}
+            disabled={npcLoading}
+            className="h-7 px-2.5 bg-primary/20 border border-primary/40 text-primary rounded text-xs font-label font-bold hover:bg-primary/30 transition-colors disabled:opacity-50 flex items-center gap-1"
+          >
+            {npcLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
+          </button>
+        </div>
+        {npcResults.length > 0 && !npcSelected && (
+          <div className="space-y-1 mb-2 max-h-40 overflow-y-auto">
+            {npcResults.map(m => (
+              <button
+                key={`${m.name}-${m.document__slug}`}
+                onClick={() => setNpcSelected(m)}
+                className="w-full text-left px-2 py-1.5 bg-background border border-border/50 rounded hover:border-primary/50 hover:bg-primary/5 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-label font-bold">{m.name}</span>
+                  <span className="text-[10px] text-muted-foreground">CR {m.challenge_rating}</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground">{m.size} {m.type} · HP {m.hit_points} · AC {m.armor_class}</div>
+              </button>
+            ))}
+          </div>
+        )}
+        {npcSelected && (
+          <div className="bg-background border border-primary/30 rounded p-2 mb-2">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-label font-bold text-primary">{npcSelected.name}</span>
+              <button onClick={() => setNpcSelected(null)} className="text-[10px] text-muted-foreground hover:text-foreground">✕</button>
+            </div>
+            <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground mb-2">
+              <span>CR <strong className="text-foreground">{npcSelected.challenge_rating}</strong></span>
+              <span>HP <strong className="text-foreground">{npcSelected.hit_points}</strong></span>
+              <span>AC <strong className="text-foreground">{npcSelected.armor_class}</strong></span>
+              <span>STR <strong className="text-foreground">{npcSelected.strength}</strong></span>
+              <span>DEX <strong className="text-foreground">{npcSelected.dexterity}</strong></span>
+              <span>CON <strong className="text-foreground">{npcSelected.constitution}</strong></span>
+              <span>INT <strong className="text-foreground">{npcSelected.intelligence}</strong></span>
+              <span>WIS <strong className="text-foreground">{npcSelected.wisdom}</strong></span>
+              <span>CHA <strong className="text-foreground">{npcSelected.charisma}</strong></span>
+            </div>
+            <button
+              onClick={() => addNpcToInitiative(npcSelected)}
+              className="w-full text-xs font-label font-bold py-1.5 bg-destructive/20 border border-destructive/50 text-destructive rounded hover:bg-destructive/30 transition-colors"
+            >
+              Add to Initiative
+            </button>
+          </div>
+        )}
+      </section>
+
       {/* Encounter Builder */}
       <section>
         <h3 className="text-[10px] font-label font-bold uppercase tracking-widest text-primary/80 mb-2 flex items-center gap-1">
-          <Swords className="w-3.5 h-3.5" /> Encounter Builder
+          <Swords className="w-3.5 h-3.5" /> Quick NPCs
         </h3>
         <div className="space-y-1.5 text-xs text-muted-foreground">
-          <p className="text-[10px]">Add NPCs to initiative order via the bar above (+ button). Click a combatant to apply conditions.</p>
+          <p className="text-[10px]">Quick-add common monsters to combat.</p>
           <div className="grid grid-cols-2 gap-1.5">
             {[
               { name: 'Goblin', hp: 7, ac: 15, init: '+2' },

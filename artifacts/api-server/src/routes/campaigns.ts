@@ -4,7 +4,7 @@ import { campaignsTable, campaignMembersTable } from "@workspace/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { requireAuth } from "../middlewares/auth";
-import "../types";
+import { param } from "../types";
 
 const router: IRouter = Router();
 
@@ -96,7 +96,7 @@ router.post("/campaigns/join", requireAuth, async (req, res) => {
 
 router.get("/campaigns/:campaignId", requireAuth, async (req, res) => {
   const userId = req.session.userId!;
-  const { campaignId } = req.params;
+  const campaignId = param(req.params.campaignId);
 
   const [campaign] = await db.select().from(campaignsTable).where(eq(campaignsTable.id, campaignId));
   if (!campaign) {

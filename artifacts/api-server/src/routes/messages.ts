@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import { messagesTable, usersTable, gameSessionsTable } from "@workspace/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { requireAuth, requireCampaignMember } from "../middlewares/auth";
-import "../types";
+import { param } from "../types";
 
 const router: IRouter = Router();
 
@@ -12,7 +12,10 @@ router.get(
   requireAuth,
   requireCampaignMember,
   async (req, res) => {
-    const { campaignId, sessionId } = req.params;
+    const campaignId = param(req.params.campaignId);
+    const sessionId = param(req.params.sessionId);
+    const userId = req.session.userId!;
+    const member = req.campaignMember;
 
     const [session] = await db
       .select()
@@ -25,14 +28,21 @@ router.get(
     }
 
     const limit = Math.min(parseInt((req.query.limit as string) || "100", 10), 200);
-    const messages = await db
+    const allMessages = await db
       .select()
       .from(messagesTable)
       .where(eq(messagesTable.sessionId, sessionId))
       .orderBy(desc(messagesTable.createdAt))
       .limit(limit);
 
-    res.json(messages.reverse());
+    const isDm = member?.role === "dm";
+    const visible = allMessages.filter((m) => {
+      if (m.type !== "whisper") return true;
+      if (isDm) return true;
+      return m.senderId === userId || m.recipientId === userId;
+    });
+
+    res.json(visible.reverse());
   }
 );
 
@@ -42,8 +52,9 @@ router.post(
   requireCampaignMember,
   async (req, res) => {
     const userId = req.session.userId!;
-    const { campaignId, sessionId } = req.params;
-    const member = (req as any).campaignMember as { role: string };
+    const campaignId = param(req.params.campaignId);
+    const sessionId = param(req.params.sessionId);
+    const member = req.campaignMember;
 
     const [session] = await db
       .select()
@@ -62,7 +73,7 @@ router.post(
       return;
     }
 
-    if (type === "whisper" && member.role !== "dm") {
+    if (type === "whisper" && member?.role !== "dm") {
       res.status(403).json({ error: "Only DMs can send whispers" });
       return;
     }
