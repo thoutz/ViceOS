@@ -31,9 +31,10 @@ interface InitiativeBarProps {
 const CONDITIONS = ['Blinded', 'Charmed', 'Deafened', 'Frightened', 'Grappled', 'Incapacitated', 'Invisible', 'Paralyzed', 'Petrified', 'Poisoned', 'Prone', 'Restrained', 'Stunned', 'Unconscious', 'Exhaustion'];
 
 function rollInitiative(character: Character): number {
-  const dex = (character.stats as any)?.dex || 10;
+  const stats = (character.stats as Record<string, number>) || {};
+  const dex = stats.dex || 10;
   const mod = Math.floor((dex - 10) / 2);
-  const bonus = (character as any).initiativeBonus ?? mod;
+  const bonus = (character.initiativeBonus as number | undefined) ?? mod;
   try {
     const roll = new DiceRoll(`1d20+${bonus}`);
     return roll.total;
@@ -80,7 +81,7 @@ export function InitiativeBar({ order, currentIndex, roundNumber, isDm, characte
       hp: c.hp || 0,
       maxHp: c.maxHp || 1,
       ac: c.ac || 10,
-      tokenColor: (c as any).tokenColor || '#C9A84C',
+      tokenColor: c.tokenColor || '#C9A84C',
     }));
     const npcs = order.filter(c => c.isNpc);
     const combined = [...fromChars, ...npcs].sort((a, b) => b.initiative - a.initiative);

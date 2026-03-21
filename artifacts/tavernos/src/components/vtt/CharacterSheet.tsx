@@ -111,16 +111,16 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
     );
   }
 
-  const stats = viewed.stats as any || {};
-  const sheetData = (viewed.sheetData as any) || {};
+  const stats = (viewed.stats as Record<string, number>) || {};
+  const sheetData = (viewed.sheetData as Record<string, unknown>) || {};
   const prof = profBonus(viewed.level || 1);
-  const saveProficiencies: string[] = sheetData.saveProficiencies || [];
-  const skillProficiencies: string[] = sheetData.skillProficiencies || [];
-  const skillExpertise: string[] = sheetData.skillExpertise || [];
-  const spellSlots: Record<string, { total: number; used: number }> = sheetData.spellSlots || {};
-  const spells: { name: string; level: number; prepared: boolean }[] = sheetData.spells || [];
-  const inventory: { name: string; qty: number; weight?: number; notes?: string }[] = sheetData.inventory || [];
-  const features: { name: string; source: string; desc: string }[] = sheetData.features || [];
+  const saveProficiencies = (sheetData.saveProficiencies as string[]) || [];
+  const skillProficiencies = (sheetData.skillProficiencies as string[]) || [];
+  const skillExpertise = (sheetData.skillExpertise as string[]) || [];
+  const spellSlots = (sheetData.spellSlots as Record<string, { total: number; used: number }>) || {};
+  const spells = (sheetData.spells as { name: string; level: number; prepared: boolean }[]) || [];
+  const inventory = (sheetData.inventory as { name: string; qty: number; weight?: number; notes?: string }[]) || [];
+  const features = (sheetData.features as { name: string; source: string; desc: string }[]) || [];
 
   const getSkillMod = (skill: typeof SKILLS[0]) => {
     const base = mod(stats[skill.ability] || 10);

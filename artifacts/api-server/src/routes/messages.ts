@@ -43,7 +43,7 @@ router.post(
   async (req, res) => {
     const userId = req.session.userId!;
     const { campaignId, sessionId } = req.params;
-    const member = (req as any).campaignMember;
+    const member = (req as any).campaignMember as { role: string };
 
     const [session] = await db
       .select()
@@ -62,7 +62,7 @@ router.post(
       return;
     }
 
-    if (type === "whisper" && !member.isDm && recipientId !== userId) {
+    if (type === "whisper" && member.role !== "dm") {
       res.status(403).json({ error: "Only DMs can send whispers" });
       return;
     }

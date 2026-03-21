@@ -1,8 +1,16 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import type { KonvaEventObject } from 'konva/lib/Node';
+import type { Stage as KonvaStageType } from 'konva/lib/Stage';
 import { Stage, Layer, Image as KonvaImage, Rect, Line, Circle, Text, Group } from 'react-konva';
 import useImage from 'use-image';
 import { GameMap, Character } from '@workspace/api-client-react';
-import { Eye, EyeOff, Grid3X3, Move, Ruler, MousePointer2, Plus, Minus } from 'lucide-react';
+import { Eye, EyeOff, Grid3X3, Ruler, MousePointer2, Plus, Minus } from 'lucide-react';
+
+type KonvaEvent = KonvaEventObject<MouseEvent> & {
+  target: KonvaEventObject<MouseEvent>['target'] & {
+    getStage(): KonvaStageType;
+  };
+};
 
 interface Token {
   id: string;
@@ -19,7 +27,7 @@ interface MapCanvasProps {
   map: GameMap | null;
   characters: Character[];
   onTokenMove: (mapId: string, tokenId: string, x: number, y: number) => void;
-  onFogUpdate: (mapId: string, fogData: any) => void;
+  onFogUpdate: (mapId: string, fogData: { revealed: FogRect[]; hidden: FogRect[] }) => void;
   isDm: boolean;
 }
 
@@ -83,15 +91,15 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
   // Load fog data from map
   useEffect(() => {
     if (map?.fogData) {
-      const fd = map.fogData as any;
+      const fd = map.fogData as { hidden?: FogRect[]; revealed?: FogRect[] };
       setHiddenRects(fd.hidden || []);
       setFogRects(fd.revealed || []);
     }
   }, [map?.id]);
 
-  const handleWheel = (e: any) => {
+  const handleWheel = (e: KonvaEventObject<WheelEvent> & { evt: WheelEvent }) => {
     e.evt.preventDefault();
-    const stage = e.target.getStage();
+    const stage = (e.target as unknown as { getStage(): KonvaStageType }).getStage();
     const scaleBy = 1.12;
     const oldScale = stage.scaleX();
     const ptr = stage.getPointerPosition();
@@ -109,7 +117,7 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
     });
   };
 
-  const stageToCanvas = (stage: any, clientX: number, clientY: number) => {
+  const stageToCanvas = (stage: KonvaStageType) => {
     const pos = stage.getPointerPosition();
     if (!pos) return { x: 0, y: 0 };
     return {
@@ -120,11 +128,11 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
 
   const snapToGrid = (v: number) => Math.round(v / gridSize) * gridSize;
 
-  const handleStageMouseDown = (e: any) => {
+  const handleStageMouseDown = (e: KonvaEvent) => {
     if (e.target !== e.target.getStage() && activeTool === 'select') return;
-    const pos = stageToCanvas(e.target.getStage(), 0, 0);
+    const pos = stageToCanvas(e.target.getStage());
 
-    if (activeTool === 'fog_add' || activeTool === 'fog_erase') {
+    if (isDm && (activeTool === 'fog_add' || activeTool === 'fog_erase')) {
       setIsPainting(true);
       setPaintStart({ x: snapToGrid(pos.x), y: snapToGrid(pos.y) });
       setPaintCurrent({ x: snapToGrid(pos.x), y: snapToGrid(pos.y) });
@@ -134,8 +142,8 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
     }
   };
 
-  const handleStageMouseMove = (e: any) => {
-    const pos = stageToCanvas(e.target.getStage(), 0, 0);
+  const handleStageMouseMove = (e: KonvaEvent) => {
+    const pos = stageToCanvas(e.target.getStage());
     if (isPainting && paintStart) {
       setPaintCurrent({ x: snapToGrid(pos.x), y: snapToGrid(pos.y) });
     }
@@ -144,7 +152,7 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
     }
   };
 
-  const handleStageMouseUp = (e: any) => {
+  const handleStageMouseUp = (_e: KonvaEvent) => {
     if (isPainting && paintStart && paintCurrent) {
       const rect: FogRect = {
         x: Math.min(paintStart.x, paintCurrent.x),
@@ -198,20 +206,20 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
   };
 
   const renderFog = () => {
-    if (!showFog || !isDm) return null;
-    return hiddenRects.map((r, i) => {
-      const isCurrentPaint = false;
-      return (
-        <Rect
-          key={`fog-${i}`}
-          x={r.x}
-          y={r.y}
-          width={r.w}
-          height={r.h}
-          fill="rgba(0,0,0,0.75)"
-        />
-      );
-    });
+    if (!showFog) return null;
+    // DM sees fog semi-transparent (can see beneath it); players see it fully opaque
+    const fogOpacity = isDm ? 0.55 : 1.0;
+    return hiddenRects.map((r, i) => (
+      <Rect
+        key={`fog-${i}`}
+        x={r.x}
+        y={r.y}
+        width={r.w}
+        height={r.h}
+        fill={`rgba(0,0,0,${fogOpacity})`}
+        listening={false}
+      />
+    ));
   };
 
   const renderFogPreview = () => {
@@ -270,7 +278,7 @@ export function MapCanvas({ map, characters, onTokenMove, onFogUpdate, isDm }: M
               token={token}
               gridSize={gridSize}
               isSelected={selectedTokenId === token.id}
-              isDraggable={isDm || true}
+              isDraggable={isDm}
               snapToGrid={map?.gridConfig?.snapToGrid ?? true}
               onSelect={() => setSelectedTokenId(token.id)}
               onDragEnd={(x, y) => {

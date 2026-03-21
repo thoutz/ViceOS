@@ -10,7 +10,7 @@ type MessageType = 'chat' | 'dice' | 'system' | 'whisper';
 
 interface ChatPanelProps {
   messages: ChatMessage[];
-  onSendMessage: (content: string, type: MessageType, diceData?: any) => void;
+  onSendMessage: (content: string, type: MessageType, diceData?: { total: number; output: string; expr: string }) => void;
   isDm: boolean;
   myCharacter: Character | null;
   allCharacters: Character[];
@@ -91,7 +91,7 @@ export function ChatPanel({
     ? messages.filter(m => m.type === 'dice')
     : messages;
 
-  const stats = (myCharacter?.stats as any) || {};
+  const stats = (myCharacter?.stats as Record<string, number>) || {};
 
   return (
     <div className="h-full flex flex-col bg-card">
@@ -252,10 +252,10 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
         <div className="bg-[#1A1208] border border-[#7A6228]/50 rounded p-2.5 mt-1">
           <div className="text-xs text-muted-foreground mb-1">{msg.content}</div>
           <div className="font-mono text-xs break-all bg-background p-1.5 rounded border border-border/40 text-foreground/80">
-            {(msg.diceData as any).output}
+            {(msg.diceData as { output: string; total: number }).output}
           </div>
           <div className="flex justify-end mt-1">
-            <span className="text-2xl font-bold font-serif text-ember">{(msg.diceData as any).total}</span>
+            <span className="text-2xl font-bold font-serif text-ember">{(msg.diceData as { output: string; total: number }).total}</span>
           </div>
         </div>
       ) : (
@@ -271,7 +271,7 @@ function DmToolsPanel({
   allCharacters: Character[];
   activeSession: GameSession;
   onOrderUpdate: (order: InitiativeCombatant[]) => void;
-  onSendMessage: (content: string, type: any, diceData?: any) => void;
+  onSendMessage: (content: string, type: MessageType, diceData?: { total: number; output: string; expr: string }) => void;
   performRoll: (expr: string, label: string) => void;
 }) {
   const [announcement, setAnnouncement] = useState('');

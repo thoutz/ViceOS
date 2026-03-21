@@ -1,13 +1,26 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
+import type { InitiativeCombatant } from "@/components/vtt/InitiativeBar";
 
-export interface VttSocketEvents {
+interface FogRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+interface FogData {
+  revealed: FogRect[];
+  hidden: FogRect[];
+}
+
+export interface VttSocketEmitEvents {
   token_move: (data: { mapId: string; tokenId: string; x: number; y: number }) => void;
   initiative_advance: (data: { direction: "next" | "prev" }) => void;
-  initiative_order_update: (data: { initiativeOrder: any[] }) => void;
-  chat_message: (data: { message: any }) => void;
-  fog_update: (data: { mapId: string; fogData: any }) => void;
+  initiative_order_update: (data: { initiativeOrder: InitiativeCombatant[] }) => void;
+  chat_message: (data: { message: unknown }) => void;
+  fog_update: (data: { mapId: string; fogData: FogData }) => void;
   hp_update: (data: { characterId: string; hp: number; maxHp: number }) => void;
 }
 
@@ -37,39 +50,61 @@ export function useVttSocket(campaignId: string, sessionId: string) {
     });
 
     socket.on("token_moved", () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/campaigns/${campaignId}/maps`] });
+      void queryClient.invalidateQueries({ queryKey: [`/api/campaigns/${campaignId}/maps`] });
     });
 
     socket.on("chat_message", () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: [`/api/campaigns/${campaignId}/sessions/${sessionId}/messages`],
       });
     });
 
-    socket.on("turn_changed", (data: { sessionId: string; currentTurnIndex: number; roundNumber: number }) => {
+    socket.on("turn_changed", (data: { currentTurnIndex: number; roundNumber: number }) => {
       queryClient.setQueryData(
-        [`/api/campaigns/${campaignId}/sessions/${sessionId}`],
-        (old: any) => old ? { ...old, currentTurnIndex: data.currentTurnIndex, roundNumber: data.roundNumber } : old
+        [`/api/campaigns/${campaignId}/sessions`],
+        (old: Array<Record<string, unknown>> | undefined) =>
+          old?.map((s) =>
+            s.id === sessionId
+              ? { ...s, currentTurnIndex: data.currentTurnIndex, roundNumber: data.roundNumber }
+              : s
+          )
       );
     });
 
-    socket.on("initiative_order_updated", (data: { initiativeOrder: any[]; currentTurnIndex: number }) => {
-      queryClient.setQueryData(
-        [`/api/campaigns/${campaignId}/sessions/${sessionId}`],
-        (old: any) => old ? { ...old, initiativeOrder: data.initiativeOrder, currentTurnIndex: data.currentTurnIndex } : old
-      );
-    });
+    socket.on(
+      "initiative_order_updated",
+      (data: {
+        initiativeOrder: InitiativeCombatant[];
+        currentTurnIndex: number;
+        roundNumber: number;
+      }) => {
+        queryClient.setQueryData(
+          [`/api/campaigns/${campaignId}/sessions`],
+          (old: Array<Record<string, unknown>> | undefined) =>
+            old?.map((s) =>
+              s.id === sessionId
+                ? {
+                    ...s,
+                    initiativeOrder: data.initiativeOrder,
+                    currentTurnIndex: data.currentTurnIndex,
+                    roundNumber: data.roundNumber,
+                  }
+                : s
+            )
+        );
+      }
+    );
 
     socket.on("hp_updated", () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/campaigns/${campaignId}/characters`] });
+      void queryClient.invalidateQueries({ queryKey: [`/api/campaigns/${campaignId}/characters`] });
     });
 
     socket.on("fog_updated", () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/campaigns/${campaignId}/maps`] });
+      void queryClient.invalidateQueries({ queryKey: [`/api/campaigns/${campaignId}/maps`] });
     });
 
-    socket.on("user_joined", (data: { userId: string; username: string }) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/campaigns/${campaignId}/characters`] });
+    socket.on("user_joined", () => {
+      void queryClient.invalidateQueries({ queryKey: [`/api/campaigns/${campaignId}/characters`] });
     });
 
     return () => {
@@ -79,12 +114,15 @@ export function useVttSocket(campaignId: string, sessionId: string) {
   }, [campaignId, sessionId, queryClient]);
 
   const emit = useCallback(
-    <K extends keyof VttSocketEvents>(event: K, data: Parameters<VttSocketEvents[K]>[0]) => {
+    <K extends keyof VttSocketEmitEvents>(
+      event: K,
+      data: Parameters<VttSocketEmitEvents[K]>[0]
+    ) => {
       if (socketRef.current?.connected) {
-        socketRef.current.emit(event, { campaignId, sessionId, ...data });
+        socketRef.current.emit(event, data);
       }
     },
-    [campaignId, sessionId]
+    []
   );
 
   return { isConnected, emit };

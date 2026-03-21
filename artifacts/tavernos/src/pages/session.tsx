@@ -21,6 +21,13 @@ import { ChatPanel } from '@/components/vtt/ChatPanel';
 import { DiceRoll } from 'rpg-dice-roller';
 import { LogOut, Menu, X, Wifi, WifiOff } from 'lucide-react';
 
+interface FogRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export default function Session() {
   const { campaignId, sessionId } = useParams();
   const [, setLocation] = useLocation();
@@ -88,7 +95,11 @@ export default function Session() {
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
 
-  const handleSendMessage = (content: string, type: any, diceData?: any) => {
+  const handleSendMessage = (
+    content: string,
+    type: 'chat' | 'dice' | 'system' | 'whisper',
+    diceData?: { total: number; output: string; expr?: string }
+  ) => {
     if (!activeSession) return;
     postMessage.mutate(
       {
@@ -141,23 +152,23 @@ export default function Session() {
     refetchMaps();
   };
 
-  const handleFogUpdate = (mapId: string, fogData: any) => {
+  const handleFogUpdate = (mapId: string, fogData: { revealed: FogRect[]; hidden: FogRect[] }) => {
     emit('fog_update', { mapId, fogData });
   };
 
   const handleNextTurn = () => {
     if (!activeSession || !campaignId) return;
-    emit('initiative_advance', { direction: 'next' } as any);
+    emit('initiative_advance', { direction: 'next' });
   };
 
   const handlePrevTurn = () => {
     if (!activeSession || !campaignId) return;
-    emit('initiative_advance', { direction: 'prev' } as any);
+    emit('initiative_advance', { direction: 'prev' });
   };
 
-  const handleInitiativeOrderUpdate = (order: any[]) => {
+  const handleInitiativeOrderUpdate = (order: InitiativeCombatant[]) => {
     if (!activeSession || !campaignId) return;
-    emit('initiative_order_update', { initiativeOrder: order } as any);
+    emit('initiative_order_update', { initiativeOrder: order });
   };
 
   if (!campaign || !activeSession) {
@@ -229,7 +240,7 @@ export default function Session() {
 
       {/* INITIATIVE STRIP */}
       <InitiativeBar
-        order={(activeSession.initiativeOrder as any[]) || []}
+        order={(activeSession.initiativeOrder as InitiativeCombatant[]) || []}
         currentIndex={activeSession.currentTurnIndex || 0}
         roundNumber={activeSession.roundNumber || 1}
         isDm={isDm}
