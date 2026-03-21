@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import { setTabIdGetter } from "@workspace/api-client-react";
 
 // Pages
 import Login from "@/pages/login";
@@ -11,6 +12,21 @@ import CharacterCreator from "@/pages/character-creator";
 import Session from "@/pages/session";
 
 const queryClient = new QueryClient();
+
+// Generate or retrieve a per-tab identifier stored in sessionStorage.
+// This allows multiple browser tabs to each have a distinct logged-in user
+// identity even though they share the same session cookie.
+function getOrCreateTabId(): string {
+  const key = "tavernos_tab_id";
+  let id = sessionStorage.getItem(key);
+  if (!id) {
+    id = `tab_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    sessionStorage.setItem(key, id);
+  }
+  return id;
+}
+
+setTabIdGetter(getOrCreateTabId);
 
 function Router() {
   return (

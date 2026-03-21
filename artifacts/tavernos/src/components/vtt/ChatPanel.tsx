@@ -95,13 +95,15 @@ export function ChatPanel({
     if (text.startsWith('/r ') || text.startsWith('/roll ')) {
       const expr = text.replace(/^\/(r|roll)\s+/, '');
       performRoll(expr, expr);
-    } else if (text.startsWith('/w ') && isDm) {
+    } else if (text.startsWith('/w ')) {
+      // Anyone can whisper — DM to specific player, player to DM
       const content = text.replace(/^\/w\s+/, '');
-      const recipientId = whisperTo !== 'all' ? whisperTo : undefined;
+      // 'dm' means "send to DM" — server auto-resolves DM userId when recipientId is undefined
+      const recipientId = (whisperTo !== 'all' && whisperTo !== 'dm') ? whisperTo : undefined;
       onSendMessage(content, 'whisper', undefined, recipientId);
     } else {
-      const type = whisperTo !== 'all' ? 'whisper' : 'chat';
-      const recipientId = whisperTo !== 'all' ? whisperTo : undefined;
+      const type = (whisperTo !== 'all') ? 'whisper' : 'chat';
+      const recipientId = (whisperTo !== 'all' && whisperTo !== 'dm') ? whisperTo : undefined;
       onSendMessage(text, type, undefined, recipientId);
     }
     setInput('');
@@ -194,20 +196,22 @@ export function ChatPanel({
 
           {/* Input area */}
           <div className="p-2.5 bg-background border-t border-border flex-shrink-0">
-            {isDm && (
-              <div className="flex items-center gap-2 mb-2">
-                <select
-                  value={whisperTo}
-                  onChange={e => setWhisperTo(e.target.value)}
-                  className="flex-1 bg-background border border-border/50 rounded px-2 py-1 text-xs font-sans text-muted-foreground"
-                >
-                  <option value="all">To: Everyone</option>
-                  {allCharacters.map(c => (
-                    <option key={c.id} value={c.userId || c.id}>Whisper → {c.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+            <div className="flex items-center gap-2 mb-2">
+              <select
+                value={whisperTo}
+                onChange={e => setWhisperTo(e.target.value)}
+                className="flex-1 bg-background border border-border/50 rounded px-2 py-1 text-xs font-sans text-muted-foreground"
+              >
+                <option value="all">To: Everyone</option>
+                {isDm ? (
+                  allCharacters.map(c => (
+                    <option key={c.id} value={c.userId || c.id}>🤫 Whisper → {c.name}</option>
+                  ))
+                ) : (
+                  <option value="dm">🤫 Whisper → DM</option>
+                )}
+              </select>
+            </div>
             <form onSubmit={handleSend} className="flex gap-2">
               <input
                 value={input}
@@ -222,7 +226,7 @@ export function ChatPanel({
                 {input.startsWith('/r') ? <Dices className="w-4 h-4" /> : <Send className="w-4 h-4" />}
               </button>
             </form>
-            <div className="mt-1 text-[10px] text-muted-foreground font-label">/r 2d6+3 to roll · /w [msg] to whisper (DM)</div>
+            <div className="mt-1 text-[10px] text-muted-foreground font-label">/r 2d6+3 to roll · /w [msg] to whisper</div>
           </div>
         </>
       )}

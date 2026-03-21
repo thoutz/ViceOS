@@ -17,6 +17,16 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _tabIdGetter: (() => string | null) | null = null;
+
+/**
+ * Register a getter that returns a per-tab identifier string.
+ * When set, every request will include an `X-Tab-Id` header so the server
+ * can maintain per-tab user identity (enables multi-tab player simulation).
+ */
+export function setTabIdGetter(getter: (() => string | null) | null): void {
+  _tabIdGetter = getter;
+}
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -352,6 +362,15 @@ export async function customFetch<T = unknown>(
     const token = await _authTokenGetter();
     if (token) {
       headers.set("authorization", `Bearer ${token}`);
+    }
+  }
+
+  // Attach per-tab identifier so the server can distinguish identities
+  // across browser tabs sharing the same session cookie.
+  if (_tabIdGetter && !headers.has("x-tab-id")) {
+    const tabId = _tabIdGetter();
+    if (tabId) {
+      headers.set("x-tab-id", tabId);
     }
   }
 

@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { messagesTable, usersTable, gameSessionsTable } from "@workspace/db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { requireAuth, requireCampaignMember } from "../middlewares/auth";
+import { requireAuth, requireCampaignMember, getEffectiveUserId } from "../middlewares/auth";
 import { param } from "../types";
 
 const router: IRouter = Router();
@@ -14,7 +14,7 @@ router.get(
   async (req, res) => {
     const campaignId = param(req.params.campaignId);
     const sessionId = param(req.params.sessionId);
-    const userId = req.session.userId!;
+    const userId = getEffectiveUserId(req)!;
     const member = req.campaignMember;
 
     const [session] = await db
@@ -38,7 +38,9 @@ router.get(
     const isDm = member?.role === "dm";
     const visible = allMessages.filter((m) => {
       if (m.type !== "whisper") return true;
+      // DM sees all whispers
       if (isDm) return true;
+      // Players see whispers they sent or received
       return m.senderId === userId || m.recipientId === userId;
     });
 
@@ -51,10 +53,9 @@ router.post(
   requireAuth,
   requireCampaignMember,
   async (req, res) => {
-    const userId = req.session.userId!;
+    const userId = getEffectiveUserId(req)!;
     const campaignId = param(req.params.campaignId);
     const sessionId = param(req.params.sessionId);
-    const member = req.campaignMember;
 
     const [session] = await db
       .select()
@@ -73,9 +74,19 @@ router.post(
       return;
     }
 
-    if (type === "whisper" && member?.role !== "dm") {
-      res.status(403).json({ error: "Only DMs can send whispers" });
-      return;
+    // Whispers are allowed from anyone — players can whisper to the DM and vice versa
+    // If a player sends a whisper without a recipientId, it goes to DM (server resolves DM userId)
+    let resolvedRecipientId: string | null = recipientId || null;
+    if (type === "whisper" && !resolvedRecipientId) {
+      // Find the DM of this campaign
+      const { campaignMembersTable } = await import("@workspace/db/schema");
+      const [dmMember] = await db
+        .select()
+        .from(campaignMembersTable)
+        .where(and(eq(campaignMembersTable.campaignId, campaignId), eq(campaignMembersTable.role, "dm")));
+      if (dmMember) {
+        resolvedRecipientId = dmMember.userId;
+      }
     }
 
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
@@ -87,7 +98,7 @@ router.post(
         sessionId,
         senderId: userId,
         senderName,
-        recipientId: recipientId || null,
+        recipientId: resolvedRecipientId,
         content: content.trim(),
         type: type || "chat",
         diceData: diceData || null,

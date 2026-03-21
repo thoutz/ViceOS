@@ -6,6 +6,7 @@ import { createServer } from "http";
 import { Server as SocketServer } from "socket.io";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { tabIdentityMap } from "./middlewares/auth";
 import { db } from "@workspace/db";
 import { gameSessionsTable, mapsTable, campaignMembersTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -43,18 +44,23 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 const sessionSecret = process.env.SESSION_SECRET;
-if (!sessionSecret) {
+const isProd = process.env.NODE_ENV === "production";
+if (isProd && !sessionSecret) {
+  console.error("[SECURITY] SESSION_SECRET env var is required in production. Exiting.");
+  process.exit(1);
+}
+if (!isProd && !sessionSecret) {
   console.warn("[SECURITY] SESSION_SECRET env var is not set. Using insecure default — set this in production.");
 }
 const sessionMiddleware = session({
-  secret: sessionSecret || "tavern-os-secret-key-change-in-production",
+  secret: sessionSecret || "tavern-os-dev-secret-only",
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false,
+    secure: isProd,
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    sameSite: "lax",
+    sameSite: isProd ? "strict" : "lax",
   },
 });
 
@@ -96,9 +102,19 @@ function socketOwnsSession(data: SocketData, sessionId: string, campaignId: stri
 }
 
 io.on("connection", (socket) => {
-  // Read userId from the shared express session
+  // Resolve userId: prefer per-tab identity (for multi-tab testing) over shared session
   const req = socket.request as express.Request;
-  const serverUserId: string | undefined = req.session?.userId;
+  const tabId = (socket.handshake.auth as Record<string, string> | undefined)?.tabId;
+  let serverUserId: string | undefined = req.session?.userId;
+  let serverUsername: string | undefined = req.session?.username;
+
+  if (tabId) {
+    const tabUser = tabIdentityMap.get(tabId);
+    if (tabUser) {
+      serverUserId = tabUser.userId;
+      serverUsername = tabUser.username;
+    }
+  }
 
   if (!serverUserId) {
     logger.warn({ socketId: socket.id }, "Unauthenticated socket connection rejected");
@@ -140,14 +156,15 @@ io.on("connection", (socket) => {
       const room = `session:${data.sessionId}`;
       socket.join(room);
 
-      // Store auth context on socket — always use server-side userId
+      // Store auth context on socket — prefer server-resolved identity over client-supplied username
+      const resolvedUsername = serverUsername || data.username;
       (socket.data as SocketData).userId = serverUserId;
-      (socket.data as SocketData).username = data.username;
+      (socket.data as SocketData).username = resolvedUsername;
       (socket.data as SocketData).sessionId = data.sessionId;
       (socket.data as SocketData).campaignId = data.campaignId;
       (socket.data as SocketData).role = member.role;
 
-      socket.to(room).emit("user_joined", { userId: serverUserId, username: data.username });
+      socket.to(room).emit("user_joined", { userId: serverUserId, username: resolvedUsername });
       logger.info({ sessionId: data.sessionId, userId: serverUserId, role: member.role }, "User joined session room");
     }
   );

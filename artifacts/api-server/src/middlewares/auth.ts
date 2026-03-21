@@ -5,8 +5,36 @@ import { eq, and } from "drizzle-orm";
 
 import { param } from "../types";
 
+/**
+ * In-memory per-tab identity map. Keyed by X-Tab-Id header value.
+ * Allows separate browser tabs to maintain distinct user identities even
+ * though they share the same session cookie.
+ */
+export const tabIdentityMap = new Map<string, { userId: string; username: string }>();
+
+/** Get the effective userId for a request, preferring tab identity over session. */
+export function getEffectiveUserId(req: Request): string | undefined {
+  const tabId = req.headers["x-tab-id"] as string | undefined;
+  if (tabId) {
+    const tabUser = tabIdentityMap.get(tabId);
+    if (tabUser) return tabUser.userId;
+  }
+  return req.session.userId;
+}
+
+/** Get the effective username for a request, preferring tab identity over session. */
+export function getEffectiveUsername(req: Request): string | undefined {
+  const tabId = req.headers["x-tab-id"] as string | undefined;
+  if (tabId) {
+    const tabUser = tabIdentityMap.get(tabId);
+    if (tabUser) return tabUser.username;
+  }
+  return req.session.username;
+}
+
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
-  if (!req.session.userId) {
+  const userId = getEffectiveUserId(req);
+  if (!userId) {
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
@@ -14,7 +42,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 }
 
 export async function requireCampaignMember(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const userId = req.session.userId!;
+  const userId = getEffectiveUserId(req)!;
   const campaignId = param(req.params.campaignId);
 
   if (!campaignId) {

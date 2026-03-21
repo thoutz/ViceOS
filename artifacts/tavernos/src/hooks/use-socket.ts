@@ -45,10 +45,13 @@ export function useVttSocket(campaignId: string, sessionId: string) {
   useEffect(() => {
     if (!sessionId || !campaignId) return;
 
+    const tabId = sessionStorage.getItem("tavernos_tab_id") ?? undefined;
+
     const socket = io(window.location.origin, {
       path: "/socket.io",
       reconnectionDelayMax: 10000,
       withCredentials: true,
+      auth: tabId ? { tabId } : undefined,
     });
 
     socketRef.current = socket;
