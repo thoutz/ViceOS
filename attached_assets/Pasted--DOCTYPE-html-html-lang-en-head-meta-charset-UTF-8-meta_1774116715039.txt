@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TavernOS — Executive Development Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8CC7A;
+    --gold-dim: #7A6228;
+    --parchment: #F2E8CE;
+    --parchment-dark: #D9C9A0;
+    --ink: #1A1208;
+    --ink-mid: #2E2010;
+    --blood: #8B1A1A;
+    --blood-bright: #C42B2B;
+    --stone: #3A3228;
+    --stone-light: #5A4E3A;
+    --ember: #E07B39;
+    --ember-dim: #7A3A10;
+    --shadow: rgba(0,0,0,0.6);
+    --magic: #5B3FA6;
+    --magic-bright: #8A68D4;
+    --forest: #2A5C3A;
+    --forest-bright: #3D8A55;
+  }
+
+- { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+background-color: #0E0B06;
+color: var(–parchment);
+font-family: ‘Crimson Pro’, Georgia, serif;
+font-size: 17px;
+line-height: 1.7;
+overflow-x: hidden;
+}
+
+/* ── HERO ── */
+.hero {
+position: relative;
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+text-align: center;
+padding: 60px 40px;
+overflow: hidden;
+}
+
+.hero::before {
+content: ‘’;
+position: absolute;
+inset: 0;
+background:
+radial-gradient(ellipse 80% 60% at 50% 30%, rgba(201,168,76,0.08) 0%, transparent 70%),
+radial-gradient(ellipse 40% 40% at 20% 80%, rgba(139,26,26,0.12) 0%, transparent 60%),
+radial-gradient(ellipse 40% 40% at 80% 70%, rgba(91,63,166,0.10) 0%, transparent 60%);
+}
+
+.hero-rune {
+font-family: ‘Cinzel Decorative’, serif;
+font-size: 11px;
+letter-spacing: 6px;
+color: var(–gold-dim);
+text-transform: uppercase;
+margin-bottom: 30px;
+position: relative;
+}
+
+.hero-rune::before, .hero-rune::after {
+content: ‘⸻’;
+margin: 0 16px;
+color: var(–gold-dim);
+}
+
+h1.app-title {
+font-family: ‘Cinzel Decorative’, serif;
+font-size: clamp(48px, 8vw, 90px);
+font-weight: 900;
+color: var(–gold-light);
+text-shadow:
+0 0 40px rgba(201,168,76,0.4),
+0 2px 0 var(–gold-dim),
+0 4px 12px rgba(0,0,0,0.8);
+letter-spacing: 4px;
+line-height: 1.1;
+position: relative;
+margin-bottom: 8px;
+}
+
+.app-subtitle {
+font-family: ‘Cinzel’, serif;
+font-size: clamp(13px, 2vw, 18px);
+color: var(–gold-dim);
+letter-spacing: 8px;
+text-transform: uppercase;
+margin-bottom: 40px;
+}
+
+.hero-tagline {
+font-family: ‘Crimson Pro’, serif;
+font-style: italic;
+font-size: clamp(18px, 2.5vw, 24px);
+color: var(–parchment-dark);
+max-width: 680px;
+margin-bottom: 60px;
+line-height: 1.6;
+}
+
+.divider-ornament {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 16px;
+margin: 40px auto;
+max-width: 600px;
+}
+
+.divider-ornament .line {
+flex: 1;
+height: 1px;
+background: linear-gradient(to right, transparent, var(–gold-dim), transparent);
+}
+
+.divider-ornament .gem {
+width: 10px;
+height: 10px;
+background: var(–gold);
+transform: rotate(45deg);
+box-shadow: 0 0 10px rgba(201,168,76,0.5);
+}
+
+/* ── LAYOUT ── */
+.document {
+max-width: 960px;
+margin: 0 auto;
+padding: 0 40px 120px;
+}
+
+/* ── SECTION HEADERS ── */
+.section {
+margin-bottom: 80px;
+position: relative;
+}
+
+.section-label {
+font-family: ‘Cinzel’, serif;
+font-size: 10px;
+letter-spacing: 5px;
+color: var(–gold-dim);
+text-transform: uppercase;
+margin-bottom: 12px;
+}
+
+h2.section-title {
+font-family: ‘Cinzel Decorative’, serif;
+font-size: clamp(22px, 3vw, 32px);
+font-weight: 700;
+color: var(–gold-light);
+text-shadow: 0 0 20px rgba(201,168,76,0.2);
+margin-bottom: 8px;
+line-height: 1.2;
+}
+
+h3.sub-title {
+font-family: ‘Cinzel’, serif;
+font-size: clamp(14px, 2vw, 18px);
+font-weight: 600;
+color: var(–ember);
+letter-spacing: 1px;
+margin: 36px 0 12px;
+}
+
+h4.micro-title {
+font-family: ‘Cinzel’, serif;
+font-size: 13px;
+font-weight: 600;
+color: var(–gold);
+letter-spacing: 2px;
+text-transform: uppercase;
+margin: 24px 0 8px;
+}
+
+p { margin-bottom: 14px; color: var(–parchment); }
+
+/* ── CARDS ── */
+.card-grid {
+display: grid;
+gap: 20px;
+margin-top: 24px;
+}
+
+.card-grid.col2 { grid-template-columns: 1fr 1fr; }
+.card-grid.col3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.card {
+background: linear-gradient(135deg, rgba(42,32,16,0.9), rgba(26,18,8,0.95));
+border: 1px solid var(–gold-dim);
+border-radius: 4px;
+padding: 24px 26px;
+position: relative;
+overflow: hidden;
+}
+
+.card::before {
+content: ‘’;
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 2px;
+background: linear-gradient(to right, transparent, var(–gold), transparent);
+}
+
+.card-icon {
+font-size: 28px;
+margin-bottom: 10px;
+display: block;
+}
+
+.card-title {
+font-family: ‘Cinzel’, serif;
+font-size: 14px;
+font-weight: 600;
+color: var(–gold-light);
+letter-spacing: 1px;
+margin-bottom: 8px;
+}
+
+.card p {
+font-size: 15px;
+color: #C4B896;
+margin: 0;
+line-height: 1.6;
+}
+
+/* ── PHASE BLOCKS ── */
+.phase {
+border-left: 3px solid var(–gold-dim);
+padding: 0 0 40px 36px;
+position: relative;
+margin-top: 16px;
+}
+
+.phase::before {
+content: ‘’;
+position: absolute;
+left: -9px;
+top: 4px;
+width: 15px;
+height: 15px;
+background: var(–gold);
+transform: rotate(45deg);
+box-shadow: 0 0 12px rgba(201,168,76,0.6);
+}
+
+.phase-header {
+display: flex;
+align-items: baseline;
+gap: 16px;
+margin-bottom: 16px;
+}
+
+.phase-number {
+font-family: ‘Cinzel Decorative’, serif;
+font-size: 13px;
+color: var(–gold-dim);
+letter-spacing: 2px;
+white-space: nowrap;
+}
+
+.phase-title {
+font-family: ‘Cinzel’, serif;
+font-size: 20px;
+color: var(–gold-light);
+font-weight: 600;
+}
+
+.phase-duration {
+font-family: ‘Crimson Pro’, serif;
+font-style: italic;
+color: var(–ember);
+font-size: 15px;
+margin-left: auto;
+white-space: nowrap;
+}
+
+/* ── FEATURE LIST ── */
+.feature-list {
+list-style: none;
+margin: 12px 0 20px;
+}
+
+.feature-list li {
+padding: 8px 0 8px 28px;
+position: relative;
+color: #C4B896;
+font-size: 16px;
+border-bottom: 1px solid rgba(201,168,76,0.06);
+line-height: 1.5;
+}
+
+.feature-list li::before {
+content: ‘◆’;
+position: absolute;
+left: 0;
+color: var(–gold-dim);
+font-size: 8px;
+top: 14px;
+}
+
+.feature-list li strong {
+color: var(–parchment);
+font-weight: 600;
+}
+
+/* ── TECH STACK TABLE ── */
+.tech-table {
+width: 100%;
+border-collapse: collapse;
+margin: 20px 0;
+font-size: 15px;
+}
+
+.tech-table th {
+font-family: ‘Cinzel’, serif;
+font-size: 11px;
+letter-spacing: 3px;
+color: var(–gold);
+text-transform: uppercase;
+text-align: left;
+padding: 12px 16px;
+border-bottom: 1px solid var(–gold-dim);
+background: rgba(201,168,76,0.05);
+}
+
+.tech-table td {
+padding: 12px 16px;
+border-bottom: 1px solid rgba(201,168,76,0.08);
+color: #C4B896;
+vertical-align: top;
+}
+
+.tech-table td:first-child {
+color: var(–parchment);
+font-weight: 600;
+width: 28%;
+font-family: ‘Cinzel’, serif;
+font-size: 13px;
+letter-spacing: 0.5px;
+}
+
+.tech-table td:nth-child(2) {
+color: var(–gold-light);
+width: 28%;
+}
+
+.tech-table tr:hover td {
+background: rgba(201,168,76,0.03);
+}
+
+/* ── RISK TABLE ── */
+.risk-table {
+width: 100%;
+border-collapse: collapse;
+margin: 20px 0;
+font-size: 15px;
+}
+
+.risk-table th {
+font-family: ‘Cinzel’, serif;
+font-size: 11px;
+letter-spacing: 3px;
+color: var(–gold);
+text-transform: uppercase;
+text-align: left;
+padding: 12px 16px;
+border-bottom: 1px solid var(–gold-dim);
+background: rgba(201,168,76,0.05);
+}
+
+.risk-table td {
+padding: 12px 16px;
+border-bottom: 1px solid rgba(201,168,76,0.08);
+vertical-align: top;
+color: #C4B896;
+}
+
+.badge {
+display: inline-block;
+padding: 2px 10px;
+border-radius: 2px;
+font-size: 11px;
+font-family: ‘Cinzel’, serif;
+letter-spacing: 1px;
+text-transform: uppercase;
+font-weight: 600;
+}
+
+.badge-high { background: rgba(196,43,43,0.2); color: var(–blood-bright); border: 1px solid var(–blood); }
+.badge-med  { background: rgba(224,123,57,0.2); color: var(–ember); border: 1px solid var(–ember-dim); }
+.badge-low  { background: rgba(61,138,85,0.2); color: var(–forest-bright); border: 1px solid var(–forest); }
+
+/* ── MVP SCOPE BOX ── */
+.scope-box {
+background: linear-gradient(135deg, rgba(91,63,166,0.12), rgba(26,18,8,0.95));
+border: 1px solid rgba(138,104,212,0.3);
+border-radius: 4px;
+padding: 30px 32px;
+margin: 24px 0;
+position: relative;
+}
+
+.scope-box::before {
+content: ‘’;
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 2px;
+background: linear-gradient(to right, transparent, var(–magic-bright), transparent);
+}
+
+.scope-box h3 {
+font-family: ‘Cinzel’, serif;
+font-size: 16px;
+color: var(–magic-bright);
+margin-bottom: 12px;
+letter-spacing: 2px;
+}
+
+/* ── UI LAYOUT DIAGRAM ── */
+.ui-diagram {
+background: rgba(14,11,6,0.9);
+border: 1px solid var(–gold-dim);
+border-radius: 4px;
+padding: 30px;
+margin: 20px 0;
+font-family: ‘Crimson Pro’, monospace;
+}
+
+.ui-diagram .diagram-grid {
+display: grid;
+grid-template-columns: 220px 1fr 220px;
+grid-template-rows: 50px 1fr 100px;
+gap: 6px;
+height: 400px;
+}
+
+.ui-zone {
+border: 1px solid rgba(201,168,76,0.25);
+background: rgba(201,168,76,0.04);
+border-radius: 3px;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+padding: 10px;
+text-align: center;
+}
+
+.ui-zone .zone-label {
+font-family: ‘Cinzel’, serif;
+font-size: 10px;
+letter-spacing: 2px;
+color: var(–gold-dim);
+text-transform: uppercase;
+margin-bottom: 4px;
+}
+
+.ui-zone .zone-desc {
+font-size: 12px;
+color: #8A7A5A;
+line-height: 1.4;
+}
+
+.ui-zone.topbar {
+grid-column: 1 / -1;
+background: rgba(139,26,26,0.08);
+border-color: rgba(139,26,26,0.3);
+flex-direction: row;
+gap: 30px;
+justify-content: space-around;
+}
+
+.ui-zone.topbar .zone-label { color: var(–blood); margin: 0; }
+
+.ui-zone.map {
+background: rgba(42,92,58,0.08);
+border-color: rgba(42,92,58,0.4);
+border-width: 2px;
+}
+
+.ui-zone.map .zone-label { color: var(–forest-bright); font-size: 12px; }
+
+.ui-zone.chat {
+grid-column: 1 / -1;
+background: rgba(91,63,166,0.06);
+border-color: rgba(91,63,166,0.25);
+}
+
+/* ── DATA MODEL ── */
+.model-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 16px;
+margin-top: 20px;
+}
+
+.model-card {
+background: rgba(26,18,8,0.9);
+border: 1px solid rgba(201,168,76,0.15);
+border-radius: 4px;
+padding: 20px;
+}
+
+.model-name {
+font-family: ‘Cinzel’, serif;
+font-size: 13px;
+color: var(–gold);
+letter-spacing: 2px;
+margin-bottom: 12px;
+padding-bottom: 8px;
+border-bottom: 1px solid rgba(201,168,76,0.15);
+}
+
+.model-fields {
+list-style: none;
+font-size: 13px;
+font-family: ‘Crimson Pro’, monospace;
+}
+
+.model-fields li {
+padding: 3px 0;
+color: #8A9E88;
+display: flex;
+gap: 10px;
+}
+
+.field-name { color: #C4B896; min-width: 120px; }
+.field-type { color: var(–magic-bright); opacity: 0.8; }
+
+/* ── MONETIZATION ── */
+.tier-grid {
+display: grid;
+grid-template-columns: 1fr 1fr 1fr;
+gap: 16px;
+margin-top: 20px;
+}
+
+.tier-card {
+border: 1px solid var(–gold-dim);
+border-radius: 4px;
+padding: 24px 20px;
+text-align: center;
+background: rgba(26,18,8,0.9);
+position: relative;
+}
+
+.tier-card.featured {
+border-color: var(–gold);
+background: linear-gradient(160deg, rgba(42,32,16,0.95), rgba(26,18,8,0.95));
+}
+
+.tier-card.featured::before {
+content: ‘RECOMMENDED’;
+position: absolute;
+top: -1px; left: 50%; transform: translateX(-50%);
+background: var(–gold);
+color: var(–ink);
+font-family: ‘Cinzel’, serif;
+font-size: 9px;
+letter-spacing: 2px;
+padding: 3px 12px;
+border-radius: 0 0 3px 3px;
+}
+
+.tier-name {
+font-family: ‘Cinzel Decorative’, serif;
+font-size: 16px;
+color: var(–gold-light);
+margin-bottom: 6px;
+}
+
+.tier-price {
+font-family: ‘Crimson Pro’, serif;
+font-size: 32px;
+color: var(–ember);
+font-weight: 600;
+margin: 12px 0;
+}
+
+.tier-price span {
+font-size: 16px;
+color: var(–gold-dim);
+}
+
+.tier-perks {
+list-style: none;
+text-align: left;
+margin-top: 16px;
+font-size: 14px;
+}
+
+.tier-perks li {
+padding: 5px 0 5px 20px;
+position: relative;
+color: #C4B896;
+border-bottom: 1px solid rgba(201,168,76,0.06);
+}
+
+.tier-perks li::before {
+content: ‘✦’;
+position: absolute;
+left: 0;
+color: var(–gold-dim);
+font-size: 9px;
+top: 8px;
+}
+
+/* ── FOOTER ── */
+.doc-footer {
+text-align: center;
+padding: 60px 40px;
+border-top: 1px solid rgba(201,168,76,0.1);
+}
+
+.doc-footer p {
+font-family: ‘Cinzel’, serif;
+font-size: 11px;
+letter-spacing: 4px;
+color: var(–gold-dim);
+text-transform: uppercase;
+}
+
+/* ── CALLOUT ── */
+.callout {
+border-left: 3px solid var(–ember);
+padding: 14px 20px;
+background: rgba(224,123,57,0.06);
+margin: 20px 0;
+border-radius: 0 4px 4px 0;
+}
+
+.callout p { color: #C4B896; margin: 0; font-style: italic; }
+.callout strong { color: var(–ember); font-style: normal; }
+
+@media (max-width: 720px) {
+.card-grid.col2, .card-grid.col3,
+.tier-grid, .model-grid { grid-template-columns: 1fr; }
+.ui-diagram .diagram-grid { grid-template-columns: 1fr; height: auto; }
+.ui-zone.topbar { flex-direction: column; gap: 6px; }
+.document { padding: 0 20px 80px; }
+.phase { padding-left: 24px; }
+}
+</style>
+
+</head>
+<body>
+
+<!-- HERO -->
+
+<div class="hero">
+  <div class="hero-rune">Executive Development Plan</div>
+  <h1 class="app-title">TavernOS</h1>
+  <div class="app-subtitle">Virtual Tabletop Platform</div>
+  <p class="hero-tagline">
+    A living, breathing digital table — where heroes gather, dice are cast,
+    and the dungeon master commands the world in real time.
+  </p>
+  <div class="divider-ornament">
+    <div class="line"></div>
+    <div class="gem"></div>
+    <div class="gem"></div>
+    <div class="gem"></div>
+    <div class="line"></div>
+  </div>
+  <div class="card-grid col3" style="max-width:700px; width:100%;">
+    <div class="card" style="text-align:center;">
+      <span class="card-icon">🗓</span>
+      <div class="card-title">Target Launch</div>
+      <p>MVP in ~4 months<br>Full v1 in ~9 months</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <span class="card-icon">⚔️</span>
+      <div class="card-title">Primary Users</div>
+      <p>D&D groups, online campaigns, remote play sessions</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <span class="card-icon">🏰</span>
+      <div class="card-title">Differentiator</div>
+      <p>Real-time sync, DM command center, drag-and-drop maps</p>
+    </div>
+  </div>
+</div>
+
+<!-- DOCUMENT BODY -->
+
+<div class="document">
+
+  <!-- 1. VISION -->
+
+  <div class="section">
+    <div class="divider-ornament"><div class="line"></div><div class="gem"></div><div class="line"></div></div>
+    <div class="section-label">Chapter I</div>
+    <h2 class="section-title">Product Vision & Scope</h2>
+
+```
+<p>TavernOS is a browser-based virtual tabletop (VTT) platform purpose-built for Dungeons & Dragons and compatible TTRPG systems. It unifies everything a gaming group needs into one synchronized environment: an interactive map canvas, full character sheets, real-time video and chat, initiative tracking, and a powerful Dungeon Master control panel — all live-updated for every player at the table simultaneously.</p>
+
+<p>The core philosophy is <strong style="color:var(--gold)">asymmetric by design</strong>: the DM has godlike controls while players get a clean, immersive view tailored to their character. The experience should feel like sitting at a real table, but with powers no physical table could offer.</p>
+
+<h3 class="sub-title">Core Experience Pillars</h3>
+<div class="card-grid col2">
+  <div class="card">
+    <span class="card-icon">🗺</span>
+    <div class="card-title">The Living Map</div>
+    <p>A real-time shared canvas where the DM imports images, places tokens, reveals fog of war, and players watch the world unfold tile by tile.</p>
+  </div>
+  <div class="card">
+    <span class="card-icon">📜</span>
+    <div class="card-title">Character at Your Side</div>
+    <p>Every player's sheet lives in a collapsible side panel — stats, inventory, spells, HP — always in sync with live game state.</p>
+  </div>
+  <div class="card">
+    <span class="card-icon">🎲</span>
+    <div class="card-title">Roll at the Table</div>
+    <p>Integrated dice roller with animated results posted to the table log. Modifiers auto-pulled from character stats. Private rolls for DM.</p>
+  </div>
+  <div class="card">
+    <span class="card-icon">🎬</span>
+    <div class="card-title">Face to Face</div>
+    <p>Embedded video and voice via LiveKit, with individual mute/deafen controls and a push-to-talk mode that feels native to the session.</p>
+  </div>
+  <div class="card">
+    <span class="card-icon">⚡</span>
+    <div class="card-title">Initiative Command</div>
+    <p>A persistent initiative bar shows turn order, highlights the active combatant, and auto-advances — with DM override at any moment.</p>
+  </div>
+  <div class="card">
+    <span class="card-icon">🛡</span>
+    <div class="card-title">DM Command Center</div>
+    <p>A dedicated DM view with NPC stat blocks, secret notes, hidden map zones, weather overlays, ambient sound control, and encounter builders.</p>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- 2. UI LAYOUT -->
+
+  <div class="section">
+    <div class="divider-ornament"><div class="line"></div><div class="gem"></div><div class="line"></div></div>
+    <div class="section-label">Chapter II</div>
+    <h2 class="section-title">UI Architecture & Layout</h2>
+
+```
+<p>The layout follows a <strong style="color:var(--gold)">three-column docking system</strong> with a persistent top bar for session controls. The map canvas is the dominant center element, flanked by collapsible side panels. The bottom bar handles communications and the initiative tracker.</p>
+
+<div class="ui-diagram">
+  <div class="diagram-grid">
+    <div class="ui-zone topbar">
+      <div><div class="zone-label">Campaign Title / Session</div></div>
+      <div><div class="zone-label">Initiative Bar (Pinned)</div></div>
+      <div><div class="zone-label">Session Controls + DM Toggle</div></div>
+    </div>
+
+    <div class="ui-zone" style="grid-column:1; grid-row:2;">
+      <div class="zone-label">Left Panel</div>
+      <div class="zone-desc">
+        Character Sheet<br>
+        Stats / HP / AC<br>
+        Spell Slots<br>
+        Inventory<br>
+        Passive Stats<br>
+        <br>
+        <em style="color:var(--gold-dim)">Collapsible</em>
+      </div>
+    </div>
+
+    <div class="ui-zone map" style="grid-column:2; grid-row:2;">
+      <div class="zone-label">🗺 Map Canvas</div>
+      <div class="zone-desc" style="color:#4A8A5A;">
+        Drag &amp; Drop Tokens<br>
+        Image Import<br>
+        Grid Overlay<br>
+        Fog of War<br>
+        Measurement Tools<br>
+        Layer System
+      </div>
+    </div>
+
+    <div class="ui-zone" style="grid-column:3; grid-row:2;">
+      <div class="zone-label">Right Panel</div>
+      <div class="zone-desc">
+        Video Feeds (Grid)<br>
+        Session Chat<br>
+        DM ↔ Player DMs<br>
+        Dice Log<br>
+        <br>
+        <em style="color:var(--gold-dim)">Collapsible</em>
+      </div>
+    </div>
+
+    <div class="ui-zone chat" style="grid-column:1/-1; grid-row:3;">
+      <div class="zone-label">Bottom Bar — Chat &amp; Dice Input · Active Token HUD · Conditions · Notes Hotbar</div>
+    </div>
+  </div>
+</div>
+
+<h3 class="sub-title">DM View — Additional Overlays</h3>
+<ul class="feature-list">
+  <li><strong>Secret Layer:</strong> Notes and NPC positions only the DM can see on the map canvas</li>
+  <li><strong>Encounter Builder Drawer:</strong> Drag monsters from a bestiary onto the map to spawn them live</li>
+  <li><strong>Player Health Monitor:</strong> A compact HUD showing all player HP bars in real time</li>
+  <li><strong>Fog of War Controls:</strong> Paint/erase revealed areas per-player or globally</li>
+  <li><strong>Ambient Sound Panel:</strong> Trigger background audio scenes (tavern, dungeon, forest)</li>
+  <li><strong>NPC Stat Blocks:</strong> Pull standard SRD stat blocks directly into the DM panel</li>
+  <li><strong>Private DM Chat:</strong> Inline whisper thread per player, inaccessible to the table</li>
+</ul>
+```
+
+  </div>
+
+  <!-- 3. FEATURES -->
+
+  <div class="section">
+    <div class="divider-ornament"><div class="line"></div><div class="gem"></div><div class="line"></div></div>
+    <div class="section-label">Chapter III</div>
+    <h2 class="section-title">Feature Specification</h2>
+
+```
+<h3 class="sub-title">🗺 Map & Canvas System</h3>
+<ul class="feature-list">
+  <li><strong>Image Import:</strong> Upload JPG/PNG/WebP map images; stored via Supabase Storage. Drag image from a panel onto the canvas.</li>
+  <li><strong>Grid Overlay:</strong> Configurable square or hex grid with snap-to-grid toggle. Grid scale tied to real D&D distance (5ft per square).</li>
+  <li><strong>Token System:</strong> Upload or use library token images. Tokens have HP/AC overlays, name labels, condition badges (Prone, Stunned, etc.).</li>
+  <li><strong>Drag & Drop — Live:</strong> When DM moves a token, all connected players see the move in real time via WebSocket broadcast.</li>
+  <li><strong>Fog of War:</strong> DM paints revealed areas; unexplored zones appear as black overlays for players. Partial reveal supported.</li>
+  <li><strong>Layer System:</strong> Background image, grid, tokens, DM notes, and effects on separate toggleable layers.</li>
+  <li><strong>Measurement Tool:</strong> Click-drag ruler showing distance in feet/squares. AoE shape templates (cone, circle, line).</li>
+  <li><strong>Map Library:</strong> Users save maps to a personal/campaign library for reuse.</li>
+</ul>
+
+<h3 class="sub-title">📜 Character Sheet System</h3>
+<ul class="feature-list">
+  <li><strong>Standard D&D 5e Layout:</strong> All core stats (STR, DEX, CON, INT, WIS, CHA), saving throws, skill proficiencies, AC, HP, speed, initiative, spell slots, class features, feats.</li>
+  <li><strong>Auto-Calculated Fields:</strong> Modifier values, proficiency bonuses, spell attack/save DCs derive automatically from base stats.</li>
+  <li><strong>Inline Dice Rolls:</strong> Click any stat/skill/attack to auto-roll with modifiers; result posts to table log.</li>
+  <li><strong>HP Tracker:</strong> Large HP widget with quick damage/heal inputs. Temp HP support. Death save tracker.</li>
+  <li><strong>Inventory Management:</strong> Drag to reorder items. Weight tracking. Equipment slots. Attunement slots.</li>
+  <li><strong>Spell Book:</strong> Spell slots per level, prepared spells, spell details via SRD lookup.</li>
+  <li><strong>Custom Templates:</strong> Duplicate default sheet and customize: rename fields, add/remove sections, change stat labels for non-5e games (Pathfinder, homebrew, etc.).</li>
+  <li><strong>Sheet Sharing:</strong> DM can view any player's full sheet. Players see each other's public stats (HP, AC) only unless sheet is set to public.</li>
+</ul>
+
+<h3 class="sub-title">⚔️ Initiative & Combat Tracker</h3>
+<ul class="feature-list">
+  <li><strong>Initiative Bar:</strong> Persistent top-bar strip showing all combatants sorted by roll. Active turn highlighted with animated border.</li>
+  <li><strong>Auto-Roll Initiative:</strong> Click "Roll Initiative" to auto-roll all characters using DEX modifier; NPC rolls controlled by DM.</li>
+  <li><strong>Turn Timer (Optional):</strong> Countdown clock per turn, configurable by DM (30s–5min).</li>
+  <li><strong>Conditions Panel:</strong> Apply standard D&D conditions (Prone, Poisoned, etc.) from initiative bar. Auto-remove at end of condition duration.</li>
+  <li><strong>Round Counter:</strong> Persistent round number; useful for spell/effect durations.</li>
+  <li><strong>DM Override:</strong> Reorder initiative, skip turns, add/remove combatants mid-combat.</li>
+</ul>
+
+<h3 class="sub-title">💬 Communication System</h3>
+<ul class="feature-list">
+  <li><strong>Table Chat:</strong> Persistent text channel visible to all. System messages (dice rolls, HP changes) auto-post here.</li>
+  <li><strong>Private DM Messages:</strong> Any player can open a private thread with the DM. DM sees all threads in a sidebar; replies are whispered back.</li>
+  <li><strong>Video & Voice:</strong> LiveKit-powered grid of player video tiles in the right panel. Per-tile mute, deafen, kick controls (DM only). Push-to-talk toggle.</li>
+  <li><strong>Dice Log:</strong> Dedicated sub-tab in chat showing all dice results: who rolled, what dice, modifiers, total, and roll type (attack, check, save).</li>
+  <li><strong>Emotes & Reactions:</strong> Quick emoji reactions on chat messages; table-wide reaction overlays (confetti on a nat 20).</li>
+</ul>
+
+<h3 class="sub-title">🧙 Character Creation Wizard</h3>
+<ul class="feature-list">
+  <li><strong>Step-by-Step Flow:</strong> Race → Class → Background → Ability Scores → Skills → Equipment → Finishing Touches.</li>
+  <li><strong>SRD Content Library:</strong> Standard races, classes, backgrounds, spells, feats pulled from Open Game Content database.</li>
+  <li><strong>Ability Score Methods:</strong> Standard array, point buy, or manual entry (with optional dice-roll integration).</li>
+  <li><strong>Template Selection:</strong> "Classic D&D 5e", "Pathfinder 2e", "Homebrew Minimal", and "Blank Custom" starting templates.</li>
+  <li><strong>Export/Import:</strong> JSON export for portability; import from D&D Beyond-style JSON.</li>
+</ul>
+```
+
+  </div>
+
+  <!-- 4. TECH STACK -->
+
+  <div class="section">
+    <div class="divider-ornament"><div class="line"></div><div class="gem"></div><div class="line"></div></div>
+    <div class="section-label">Chapter IV</div>
+    <h2 class="section-title">Technology Stack</h2>
+
+```
+<p>The stack is intentionally aligned with your existing infrastructure in Nexus — Supabase, LiveKit, and React/TypeScript — to minimize new learning surface and maximize code reuse across projects.</p>
+
+<table class="tech-table">
+  <thead>
+    <tr>
+      <th>Layer</th>
+      <th>Technology</th>
+      <th>Rationale</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Frontend Framework</td>
+      <td>React + TypeScript + Vite</td>
+      <td>Matches your existing Nexus web stack; fast HMR; strong ecosystem for real-time UI</td>
+    </tr>
+    <tr>
+      <td>Canvas / Map Engine</td>
+      <td>Konva.js (React-Konva)</td>
+      <td>High-performance canvas rendering; excellent drag-and-drop, layer, and hit-testing API</td>
+    </tr>
+    <tr>
+      <td>Real-Time Sync</td>
+      <td>Supabase Realtime (Channels)</td>
+      <td>Already in your stack; broadcast token moves, HP changes, initiative, fog of war</td>
+    </tr>
+    <tr>
+      <td>Database & Auth</td>
+      <td>Supabase (PostgreSQL + Auth)</td>
+      <td>Existing infrastructure; Row Level Security for per-campaign data isolation</td>
+    </tr>
+    <tr>
+      <td>File Storage</td>
+      <td>Supabase Storage</td>
+      <td>Map images, token PNGs, character portraits; CDN delivery; signed URLs for privacy</td>
+    </tr>
+    <tr>
+      <td>Video & Voice</td>
+      <td>LiveKit Cloud</td>
+      <td>Already integrated in Nexus; per-room sessions; scalable; WebRTC under the hood</td>
+    </tr>
+    <tr>
+      <td>Backend / API</td>
+      <td>Node.js + Express (Replit)</td>
+      <td>Your existing backend; add REST endpoints for campaign management and SRD data</td>
+    </tr>
+    <tr>
+      <td>SRD Game Data</td>
+      <td>Open5e API + local JSON cache</td>
+      <td>Free, open-source D&D 5e SRD — spells, monsters, classes, items; no licensing issues</td>
+    </tr>
+    <tr>
+      <td>UI Component Library</td>
+      <td>Radix UI Primitives + custom styles</td>
+      <td>Accessible headless components; full visual control to match your D&D aesthetic</td>
+    </tr>
+    <tr>
+      <td>State Management</td>
+      <td>Zustand + React Query</td>
+      <td>Zustand for live game state (initiative, tokens); React Query for campaign data fetching</td>
+    </tr>
+    <tr>
+      <td>Dice Engine</td>
+      <td>rpg-dice-roller (npm)</td>
+      <td>Supports complex D&D expressions (2d6+4, advantage, etc.); well maintained; typed</td>
+    </tr>
+    <tr>
+      <td>Deployment</td>
+      <td>Vercel (frontend) + Replit (backend)</td>
+      <td>Consistent with existing workflow; Vercel's edge network for low-latency delivery</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 class="sub-title">Real-Time Architecture</h3>
+<p>All live game events flow through <strong style="color:var(--gold)">Supabase Realtime broadcast channels</strong>, organized per campaign session. This keeps the Node.js backend stateless and lets Supabase handle connection management. The channel structure:</p>
+
+<div class="card-grid col3">
+  <div class="card">
+    <div class="card-title">session:{id}:map</div>
+    <p>Token positions, fog of war changes, map image switches, layer visibility</p>
+  </div>
+  <div class="card">
+    <div class="card-title">session:{id}:combat</div>
+    <p>Initiative order, turn changes, HP updates, condition additions/removals</p>
+  </div>
+  <div class="card">
+    <div class="card-title">session:{id}:chat</div>
+    <p>Table messages, dice results, system events, DM whispers (filtered by recipient)</p>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- 5. DATA MODEL -->
+
+  <div class="section">
+    <div class="divider-ornament"><div class="line"></div><div class="gem"></div><div class="line"></div></div>
+    <div class="section-label">Chapter V</div>
+    <h2 class="section-title">Core Data Model</h2>
+
+```
+<div class="model-grid">
+  <div class="model-card">
+    <div class="model-name">CAMPAIGNS</div>
+    <ul class="model-fields">
+      <li><span class="field-name">id</span><span class="field-type">uuid PK</span></li>
+      <li><span class="field-name">name</span><span class="field-type">text</span></li>
+      <li><span class="field-name">dm_user_id</span><span class="field-type">uuid → users</span></li>
+      <li><span class="field-name">game_system</span><span class="field-type">text</span></li>
+      <li><span class="field-name">invite_code</span><span class="field-type">text unique</span></li>
+      <li><span class="field-name">settings</span><span class="field-type">jsonb</span></li>
+      <li><span class="field-name">created_at</span><span class="field-type">timestamptz</span></li>
+    </ul>
+  </div>
+
+  <div class="model-card">
+    <div class="model-name">CHARACTERS</div>
+    <ul class="model-fields">
+      <li><span class="field-name">id</span><span class="field-type">uuid PK</span></li>
+      <li><span class="field-name">campaign_id</span><span class="field-type">uuid → campaigns</span></li>
+      <li><span class="field-name">user_id</span><span class="field-type">uuid → users</span></li>
+      <li><span class="field-name">sheet_template_id</span><span class="field-type">uuid → templates</span></li>
+      <li><span class="field-name">name, race, class</span><span class="field-type">text</span></li>
+      <li><span class="field-name">level, hp, max_hp</span><span class="field-type">int</span></li>
+      <li><span class="field-name">stats</span><span class="field-type">jsonb (6 ability scores)</span></li>
+      <li><span class="field-name">sheet_data</span><span class="field-type">jsonb (full sheet)</span></li>
+    </ul>
+  </div>
+
+  <div class="model-card">
+    <div class="model-name">SESSIONS</div>
+    <ul class="model-fields">
+      <li><span class="field-name">id</span><span class="field-type">uuid PK</span></li>
+      <li><span class="field-name">campaign_id</span><span class="field-type">uuid → campaigns</span></li>
+      <li><span class="field-name">active_map_id</span><span class="field-type">uuid → maps</span></li>
+      <li><span class="field-name">initiative_order</span><span class="field-type">jsonb[]</span></li>
+      <li><span class="field-name">current_turn_index</span><span class="field-type">int</span></li>
+      <li><span class="field-name">round_number</span><span class="field-type">int</span></li>
+      <li><span class="field-name">livekit_room</span><span class="field-type">text</span></li>
+      <li><span class="field-name">status</span><span class="field-type">enum (active/paused)</span></li>
+    </ul>
+  </div>
+
+  <div class="model-card">
+    <div class="model-name">MAPS</div>
+    <ul class="model-fields">
+      <li><span class="field-name">id</span><span class="field-type">uuid PK</span></li>
+      <li><span class="field-name">campaign_id</span><span class="field-type">uuid → campaigns</span></li>
+      <li><span class="field-name">image_url</span><span class="field-type">text (Storage)</span></li>
+      <li><span class="field-name">grid_config</span><span class="field-type">jsonb</span></li>
+      <li><span class="field-name">fog_data</span><span class="field-type">jsonb (revealed cells)</span></li>
+      <li><span class="field-name">tokens</span><span class="field-type">jsonb[] (positions)</span></li>
+      <li><span class="field-name">dm_notes</span><span class="field-type">text (DM-only)</span></li>
+    </ul>
+  </div>
+
+  <div class="model-card">
+    <div class="model-name">MESSAGES</div>
+    <ul class="model-fields">
+      <li><span class="field-name">id</span><span class="field-type">uuid PK</span></li>
+      <li><span class="field-name">session_id</span><span class="field-type">uuid → sessions</span></li>
+      <li><span class="field-name">sender_id</span><span class="field-type">uuid → users</span></li>
+      <li><span class="field-name">recipient_id</span><span class="field-type">uuid (null = table)</span></li>
+      <li><span class="field-name">type</span><span class="field-type">enum (chat/roll/system)</span></li>
+      <li><span class="field-name">content</span><span class="field-type">jsonb</span></li>
+      <li><span class="field-name">created_at</span><span class="field-type">timestamptz</span></li>
+    </ul>
+  </div>
+
+  <div class="model-card">
+    <div class="model-name">SHEET TEMPLATES</div>
+    <ul class="model-fields">
+      <li><span class="field-name">id</span><span class="field-type">uuid PK</span></li>
+      <li><span class="field-name">owner_id</span><span class="field-type">uuid (null = system)</span></li>
+      <li><span class="field-name">name</span><span class="field-type">text</span></li>
+      <li><span class="field-name">game_system</span><span class="field-type">text</span></li>
+      <li><span class="field-name">schema</span><span class="field-type">jsonb (field definitions)</span></li>
+      <li><span class="field-name">is_public</span><span class="field-type">boolean</span></li>
+      <li><span class="field-name">base_template_id</span><span class="field-type">uuid (for forks)</span></li>
+    </ul>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- 6. ROADMAP -->
+
+  <div class="section">
+    <div class="divider-ornament"><div class="line"></div><div class="gem"></div><div class="line"></div></div>
+    <div class="section-label">Chapter VI</div>
+    <h2 class="section-title">Development Roadmap</h2>
+
+```
+<div class="scope-box">
+  <h3>✦ MVP Definition (Playable at the Table)</h3>
+  <p>A single campaign can be created, players can join via link, the DM can load and navigate a map, all players see tokens move in real time, initiative is tracked, character HP is live, and the group can talk via voice/text. This is the minimum for a real session to occur.</p>
+</div>
+
+<!-- Phase 1 -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-number">Phase I</span>
+    <span class="phase-title">Foundation & Authentication</span>
+    <span class="phase-duration">Weeks 1–3</span>
+  </div>
+  <ul class="feature-list">
+    <li><strong>Project scaffolding:</strong> Vite + React + TypeScript monorepo, Tailwind config, Radix UI baseline</li>
+    <li><strong>Supabase setup:</strong> Schema migrations for campaigns, characters, sessions, maps, messages tables</li>
+    <li><strong>Auth flow:</strong> Email/password + Google OAuth via Supabase Auth; protected routes</li>
+    <li><strong>Campaign management:</strong> Create, join (invite code), leave, list campaigns; DM role assignment</li>
+    <li><strong>Basic shell UI:</strong> Three-column layout skeleton, responsive breakpoints, dark D&D theme system</li>
+    <li><strong>Node.js backend:</strong> Campaign API routes, LiveKit token generation endpoint, SRD data proxy</li>
+  </ul>
+</div>
+
+<!-- Phase 2 -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-number">Phase II</span>
+    <span class="phase-title">Map Canvas & Real-Time Sync</span>
+    <span class="phase-duration">Weeks 4–6</span>
+  </div>
+  <ul class="feature-list">
+    <li><strong>Konva.js canvas:</strong> Base map rendering, pan/zoom, grid overlay, layer system</li>
+    <li><strong>Image import:</strong> Upload map to Supabase Storage; render on canvas; persist URL to DB</li>
+    <li><strong>Token system:</strong> Upload token PNG, place on map, drag to reposition</li>
+    <li><strong>Supabase Realtime broadcast:</strong> Broadcast token moves, all players see live updates (&lt;100ms latency target)</li>
+    <li><strong>Fog of war:</strong> DM paint/erase tool, cell-based reveal mask, player view enforcement via RLS</li>
+    <li><strong>Map library:</strong> Save/load maps per campaign, thumbnail previews</li>
+  </ul>
+</div>
+
+<!-- Phase 3 -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-number">Phase III</span>
+    <span class="phase-title">Character Sheets & Character Creation</span>
+    <span class="phase-duration">Weeks 7–9</span>
+  </div>
+  <ul class="feature-list">
+    <li><strong>5e sheet template:</strong> Full standard character sheet with all core fields, auto-calculated modifiers</li>
+    <li><strong>HP tracker:</strong> Click to damage/heal, temp HP, death saves, unconscious state</li>
+    <li><strong>Spell book:</strong> Spell slots per level, spell list from Open5e API, prepared toggle</li>
+    <li><strong>Character creation wizard:</strong> Step-by-step flow with SRD race/class/background data</li>
+    <li><strong>Inline dice rolls:</strong> Click stat/skill → auto-rolls and posts to table log</li>
+    <li><strong>Sheet template system:</strong> Duplicate + customize any template; save as personal or campaign template</li>
+    <li><strong>DM character viewer:</strong> DM can inspect any player's full sheet in a modal</li>
+  </ul>
+</div>
+
+<!-- Phase 4 -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-number">Phase IV</span>
+    <span class="phase-title">Combat, Initiative & Communications</span>
+    <span class="phase-duration">Weeks 10–12</span>
+  </div>
+  <ul class="feature-list">
+    <li><strong>Initiative tracker:</strong> Top-bar initiative strip, auto-roll from DEX modifier, sort, highlight active turn</li>
+    <li><strong>Turn management:</strong> Advance/reverse turn, round counter, per-turn timer option, DM override</li>
+    <li><strong>Conditions system:</strong> Apply/remove standard D&D conditions from initiative bar; visual badges on tokens</li>
+    <li><strong>Table chat:</strong> Persistent message board, system messages, dice results auto-posted</li>
+    <li><strong>Private DM messages:</strong> Player ↔ DM whisper threads; DM inbox showing all active threads</li>
+    <li><strong>LiveKit video/voice:</strong> Embedded video grid in right panel; mute/deafen; PTT mode; DM kick</li>
+    <li><strong>Dice roller:</strong> Standalone dice panel with animated 3D roll; complex expressions; roll history</li>
+  </ul>
+</div>
+
+<!-- Phase 5 -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-number">Phase V</span>
+    <span class="phase-title">DM Command Center & Advanced Features</span>
+    <span class="phase-duration">Weeks 13–16</span>
+  </div>
+  <ul class="feature-list">
+    <li><strong>DM control panel:</strong> Dedicated DM-only sidebar with encounter builder, NPC stat blocks, ambient sound, session notes</li>
+    <li><strong>Bestiary integration:</strong> Search Open5e monsters, drag to spawn as tokens on map with pre-filled HP/AC</li>
+    <li><strong>Ambient sound:</strong> Curated scene library (cave drips, tavern ambience, battle music); per-session playback</li>
+    <li><strong>Live HP broadcast:</strong> All player HP visible as mini-bars on initiative strip and on tokens</li>
+    <li><strong>AoE templates:</strong> Measurement tools — cone, sphere, cube, line — with visual overlay on map</li>
+    <li><strong>Session notes:</strong> DM private notes pane + shared session recap log visible to all players</li>
+    <li><strong>Ping & draw tools:</strong> DM can ping locations on map; draw freehand arrows/shapes visible to all</li>
+  </ul>
+</div>
+
+<!-- Phase 6 -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-number">Phase VI</span>
+    <span class="phase-title">Polish, Launch & Monetization</span>
+    <span class="phase-duration">Weeks 17–20</span>
+  </div>
+  <ul class="feature-list">
+    <li><strong>Performance optimization:</strong> Canvas rendering profiling, Realtime debounce on token drag, lazy-load SRD data</li>
+    <li><strong>Mobile responsiveness:</strong> Player-view optimized for tablet (collapsible panels, touch-friendly canvas)</li>
+    <li><strong>Onboarding flow:</strong> First-session tutorial overlay, sample campaign with pre-built map and characters</li>
+    <li><strong>Subscription system:</strong> Stripe integration, tiered feature gates (see monetization chapter)</li>
+    <li><strong>Beta testing:</strong> Invite 5–10 real D&D groups; collect session feedback; squash latency/sync bugs</li>
+    <li><strong>Documentation:</strong> Player guide, DM guide, API docs for potential future integrations</li>
+  </ul>
+</div>
+```
+
+  </div>
+
+  <!-- 7. RISKS -->
+
+  <div class="section">
+    <div class="divider-ornament"><div class="line"></div><div class="gem"></div><div class="line"></div></div>
+    <div class="section-label">Chapter VII</div>
+    <h2 class="section-title">Risks & Mitigations</h2>
+
+```
+<table class="risk-table">
+  <thead>
+    <tr>
+      <th>Risk</th>
+      <th>Level</th>
+      <th>Mitigation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong style="color:var(--parchment)">Canvas performance degrades with large maps or many tokens</strong></td>
+      <td><span class="badge badge-high">High</span></td>
+      <td>Use Konva.js offscreen canvas caching; only re-render dirty layers; cap tokens at 50/map for free tier</td>
+    </tr>
+    <tr>
+      <td><strong style="color:var(--parchment)">Realtime race conditions (two players move same token)</strong></td>
+      <td><span class="badge badge-med">Medium</span></td>
+      <td>Last-write-wins via server timestamp; DM has authority on conflict; optimistic UI with rollback</td>
+    </tr>
+    <tr>
+      <td><strong style="color:var(--parchment)">Supabase Realtime latency spikes during high load</strong></td>
+      <td><span class="badge badge-med">Medium</span></td>
+      <td>Throttle token drag broadcasts (send every 50ms not every frame); debounce fog-of-war updates</td>
+    </tr>
+    <tr>
+      <td><strong style="color:var(--parchment)">Open5e SRD API rate limits or downtime</strong></td>
+      <td><span class="badge badge-low">Low</span></td>
+      <td>Download and self-host the full SRD JSON dataset (it's open license); serve from your own backend</td>
+    </tr>
+    <tr>
+      <td><strong style="color:var(--parchment)">Character sheet data complexity for non-5e systems</strong></td>
+      <td><span class="badge badge-med">Medium</span></td>
+      <td>Store sheet data as schemaless JSONB; template system handles field differences per game system</td>
+    </tr>
+    <tr>
+      <td><strong style="color:var(--parchment)">LiveKit costs scaling with session size</strong></td>
+      <td><span class="badge badge-med">Medium</span></td>
+      <td>LiveKit Cloud's free tier covers development; paid tier ~$1/GB; gate video to paid plans to control costs</td>
+    </tr>
+    <tr>
+      <td><strong style="color:var(--parchment)">D&D brand/trademark conflicts with marketing</strong></td>
+      <td><span class="badge badge-low">Low</span></td>
+      <td>Use only SRD open game content; avoid "D&D" in app name; position as a "5e-compatible VTT platform"</td>
+    </tr>
+  </tbody>
+</table>
+```
+
+  </div>
+
+  <!-- 8. MONETIZATION -->
+
+  <div class="section">
+    <div class="divider-ornament"><div class="line"></div><div class="gem"></div><div class="line"></div></div>
+    <div class="section-label">Chapter VIII</div>
+    <h2 class="section-title">Monetization Model</h2>
+
+```
+<p>A freemium model maximizes adoption in the tightly-knit TTRPG community, where word-of-mouth is the primary growth channel. The DM typically pays for the group, reducing the barrier to onboard players.</p>
+
+<div class="tier-grid">
+  <div class="tier-card">
+    <div class="tier-name">Adventurer</div>
+    <div class="tier-price">Free</div>
+    <ul class="tier-perks">
+      <li>1 active campaign</li>
+      <li>Up to 5 players</li>
+      <li>5 map uploads (50MB)</li>
+      <li>Standard 5e sheet only</li>
+      <li>Table chat + voice</li>
+      <li>Basic initiative tracker</li>
+      <li>No ambient sound</li>
+    </ul>
+  </div>
+
+  <div class="tier-card featured">
+    <div class="tier-name">Dungeon Master</div>
+    <div class="tier-price">$9<span>/mo</span></div>
+    <ul class="tier-perks">
+      <li>Unlimited campaigns</li>
+      <li>Up to 8 players per session</li>
+      <li>2GB map/asset storage</li>
+      <li>All sheet templates + custom</li>
+      <li>Video grid (all players)</li>
+      <li>Fog of war + DM panel</li>
+      <li>Ambient sound library</li>
+      <li>Bestiary + encounter builder</li>
+      <li>Private DM messaging</li>
+    </ul>
+  </div>
+
+  <div class="tier-card">
+    <div class="tier-name">Archmage</div>
+    <div class="tier-price">$19<span>/mo</span></div>
+    <ul class="tier-perks">
+      <li>Everything in DM tier</li>
+      <li>Up to 12 players per session</li>
+      <li>10GB storage</li>
+      <li>Custom ambient sound uploads</li>
+      <li>Campaign export / backup</li>
+      <li>Priority support</li>
+      <li>Early access to new features</li>
+      <li>Custom campaign branding</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout">
+  <p><strong>Marketplace opportunity (v2):</strong> A community asset marketplace where artists sell map packs, token sets, and sound libraries. Platform takes 20–30% cut. This mirrors Roll20's successful model and creates a long-term content flywheel.</p>
+</div>
+```
+
+  </div>
+
+  <!-- 9. COMPETITORS -->
+
+  <div class="section">
+    <div class="divider-ornament"><div class="line"></div><div class="gem"></div><div class="line"></div></div>
+    <div class="section-label">Chapter IX</div>
+    <h2 class="section-title">Competitive Landscape & Differentiation</h2>
+
+```
+<table class="tech-table">
+  <thead>
+    <tr>
+      <th>Platform</th>
+      <th>Strengths</th>
+      <th>Weaknesses → Your Opportunity</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Roll20</td>
+      <td>Market leader, large community, marketplace</td>
+      <td>Outdated UI, sluggish canvas, no built-in video, expensive</td>
+    </tr>
+    <tr>
+      <td>Foundry VTT</td>
+      <td>Extremely powerful, self-hosted, modular</td>
+      <td>Complex to set up, requires self-hosting, steep learning curve</td>
+    </tr>
+    <tr>
+      <td>Owlbear Rodeo</td>
+      <td>Clean map UX, fast, no-login sessions</td>
+      <td>No character sheets, no video, minimal session management</td>
+    </tr>
+    <tr>
+      <td>D&D Beyond</td>
+      <td>Official content, excellent character sheets</td>
+      <td>No map/VTT capability; requires third-party integration for play</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 class="micro-title">TavernOS Unique Advantages</h4>
+<ul class="feature-list">
+  <li><strong>All-in-one without the bloat:</strong> Map + sheets + video in one tab, no plugins needed, clean modern UI</li>
+  <li><strong>Built-in video:</strong> Most competitors lack native video; LiveKit gives you a head start</li>
+  <li><strong>DM-first design:</strong> The command center paradigm gives DMs tools that Roll20's aging interface can't match</li>
+  <li><strong>Template flexibility:</strong> Customizable sheets make non-5e systems usable, expanding your total addressable market</li>
+  <li><strong>Speed:</strong> React + Konva + Supabase Realtime will outperform Roll20's legacy canvas implementation</li>
+</ul>
+```
+
+  </div>
+
+  <!-- 10. SUCCESS METRICS -->
+
+  <div class="section">
+    <div class="divider-ornament"><div class="line"></div><div class="gem"></div><div class="line"></div></div>
+    <div class="section-label">Chapter X</div>
+    <h2 class="section-title">Success Metrics</h2>
+
+```
+<div class="card-grid col3">
+  <div class="card">
+    <div class="card-title">MVP Signal</div>
+    <p>5 real D&D groups complete a full 3-hour session without dropping or major sync bugs.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">3-Month Target</div>
+    <p>100 registered campaigns, 500 users, 10% conversion to paid DM tier, &lt;200ms average sync latency.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">12-Month Target</div>
+    <p>1,000 paid subscribers, marketplace launched, 3 third-party asset creators onboarded, NPS &gt; 50.</p>
+  </div>
+</div>
+```
+
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+
+<div class="doc-footer">
+  <div class="divider-ornament" style="max-width:300px; margin: 0 auto 30px;">
+    <div class="line"></div><div class="gem"></div><div class="gem"></div><div class="gem"></div><div class="line"></div>
+  </div>
+  <p>TavernOS — Executive Development Plan · Confidential · 2026</p>
+  <p style="margin-top:8px; font-size:9px; letter-spacing:3px;">May your dice always roll true</p>
+</div>
+
+</body>
+</html>
