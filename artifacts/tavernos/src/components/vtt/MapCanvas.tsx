@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { Stage as KonvaStageType } from 'konva/lib/Stage';
 import { Stage, Layer, Image as KonvaImage, Rect, Line, Circle, Text, Group } from 'react-konva';
@@ -137,6 +138,7 @@ export function MapCanvas({
   placementDraft,
   onPlacementDraftConsumed,
 }: MapCanvasProps) {
+  const { theme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const { width: canvasW, height: canvasH } = useResizeObserver(containerRef);
 
@@ -559,10 +561,10 @@ export function MapCanvas({
     const cols = Math.ceil(mapW / gridSize) + 1;
     const rows = Math.ceil(mapH / gridSize) + 1;
     for (let i = 0; i <= cols; i++) {
-      lines.push(<Line key={`v${i}`} points={[i * gridSize, 0, i * gridSize, mapH]} stroke="rgba(255,255,255,0.12)" strokeWidth={0.5} />);
+      lines.push(<Line key={`v${i}`} points={[i * gridSize, 0, i * gridSize, mapH]} stroke={theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'} strokeWidth={0.5} />);
     }
     for (let j = 0; j <= rows; j++) {
-      lines.push(<Line key={`h${j}`} points={[0, j * gridSize, mapW, j * gridSize]} stroke="rgba(255,255,255,0.12)" strokeWidth={0.5} />);
+      lines.push(<Line key={`h${j}`} points={[0, j * gridSize, mapW, j * gridSize]} stroke={theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'} strokeWidth={0.5} />);
     }
     return lines;
   };
@@ -715,7 +717,7 @@ export function MapCanvas({
           {bgImage ? (
             <KonvaImage image={bgImage} width={mapW} height={mapH} />
           ) : (
-            <Rect width={mapW} height={mapH} fill="#0D0D0D" />
+            <Rect width={mapW} height={mapH} fill={theme === 'dark' ? '#0f172a' : '#f0f0eb'} />
           )}
           {renderGrid()}
         </Layer>
