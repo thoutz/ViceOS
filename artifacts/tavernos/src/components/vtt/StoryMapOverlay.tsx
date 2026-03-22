@@ -73,7 +73,7 @@ export function StoryMapOverlay({ sessionId, messages }: StoryMapOverlayProps) {
         <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-primary/25 bg-primary/5 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <Sparkles className="w-4 h-4 text-magic shrink-0" aria-hidden />
-            <span className="text-xs font-label font-bold uppercase tracking-widest text-primary truncate">
+            <span className="text-xs font-sans font-bold uppercase tracking-widest text-primary truncate">
               Story
             </span>
             <BookOpen className="w-3.5 h-3.5 text-muted-foreground shrink-0 opacity-70" aria-hidden />
@@ -97,7 +97,7 @@ export function StoryMapOverlay({ sessionId, messages }: StoryMapOverlayProps) {
           <button
             type="button"
             onClick={() => dismiss(pendingStory.id)}
-            className="text-xs font-label font-bold uppercase tracking-wide px-4 py-2 rounded-md border border-primary/50 bg-primary/15 text-primary hover:bg-primary/25 transition-colors"
+            className="text-xs font-sans font-bold uppercase tracking-wide px-4 py-2 rounded-md border border-primary/50 bg-primary/15 text-primary hover:bg-primary/25 transition-colors"
           >
             Dismiss
           </button>

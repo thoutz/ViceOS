@@ -223,7 +223,7 @@ export default function CharacterCreator() {
   if (campaignId && isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-primary font-display text-xl animate-pulse">Consulting the archives...</div>
+        <div className="text-primary font-sans text-xl animate-pulse">Consulting the archives...</div>
       </div>
     );
   }
@@ -232,8 +232,8 @@ export default function CharacterCreator() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <div className="z-10 w-full max-w-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-display text-primary gold-text-glow mb-1">Forge Your Legend</h1>
-          <p className="text-muted-foreground font-label tracking-widest text-sm">
+          <h1 className="text-4xl font-sans text-primary gold-text-glow mb-1">Forge Your Legend</h1>
+          <p className="text-muted-foreground font-sans tracking-widest text-sm">
             {campaign ? campaign.name : "New character sheet"}
           </p>
         </div>
@@ -259,7 +259,7 @@ export default function CharacterCreator() {
                 {step > s.num ? <Check className="w-4 h-4" /> : s.num}
               </div>
               <span
-                className={`text-[10px] font-label mt-1.5 uppercase font-bold whitespace-nowrap ${step >= s.num ? "text-primary" : "text-muted-foreground/50"}`}
+                className={`text-[10px] font-sans mt-1.5 uppercase font-bold whitespace-nowrap ${step >= s.num ? "text-primary" : "text-muted-foreground/50"}`}
               >
                 {s.label}
               </span>
@@ -279,12 +279,12 @@ export default function CharacterCreator() {
             >
               {step === 1 && (
                 <div className="flex flex-col flex-1 p-6 gap-4 overflow-y-auto">
-                  <h2 className="font-display text-2xl text-primary">Identity</h2>
+                  <h2 className="font-sans text-2xl text-primary">Identity</h2>
                   <p className="text-xs text-muted-foreground font-sans">
                     Name is required before you finish — you can save a draft anytime.
                   </p>
                   <div>
-                    <label className="text-xs font-label font-bold text-primary uppercase block mb-1">Character name</label>
+                    <label className="text-xs font-sans font-bold text-primary uppercase block mb-1">Character name</label>
                     <VttInput
                       value={form.name}
                       onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -294,7 +294,7 @@ export default function CharacterCreator() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-label font-bold text-primary uppercase block mb-1">Level</label>
+                      <label className="text-xs font-sans font-bold text-primary uppercase block mb-1">Level</label>
                       <VttInput
                         type="number"
                         min={1}
@@ -306,7 +306,7 @@ export default function CharacterCreator() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-label font-bold text-primary uppercase block mb-1">Alignment</label>
+                      <label className="text-xs font-sans font-bold text-primary uppercase block mb-1">Alignment</label>
                       <select
                         value={form.alignment}
                         onChange={(e) => setForm((f) => ({ ...f, alignment: e.target.value }))}
@@ -321,7 +321,7 @@ export default function CharacterCreator() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-label font-bold text-primary uppercase block mb-1">Subclass / path (optional)</label>
+                    <label className="text-xs font-sans font-bold text-primary uppercase block mb-1">Subclass / path (optional)</label>
                     <VttInput
                       value={form.subclass}
                       onChange={(e) => setForm((f) => ({ ...f, subclass: e.target.value }))}
@@ -329,14 +329,14 @@ export default function CharacterCreator() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-label font-bold text-primary uppercase block mb-2">Race</label>
+                    <label className="text-xs font-sans font-bold text-primary uppercase block mb-2">Race</label>
                     <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
                       {RACES.map((race) => (
                         <button
                           key={race.name}
                           type="button"
                           onClick={() => setForm((f) => ({ ...f, race: race.name, subrace: "" }))}
-                          className={`p-2 border-2 rounded text-left text-xs font-label transition-all ${
+                          className={`p-2 border-2 rounded text-left text-xs font-sans transition-all ${
                             form.race === race.name ? "border-primary bg-primary/10" : "border-border hover:bg-card/50"
                           }`}
                         >
@@ -362,14 +362,14 @@ export default function CharacterCreator() {
                     )}
                   </div>
                   <div>
-                    <label className="text-xs font-label font-bold text-primary uppercase block mb-2">Class</label>
+                    <label className="text-xs font-sans font-bold text-primary uppercase block mb-2">Class</label>
                     <div className="grid grid-cols-3 gap-2 max-h-36 overflow-y-auto">
                       {CLASSES.map((cls) => (
                         <button
                           key={cls.name}
                           type="button"
                           onClick={() => setForm((f) => ({ ...f, class: cls.name }))}
-                          className={`p-2 border-2 rounded text-left text-xs font-label transition-all ${
+                          className={`p-2 border-2 rounded text-left text-xs font-sans transition-all ${
                             form.class === cls.name ? "border-primary bg-primary/10" : "border-border hover:bg-card/50"
                           }`}
                         >
@@ -379,14 +379,14 @@ export default function CharacterCreator() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-label font-bold text-primary uppercase block mb-2">Background</label>
+                    <label className="text-xs font-sans font-bold text-primary uppercase block mb-2">Background</label>
                     <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
                       {BACKGROUNDS.map((bg) => (
                         <button
                           key={bg.name}
                           type="button"
                           onClick={() => setForm((f) => ({ ...f, background: bg.name }))}
-                          className={`p-2 border-2 rounded text-left text-xs font-label transition-all ${
+                          className={`p-2 border-2 rounded text-left text-xs font-sans transition-all ${
                             form.background === bg.name ? "border-primary bg-primary/10" : "border-border hover:bg-card/50"
                           }`}
                         >
@@ -400,7 +400,7 @@ export default function CharacterCreator() {
 
               {step === 2 && (
                 <div className="flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
-                  <h2 className="font-display text-2xl text-primary">Ability scores</h2>
+                  <h2 className="font-sans text-2xl text-primary">Ability scores</h2>
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -411,7 +411,7 @@ export default function CharacterCreator() {
                           standardAssignments: { str: "", dex: "", con: "", int: "", wis: "", cha: "" },
                         }))
                       }
-                      className={`text-xs font-label px-3 py-1.5 rounded border ${
+                      className={`text-xs font-sans px-3 py-1.5 rounded border ${
                         form.abilityMethod === "standard" ? "border-primary text-primary bg-primary/10" : "border-border"
                       }`}
                     >
@@ -420,7 +420,7 @@ export default function CharacterCreator() {
                     <button
                       type="button"
                       onClick={rollStats}
-                      className={`flex items-center gap-1 text-xs font-label px-3 py-1.5 rounded border ${
+                      className={`flex items-center gap-1 text-xs font-sans px-3 py-1.5 rounded border ${
                         form.abilityMethod === "roll" ? "border-primary text-primary bg-primary/10" : "border-border"
                       }`}
                     >
@@ -444,7 +444,7 @@ export default function CharacterCreator() {
                       const finalVal = rawVal + raceBonus;
                       return (
                         <div key={k} className="flex flex-col items-center bg-card border border-border rounded p-3 gap-2">
-                          <span className="text-[10px] font-label font-bold text-primary uppercase">{STAT_NAMES[k]}</span>
+                          <span className="text-[10px] font-sans font-bold text-primary uppercase">{STAT_NAMES[k]}</span>
                           {form.abilityMethod === "standard" ? (
                             <select
                               value={form.standardAssignments[k]}
@@ -491,7 +491,7 @@ export default function CharacterCreator() {
                       );
                     })}
                   </div>
-                  <div className="text-sm font-label text-muted-foreground border-t border-border/30 pt-3">
+                  <div className="text-sm font-sans text-muted-foreground border-t border-border/30 pt-3">
                     <div>
                       HP (preview): <strong className="text-foreground">{computeHp(finalStats())}</strong>
                     </div>
@@ -505,12 +505,12 @@ export default function CharacterCreator() {
 
               {step === 3 && (
                 <div className="flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
-                  <h2 className="font-display text-2xl text-primary">Story</h2>
+                  <h2 className="font-sans text-2xl text-primary">Story</h2>
                   <p className="text-xs text-muted-foreground font-sans border border-primary/20 bg-primary/5 rounded px-3 py-2">
                     This is what Tavern AI will use to voice your character — be descriptive.
                   </p>
                   <div>
-                    <label className="text-xs font-label text-muted-foreground">Personality</label>
+                    <label className="text-xs font-sans text-muted-foreground">Personality</label>
                     <textarea
                       value={form.personality}
                       onChange={(e) => setForm((f) => ({ ...f, personality: e.target.value }))}
@@ -522,7 +522,7 @@ export default function CharacterCreator() {
                     <span className="text-[10px] text-muted-foreground">{form.personality.length} / 2000</span>
                   </div>
                   <div>
-                    <label className="text-xs font-label text-muted-foreground">Backstory</label>
+                    <label className="text-xs font-sans text-muted-foreground">Backstory</label>
                     <textarea
                       value={form.backstory}
                       onChange={(e) => setForm((f) => ({ ...f, backstory: e.target.value }))}
@@ -534,7 +534,7 @@ export default function CharacterCreator() {
                     <span className="text-[10px] text-muted-foreground">{form.backstory.length} / 8000</span>
                   </div>
                   <div>
-                    <label className="text-xs font-label text-muted-foreground">Ideals</label>
+                    <label className="text-xs font-sans text-muted-foreground">Ideals</label>
                     <textarea
                       value={form.ideals}
                       onChange={(e) => setForm((f) => ({ ...f, ideals: e.target.value }))}
@@ -543,7 +543,7 @@ export default function CharacterCreator() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-label text-muted-foreground">Bonds</label>
+                    <label className="text-xs font-sans text-muted-foreground">Bonds</label>
                     <textarea
                       value={form.bonds}
                       onChange={(e) => setForm((f) => ({ ...f, bonds: e.target.value }))}
@@ -552,7 +552,7 @@ export default function CharacterCreator() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-label text-muted-foreground">Flaws</label>
+                    <label className="text-xs font-sans text-muted-foreground">Flaws</label>
                     <textarea
                       value={form.flaws}
                       onChange={(e) => setForm((f) => ({ ...f, flaws: e.target.value }))}
@@ -561,7 +561,7 @@ export default function CharacterCreator() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-label text-muted-foreground">Appearance</label>
+                    <label className="text-xs font-sans text-muted-foreground">Appearance</label>
                     <textarea
                       value={form.appearance}
                       onChange={(e) => setForm((f) => ({ ...f, appearance: e.target.value }))}
@@ -574,9 +574,9 @@ export default function CharacterCreator() {
 
               {step === 4 && (
                 <div className="flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
-                  <h2 className="font-display text-2xl text-primary">Notes &amp; portrait</h2>
+                  <h2 className="font-sans text-2xl text-primary">Notes &amp; portrait</h2>
                   <div>
-                    <label className="text-xs font-label text-muted-foreground">Notes for DM / AI</label>
+                    <label className="text-xs font-sans text-muted-foreground">Notes for DM / AI</label>
                     <textarea
                       value={form.notes}
                       onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
@@ -586,14 +586,14 @@ export default function CharacterCreator() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-label text-muted-foreground block mb-1">Portrait (optional)</label>
+                    <label className="text-xs font-sans text-muted-foreground block mb-1">Portrait (optional)</label>
                     <VttInput type="file" accept="image/*" onChange={(e) => handleAvatar(e.target.files?.[0] ?? null)} />
                     {form.avatarUrl ? (
                       <img src={form.avatarUrl} alt="" className="mt-2 max-h-32 rounded border border-border object-cover" />
                     ) : null}
                   </div>
                   <div>
-                    <label className="text-xs font-label text-muted-foreground block mb-1">Token color</label>
+                    <label className="text-xs font-sans text-muted-foreground block mb-1">Token color</label>
                     <div className="flex gap-1.5 flex-wrap">
                       {TOKEN_COLORS.map((c) => (
                         <button
@@ -611,7 +611,7 @@ export default function CharacterCreator() {
 
               {step === 5 && (
                 <div className="flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
-                  <h2 className="font-display text-2xl text-primary">Review</h2>
+                  <h2 className="font-sans text-2xl text-primary">Review</h2>
                   <div className="bg-card/50 border border-border/30 rounded p-4 space-y-2 text-sm">
                     <p>
                       <span className="text-muted-foreground">Name:</span>{" "}
@@ -633,7 +633,7 @@ export default function CharacterCreator() {
                     </p>
                     {form.personality && (
                       <p className="text-xs line-clamp-3">
-                        <span className="text-primary font-label">Personality:</span> {form.personality}
+                        <span className="text-primary font-sans">Personality:</span> {form.personality}
                       </p>
                     )}
                   </div>
@@ -647,12 +647,12 @@ export default function CharacterCreator() {
               type="button"
               disabled={step === 1}
               onClick={() => setStep((s) => s - 1)}
-              className="flex items-center gap-1.5 text-sm font-label font-bold text-muted-foreground hover:text-foreground disabled:opacity-30 px-3 py-1.5"
+              className="flex items-center gap-1.5 text-sm font-sans font-bold text-muted-foreground hover:text-foreground disabled:opacity-30 px-3 py-1.5"
             >
               <ChevronLeft className="w-4 h-4" /> Back
             </button>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-muted-foreground font-label hidden sm:inline">Autosave: use Save draft</span>
+              <span className="text-[10px] text-muted-foreground font-sans hidden sm:inline">Autosave: use Save draft</span>
               <VttButton type="button" variant="outline" size="sm" onClick={saveDraft} className="gap-1">
                 <Save className="w-3.5 h-3.5" /> Save draft
               </VttButton>
@@ -662,7 +662,7 @@ export default function CharacterCreator() {
                 type="button"
                 disabled={!canProceed}
                 onClick={() => setStep((s) => s + 1)}
-                className="flex items-center gap-1.5 px-5 py-2 bg-primary/20 border border-primary/50 text-primary rounded font-label font-bold text-sm hover:bg-primary/30 disabled:opacity-30"
+                className="flex items-center gap-1.5 px-5 py-2 bg-primary/20 border border-primary/50 text-primary rounded font-sans font-bold text-sm hover:bg-primary/30 disabled:opacity-30"
               >
                 Continue <ChevronRight className="w-4 h-4" />
               </button>
@@ -684,7 +684,7 @@ export default function CharacterCreator() {
           <button
             type="button"
             onClick={() => setLocation("/dashboard")}
-            className="text-xs text-muted-foreground hover:text-foreground font-label transition-colors"
+            className="text-xs text-muted-foreground hover:text-foreground font-sans transition-colors"
           >
             Cancel & return to Dashboard
           </button>

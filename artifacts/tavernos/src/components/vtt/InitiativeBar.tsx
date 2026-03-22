@@ -144,7 +144,7 @@ export function InitiativeBar({
   if (!order || order.length === 0) {
     return (
       <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4">
-        <div className="flex items-center gap-3 text-muted-foreground italic font-label text-sm">
+        <div className="flex items-center gap-3 text-muted-foreground italic font-sans text-sm">
           <Swords className="w-4 h-4" />
           Combat not started
         </div>
@@ -158,7 +158,7 @@ export function InitiativeBar({
             </VttButton>
             {showAdd && (
               <div className="absolute top-[72px] right-4 z-50 bg-card border border-border rounded-lg shadow-2xl p-3 w-64">
-                <div className="text-xs font-label font-bold uppercase mb-2 text-primary">Add Combatant</div>
+                <div className="text-xs font-sans font-bold uppercase mb-2 text-primary">Add Combatant</div>
                 <div className="space-y-1.5">
                   <input
                     autoFocus
@@ -192,8 +192,8 @@ export function InitiativeBar({
       <div className="flex items-center h-16 px-3 gap-3">
         {/* Round counter */}
         <div className="flex flex-col items-center justify-center min-w-[56px] border-r border-border pr-3">
-          <span className="text-[9px] font-label text-primary uppercase tracking-widest">Round</span>
-          <span className="text-xl font-display font-bold text-foreground leading-tight">{roundNumber}</span>
+          <span className="text-[9px] font-sans text-primary uppercase tracking-widest">Round</span>
+          <span className="text-xl font-sans font-bold text-foreground leading-tight">{roundNumber}</span>
         </div>
 
         {/* Combatant strip */}
@@ -228,7 +228,7 @@ export function InitiativeBar({
 
                   <div className="flex flex-col flex-1 min-w-0">
                     <div className="flex items-center gap-1">
-                      <span className="font-label font-bold text-xs truncate text-foreground">{combatant.name}</span>
+                      <span className="font-sans font-bold text-xs truncate text-foreground">{combatant.name}</span>
                       {combatant.isNpc && <span className="text-[8px] text-destructive font-bold">NPC</span>}
                     </div>
 
@@ -316,7 +316,7 @@ export function InitiativeBar({
             <button onClick={onPrevTurn} className="w-7 h-7 flex items-center justify-center border border-border rounded hover:bg-primary/20 hover:border-primary transition-colors" title="Previous Turn">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button onClick={onNextTurn} className="px-3 h-7 flex items-center justify-center bg-primary/20 border border-primary rounded hover:bg-primary/30 transition-colors text-xs font-label font-bold text-primary" title="Next Turn">
+            <button onClick={onNextTurn} className="px-3 h-7 flex items-center justify-center bg-primary/20 border border-primary rounded hover:bg-primary/30 transition-colors text-xs font-sans font-bold text-primary" title="Next Turn">
               NEXT
             </button>
             <button onClick={() => setShowAdd(!showAdd)} className="w-7 h-7 flex items-center justify-center border border-border rounded hover:bg-primary/20 transition-colors" title="Add Combatant">
@@ -349,7 +349,7 @@ export function InitiativeBar({
                 key={s}
                 type="button"
                 onClick={() => setAddTokenSize(s)}
-                className={`text-[9px] font-label px-1.5 py-0.5 rounded capitalize ${addTokenSize === s ? 'bg-primary/25 text-primary' : 'text-muted-foreground'}`}
+                className={`text-[9px] font-sans px-1.5 py-0.5 rounded capitalize ${addTokenSize === s ? 'bg-primary/25 text-primary' : 'text-muted-foreground'}`}
               >
                 {s[0]}
               </button>
@@ -373,7 +373,7 @@ export function InitiativeBar({
           <button
             type="button"
             onClick={() => addPortraitInputRef.current?.click()}
-            className="text-[10px] font-label text-muted-foreground border border-border rounded px-2 py-1 hover:bg-white/5"
+            className="text-[10px] font-sans text-muted-foreground border border-border rounded px-2 py-1 hover:bg-white/5"
           >
             Portrait
           </button>
@@ -391,7 +391,7 @@ export function InitiativeBar({
       {isDm && selectedConditionTarget && (
         <div className="border-t border-border bg-card/90 px-3 py-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-label text-muted-foreground uppercase">Conditions:</span>
+            <span className="text-[10px] font-sans text-muted-foreground uppercase">Conditions:</span>
             {CONDITIONS.map(cond => {
               const target = order.find(c => c.characterId === selectedConditionTarget);
               const has = target?.conditions?.includes(cond);

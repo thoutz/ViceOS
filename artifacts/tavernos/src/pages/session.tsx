@@ -334,14 +334,14 @@ export default function Session() {
   if (!campaign || !activeSession) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <div className="font-display text-2xl text-primary animate-pulse gold-text-glow tracking-wider">
+        <div className="font-sans text-2xl text-primary animate-pulse gold-text-glow tracking-wider">
           {campaign?.role === 'player' && sessions?.length === 0
             ? 'Waiting for the DM to start a session...'
             : 'LOADING TABLE...'}
         </div>
         <button
           onClick={() => setLocation('/dashboard')}
-          className="text-sm text-muted-foreground hover:text-primary transition-colors font-label"
+          className="text-sm text-muted-foreground hover:text-primary transition-colors font-sans"
         >
           Return to Dashboard
         </button>
@@ -361,11 +361,11 @@ export default function Session() {
           >
             <MessageSquare className="w-5 h-5 text-primary" />
           </button>
-          <div className="font-display font-bold text-lg text-primary gold-text-glow tracking-wider">
+          <div className="font-sans font-bold text-lg text-primary gold-text-glow tracking-wider">
             {campaign.name}
           </div>
           {isDm && (
-            <span className="text-[10px] font-label uppercase bg-destructive/20 text-destructive border border-destructive px-2 py-0.5 rounded">
+            <span className="text-[10px] font-sans uppercase bg-destructive/20 text-destructive border border-destructive px-2 py-0.5 rounded">
               DM
             </span>
           )}
@@ -379,13 +379,13 @@ export default function Session() {
               <WifiOff className="w-4 h-4 text-muted-foreground" />
             )}
           </div>
-          <span className="text-xs text-muted-foreground font-label hidden md:block">
+          <span className="text-xs text-muted-foreground font-sans hidden md:block">
             {activeSession.name}
           </span>
           {isDm && (
             <button
               onClick={() => setDmDrawerOpen(true)}
-              className="flex items-center gap-1.5 text-sm text-destructive/80 hover:text-destructive border border-destructive/30 hover:border-destructive/60 px-2.5 py-1 rounded font-label font-bold transition-colors"
+              className="flex items-center gap-1.5 text-sm text-destructive/80 hover:text-destructive border border-destructive/30 hover:border-destructive/60 px-2.5 py-1 rounded font-sans font-bold transition-colors"
               title="DM Command Center"
             >
               <Swords className="w-4 h-4" /> DM
@@ -393,7 +393,7 @@ export default function Session() {
           )}
           <button
             onClick={() => setLocation('/dashboard')}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors font-label font-bold"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors font-sans font-bold"
           >
             <LogOut className="w-4 h-4" /> Exit
           </button>
@@ -492,7 +492,7 @@ export default function Session() {
                 <button
                   type="button"
                   onClick={() => setRightSidebarTab('character')}
-                  className={`flex-1 py-2.5 text-xs font-label font-bold border-b-2 transition-colors flex items-center justify-center gap-1 ${
+                  className={`flex-1 py-2.5 text-xs font-sans font-bold border-b-2 transition-colors flex items-center justify-center gap-1 ${
                     rightSidebarTab === 'character'
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -503,7 +503,7 @@ export default function Session() {
                 <button
                   type="button"
                   onClick={() => setRightSidebarTab('rolls')}
-                  className={`flex-1 py-2.5 text-xs font-label font-bold border-b-2 transition-colors flex items-center justify-center gap-1 ${
+                  className={`flex-1 py-2.5 text-xs font-sans font-bold border-b-2 transition-colors flex items-center justify-center gap-1 ${
                     rightSidebarTab === 'rolls'
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -555,8 +555,8 @@ export default function Session() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-card shrink-0">
               <div className="flex items-center gap-2">
                 <Swords className="w-5 h-5 text-destructive" />
-                <span className="font-display text-lg text-primary">Command Center</span>
-                <span className="text-[10px] font-label uppercase bg-destructive/20 text-destructive border border-destructive/40 px-1.5 py-0.5 rounded">DM Only</span>
+                <span className="font-sans text-lg text-primary">Command Center</span>
+                <span className="text-[10px] font-sans uppercase bg-destructive/20 text-destructive border border-destructive/40 px-1.5 py-0.5 rounded">DM Only</span>
               </div>
               <button
                 onClick={() => setDmDrawerOpen(false)}
@@ -570,7 +570,7 @@ export default function Session() {
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <ScrollText className="w-4 h-4 text-primary shrink-0" />
-                  <span className="font-label text-xs font-bold text-primary uppercase tracking-wide truncate">
+                  <span className="font-sans text-xs font-bold text-primary uppercase tracking-wide truncate">
                     AI session context
                   </span>
                 </div>
@@ -619,7 +619,7 @@ export default function Session() {
             <div className="shrink-0 border-b border-border/50 px-4 py-3 space-y-2 bg-card/40 flex flex-col max-h-[min(42vh,320px)]">
               <div className="flex items-center gap-2 min-w-0">
                 <Sparkles className="w-4 h-4 text-magic shrink-0" />
-                <span className="font-label text-xs font-bold text-magic uppercase tracking-wide truncate">
+                <span className="font-sans text-xs font-bold text-magic uppercase tracking-wide truncate">
                   Story assistant (Groq)
                 </span>
               </div>
@@ -691,7 +691,7 @@ export default function Session() {
                     !storyPrompt.trim() ||
                     !activeSession?.id
                   }
-                  className="flex-1 h-8 rounded border border-magic/50 bg-magic/10 text-magic text-xs font-label font-bold hover:bg-magic/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 h-8 rounded border border-magic/50 bg-magic/10 text-magic text-xs font-sans font-bold hover:bg-magic/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   {storyAssistantMutation.isPending ? 'Thinking…' : 'Send to assistant'}
                 </button>
@@ -736,8 +736,8 @@ export default function Session() {
         {showConditions && (
           <div className="absolute bottom-full left-0 right-0 bg-card border border-border/50 shadow-2xl p-3 z-50">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs font-label font-bold text-primary uppercase">Conditions</div>
-              <div className="text-[10px] text-muted-foreground font-label">Round {activeSession?.roundNumber || 1} · Click to toggle · Shift+click for 1-round timer</div>
+              <div className="text-xs font-sans font-bold text-primary uppercase">Conditions</div>
+              <div className="text-[10px] text-muted-foreground font-sans">Round {activeSession?.roundNumber || 1} · Click to toggle · Shift+click for 1-round timer</div>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {CONDITIONS.map(c => {
@@ -746,7 +746,7 @@ export default function Session() {
                   <button
                     key={c}
                     onClick={e => toggleCondition(c, e.shiftKey ? 1 : undefined)}
-                    className={`text-xs px-2.5 py-1 rounded border font-label font-bold transition-all flex flex-col items-center gap-0 ${
+                    className={`text-xs px-2.5 py-1 rounded border font-sans font-bold transition-all flex flex-col items-center gap-0 ${
                       active
                         ? 'bg-destructive/20 border-destructive text-destructive'
                         : 'border-border text-muted-foreground hover:border-border/80'
@@ -764,7 +764,7 @@ export default function Session() {
         )}
         {showNotes && (
           <div className="absolute bottom-full left-0 right-0 bg-card border border-border/50 shadow-2xl p-3 z-50">
-            <div className="text-xs font-label font-bold text-primary uppercase mb-2">Quick Notes</div>
+            <div className="text-xs font-sans font-bold text-primary uppercase mb-2">Quick Notes</div>
             <textarea
               value={quickNotes}
               onChange={e => setQuickNotes(e.target.value)}
@@ -788,7 +788,7 @@ export default function Session() {
             />
             <button
               onClick={() => hotbarDiceExpr.trim() && handleHotbarRoll(hotbarDiceExpr.trim())}
-              className="flex items-center gap-1 h-7 px-2.5 bg-primary/20 border border-primary/40 text-primary rounded text-xs font-label font-bold hover:bg-primary/30 transition-colors"
+              className="flex items-center gap-1 h-7 px-2.5 bg-primary/20 border border-primary/40 text-primary rounded text-xs font-sans font-bold hover:bg-primary/30 transition-colors"
             >
               <Dices className="w-3.5 h-3.5" /> Roll
             </button>
@@ -804,7 +804,7 @@ export default function Session() {
                 key={label}
                 onClick={() => handleHotbarRoll(expr, label)}
                 title={expr}
-                className="h-7 px-2 rounded border border-border/40 text-[11px] font-label font-bold text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/10 transition-all"
+                className="h-7 px-2 rounded border border-border/40 text-[11px] font-sans font-bold text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/10 transition-all"
               >
                 {label}
               </button>
@@ -829,7 +829,7 @@ export default function Session() {
                   key={name}
                   onClick={() => toggleCondition(name)}
                   title={expiresRound != null ? `Expires round ${expiresRound}` : 'Indefinite'}
-                  className="text-[10px] font-label font-bold px-2 py-0.5 rounded bg-destructive/20 border border-destructive/60 text-destructive cursor-pointer hover:bg-destructive/30 transition-colors"
+                  className="text-[10px] font-sans font-bold px-2 py-0.5 rounded bg-destructive/20 border border-destructive/60 text-destructive cursor-pointer hover:bg-destructive/30 transition-colors"
                 >
                   {name}{expiresRound != null ? ` (R${expiresRound})` : ''}
                 </span>
@@ -841,7 +841,7 @@ export default function Session() {
           <button
             onClick={() => { setShowConditions(v => !v); setShowNotes(false); }}
             title="Conditions"
-            className={`flex items-center gap-1 h-7 px-2.5 rounded border text-xs font-label font-bold transition-all ${
+            className={`flex items-center gap-1 h-7 px-2.5 rounded border text-xs font-sans font-bold transition-all ${
               showConditions || activeConditions.length > 0
                 ? 'border-destructive/60 text-destructive bg-destructive/10'
                 : 'border-border/40 text-muted-foreground hover:text-foreground hover:border-border/80'
@@ -856,7 +856,7 @@ export default function Session() {
           <button
             onClick={() => { setShowNotes(v => !v); setShowConditions(false); }}
             title="Quick Notes"
-            className={`flex items-center gap-1 h-7 px-2.5 rounded border text-xs font-label font-bold transition-all ${
+            className={`flex items-center gap-1 h-7 px-2.5 rounded border text-xs font-sans font-bold transition-all ${
               showNotes || quickNotes
                 ? 'border-primary/60 text-primary bg-primary/10'
                 : 'border-border/40 text-muted-foreground hover:text-foreground hover:border-border/80'

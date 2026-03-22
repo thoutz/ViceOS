@@ -45,12 +45,12 @@ export default function Login() {
             <Dices className="w-10 h-10 text-primary" />
           </div>
           <h1 className="text-5xl font-sans font-bold text-primary gold-text-glow mb-2">TavernOS</h1>
-          <p className="text-muted-foreground font-label tracking-widest uppercase text-sm">Virtual Tabletop</p>
+          <p className="text-muted-foreground font-sans tracking-widest uppercase text-sm">Virtual Tabletop</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-sm font-label font-bold text-foreground/80 block">Wanderer, what is your name?</label>
+            <label className="text-sm font-sans font-bold text-foreground/80 block">Wanderer, what is your name?</label>
             <VttInput
               placeholder="Enter username..."
               value={username}

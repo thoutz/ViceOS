@@ -804,7 +804,7 @@ export function MapCanvas({
           <button
             type="button"
             onClick={clearFog}
-            className="text-[10px] font-label text-destructive hover:text-destructive/80 px-1.5 py-0.5 border border-destructive/30 rounded"
+            className="text-[10px] font-sans text-destructive hover:text-destructive/80 px-1.5 py-0.5 border border-destructive/30 rounded"
             title="Remove all fog overlays (rectangles, polygons, brush strokes)"
           >
             Clear Fog
@@ -816,7 +816,7 @@ export function MapCanvas({
             <button
               type="button"
               onClick={removeSelectedToken}
-              className="flex items-center gap-1 text-[10px] font-label text-destructive border border-destructive/40 rounded px-2 py-1 hover:bg-destructive/10 transition-colors"
+              className="flex items-center gap-1 text-[10px] font-sans text-destructive border border-destructive/40 rounded px-2 py-1 hover:bg-destructive/10 transition-colors"
               title="Remove selected token (Delete)"
             >
               <Trash2 className="w-3 h-3" /> Remove token
@@ -829,7 +829,7 @@ export function MapCanvas({
       {isDm && activeTool === 'fog' && (
         <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-card/95 border border-slate-500/50 rounded-lg px-3 py-2 shadow-xl backdrop-blur-sm flex flex-col gap-2 max-w-[min(96vw,640px)] z-10">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <span className="text-[10px] font-label font-bold text-slate-300 uppercase tracking-wide">Fog</span>
+            <span className="text-[10px] font-sans font-bold text-slate-300 uppercase tracking-wide">Fog</span>
             <div className="flex items-center gap-0.5 border border-border/60 rounded px-1 py-0.5">
               <span className="text-[9px] text-muted-foreground pr-1">Add</span>
               <button
@@ -886,7 +886,7 @@ export function MapCanvas({
             </div>
           </div>
           {(fogSubtool === 'add_brush' || fogSubtool === 'clear_brush') && (
-            <label className="flex items-center gap-2 text-[10px] text-muted-foreground font-label">
+            <label className="flex items-center gap-2 text-[10px] text-muted-foreground font-sans">
               Brush size
               <input
                 type="range"
@@ -905,7 +905,7 @@ export function MapCanvas({
                 type="button"
                 onClick={finalizeFogPolygon}
                 disabled={polygonPoints.length < 3}
-                className="font-label text-primary border border-primary/40 rounded px-2 py-1 hover:bg-primary/10 disabled:opacity-40 disabled:pointer-events-none"
+                className="font-sans text-primary border border-primary/40 rounded px-2 py-1 hover:bg-primary/10 disabled:opacity-40 disabled:pointer-events-none"
               >
                 Finish polygon
               </button>
@@ -931,7 +931,7 @@ export function MapCanvas({
           <input ref={tokenImageInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) readTokenImageFile(f); e.target.value = ''; }} />
           <span className="text-[10px] font-sans font-bold text-accent uppercase">Place Token</span>
           {placementDraft && (
-            <span className="text-[10px] font-label text-primary border border-primary/40 rounded px-2 py-1 max-w-[200px] truncate" title={placementDraft.name}>
+            <span className="text-[10px] font-sans text-primary border border-primary/40 rounded px-2 py-1 max-w-[200px] truncate" title={placementDraft.name}>
               Placing: {placementDraft.name} · {(placementDraft.tokenSize ?? 'medium').toString()}
             </span>
           )}
@@ -943,14 +943,14 @@ export function MapCanvas({
                 placeholder="Token name..."
                 className="bg-background border border-border rounded px-2 py-1 text-xs font-sans w-32 focus:outline-none focus:border-primary/50"
               />
-              <label className="flex items-center gap-1 text-[10px] font-label text-muted-foreground">
+              <label className="flex items-center gap-1 text-[10px] font-sans text-muted-foreground">
                 Color
                 <input type="color" value={newTokenColor} onChange={e => setNewTokenColor(e.target.value)} className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
               </label>
               <button
                 type="button"
                 onClick={() => tokenImageInputRef.current?.click()}
-                className="flex items-center gap-1 text-[10px] font-label text-muted-foreground border border-border rounded px-2 py-1 hover:bg-white/5"
+                className="flex items-center gap-1 text-[10px] font-sans text-muted-foreground border border-border rounded px-2 py-1 hover:bg-white/5"
                 title="Optional portrait (PNG/JPG/WebP)"
               >
                 <ImagePlus className="w-3 h-3" /> Image
@@ -979,7 +979,7 @@ export function MapCanvas({
                     key={s}
                     type="button"
                     onClick={() => setNewTokenSize(s)}
-                    className={`text-[9px] font-label px-1.5 py-0.5 rounded capitalize ${newTokenSize === s ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-white/5'}`}
+                    className={`text-[9px] font-sans px-1.5 py-0.5 rounded capitalize ${newTokenSize === s ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-white/5'}`}
                   >
                     {s[0]}
                   </button>
@@ -992,7 +992,7 @@ export function MapCanvas({
             <button
               type="button"
               onClick={removeSelectedToken}
-              className="flex items-center gap-1 text-[10px] font-label text-destructive border border-destructive/40 rounded px-2 py-1 hover:bg-destructive/10 transition-colors"
+              className="flex items-center gap-1 text-[10px] font-sans text-destructive border border-destructive/40 rounded px-2 py-1 hover:bg-destructive/10 transition-colors"
             >
               <Trash2 className="w-3 h-3" /> Remove Selected
             </button>
@@ -1019,7 +1019,7 @@ export function MapCanvas({
         </button>
         <button
           onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); }}
-          className="w-8 h-6 flex items-center justify-center bg-card/80 border border-border rounded text-[9px] font-label text-muted-foreground hover:text-primary transition-colors"
+          className="w-8 h-6 flex items-center justify-center bg-card/80 border border-border rounded text-[9px] font-sans text-muted-foreground hover:text-primary transition-colors"
         >
           FIT
         </button>
@@ -1029,7 +1029,7 @@ export function MapCanvas({
       {!map && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground pointer-events-none">
           <div className="text-6xl mb-4 opacity-20">🗺</div>
-          <div className="font-label text-sm opacity-40">
+          <div className="font-sans text-sm opacity-40">
             {isDm ? 'No map loaded — create one from DM tools' : 'Waiting for the DM to load a map...'}
           </div>
         </div>
@@ -1037,7 +1037,7 @@ export function MapCanvas({
 
       {/* Measurement info */}
       {activeTool === 'measure' && measureDist() && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-card/90 border border-primary/30 text-primary px-3 py-1.5 rounded font-label font-bold text-sm shadow">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-card/90 border border-primary/30 text-primary px-3 py-1.5 rounded font-sans font-bold text-sm shadow">
           {measureDist()} ft
         </div>
       )}

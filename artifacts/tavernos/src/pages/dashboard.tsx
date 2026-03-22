@@ -179,7 +179,7 @@ export default function Dashboard() {
 
   if (userLoading)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-primary font-display text-2xl animate-pulse">
+      <div className="min-h-screen flex items-center justify-center bg-background text-primary font-sans text-2xl animate-pulse">
         Loading Chronicles...
       </div>
     );
@@ -231,14 +231,14 @@ export default function Dashboard() {
       <header className="bg-card border-b border-border py-4 px-8 flex justify-between items-center sticky top-0 z-20 shadow-md">
         <div className="flex items-center gap-3">
           <Book className="w-8 h-8 text-primary" />
-          <h1 className="text-3xl font-display text-primary gold-text-glow">TavernOS</h1>
+          <h1 className="text-3xl font-sans text-primary gold-text-glow">TavernOS</h1>
         </div>
         <div className="flex items-center gap-4">
           <VttButton variant="outline" size="sm" onClick={() => setLocation('/create-character')}>
             <UserPlus className="w-4 h-4 mr-2" />
             New hero
           </VttButton>
-          <span className="font-label text-muted-foreground">
+          <span className="font-sans text-muted-foreground">
             Hail, <strong className="text-foreground">{user?.username}</strong>
           </span>
           <VttButton variant="ghost" size="sm" onClick={() => setLocation('/')}>
@@ -250,7 +250,7 @@ export default function Dashboard() {
       <main className="max-w-6xl mx-auto p-8">
         <div className="flex justify-between items-end mb-8 border-b border-border/50 pb-4">
           <div>
-            <h2 className="text-4xl font-display mb-2">Your Chronicles</h2>
+            <h2 className="text-4xl font-sans mb-2">Your Chronicles</h2>
             <p className="text-muted-foreground font-sans text-lg">
               Select a campaign to continue your adventure.
             </p>
@@ -274,10 +274,10 @@ export default function Dashboard() {
         {isCreating && (
           <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="glass-panel p-6 rounded-lg max-w-md w-full">
-              <h3 className="text-2xl font-display text-primary mb-4">Forge a New Chronicle</h3>
+              <h3 className="text-2xl font-sans text-primary mb-4">Forge a New Chronicle</h3>
               <form onSubmit={handleCreate} className="space-y-4">
                 <div>
-                  <label className="text-sm font-label mb-1 block">Campaign Name</label>
+                  <label className="text-sm font-sans mb-1 block">Campaign Name</label>
                   <VttInput
                     autoFocus
                     value={newCampaignName}
@@ -301,10 +301,10 @@ export default function Dashboard() {
         {isJoining && (
           <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="glass-panel p-6 rounded-lg max-w-md w-full">
-              <h3 className="text-2xl font-display text-primary mb-4">Join an Adventure</h3>
+              <h3 className="text-2xl font-sans text-primary mb-4">Join an Adventure</h3>
               <form onSubmit={handleJoin} className="space-y-4">
                 <div>
-                  <label className="text-sm font-label mb-1 block">Invite Code</label>
+                  <label className="text-sm font-sans mb-1 block">Invite Code</label>
                   <VttInput
                     autoFocus
                     value={inviteCode}
@@ -313,7 +313,7 @@ export default function Dashboard() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-label mb-1 block">
+                  <label className="text-sm font-sans mb-1 block">
                     Bring a hero (optional)
                   </label>
                   <p className="text-xs text-muted-foreground font-sans mb-2">
@@ -357,7 +357,7 @@ export default function Dashboard() {
         {deleteTarget && deleteTarget.role === 'dm' && (
           <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="glass-panel p-6 rounded-lg max-w-md w-full border border-destructive/30">
-              <h3 className="text-2xl font-display text-destructive mb-2">Delete campaign</h3>
+              <h3 className="text-2xl font-sans text-destructive mb-2">Delete campaign</h3>
               {deleteStep === 1 ? (
                 <>
                   <p className="text-sm text-muted-foreground font-sans mb-4">
@@ -445,13 +445,13 @@ export default function Dashboard() {
         {inviteModal && (
           <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="glass-panel p-6 rounded-lg max-w-md w-full">
-              <h3 className="text-2xl font-display text-primary mb-2">Accept invitation</h3>
+              <h3 className="text-2xl font-sans text-primary mb-2">Accept invitation</h3>
               <p className="text-sm text-muted-foreground font-sans mb-4">
                 Join <strong className="text-foreground">{inviteModal.campaignName}</strong> as
                 invited by {inviteModal.invitedByUsername}.
               </p>
               <div className="space-y-3">
-                <label className="text-sm font-label block">How do you want to join?</label>
+                <label className="text-sm font-sans block">How do you want to join?</label>
                 <select
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-sans text-foreground"
                   value={inviteUseExistingId}
@@ -495,7 +495,7 @@ export default function Dashboard() {
 
         {pendingInvites.length > 0 && (
           <section className="mb-10" aria-label="Pending campaign invitations">
-            <h3 className="text-2xl font-display mb-4 flex items-center gap-2">
+            <h3 className="text-2xl font-sans mb-4 flex items-center gap-2">
               <Mail className="w-6 h-6 text-primary" />
               Invitations
             </h3>
@@ -506,7 +506,7 @@ export default function Dashboard() {
                   className="glass-panel rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
                 >
                   <div>
-                    <p className="text-lg font-display text-primary">{inv.campaignName}</p>
+                    <p className="text-lg font-sans text-primary">{inv.campaignName}</p>
                     <p className="text-sm text-muted-foreground font-sans">
                       From <span className="text-foreground">{inv.invitedByUsername}</span>
                       {inv.expiresAt && <> · Expires {new Date(inv.expiresAt).toLocaleString()}</>}
@@ -540,7 +540,7 @@ export default function Dashboard() {
         {campaigns?.length === 0 ? (
           <div className="text-center py-20 border-2 border-dashed border-border/50 rounded-xl bg-card/30">
             <Swords className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="text-xl font-display text-muted-foreground">No campaigns found</h3>
+            <h3 className="text-xl font-sans text-muted-foreground">No campaigns found</h3>
             <p className="font-sans mt-2 opacity-70">
               Create a new campaign or join an existing one to begin.
             </p>
@@ -561,9 +561,9 @@ export default function Dashboard() {
                 </div>
                 <div className="p-6 flex-1 flex flex-col">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-2xl font-display text-primary truncate pr-2">{c.name}</h3>
+                    <h3 className="text-2xl font-sans text-primary truncate pr-2">{c.name}</h3>
                     <span
-                      className={`text-[10px] font-bold font-label uppercase px-2 py-1 rounded border ${
+                      className={`text-[10px] font-bold font-sans uppercase px-2 py-1 rounded border ${
                         c.role === 'dm'
                           ? 'bg-primary/10 border-primary text-primary'
                           : 'bg-magic/10 border-magic text-magic'
@@ -579,7 +579,7 @@ export default function Dashboard() {
                   <div className="mt-auto pt-4 border-t border-border/30 flex flex-col gap-3">
                     {c.role === 'dm' ? (
                       <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
-                        <p className="text-[10px] font-label font-bold uppercase tracking-widest text-primary/85">
+                        <p className="text-[10px] font-sans font-bold uppercase tracking-widest text-primary/85">
                           Player invite code
                         </p>
                         <div className="flex items-stretch gap-2">
@@ -642,7 +642,7 @@ export default function Dashboard() {
                             <Trash2 className="w-4 h-4" />
                           </button>
                         )}
-                        <span className="text-sm font-label font-bold group-hover:text-primary transition-colors flex items-center">
+                        <span className="text-sm font-sans font-bold group-hover:text-primary transition-colors flex items-center">
                           Enter{' '}
                           <span className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity translate-x-[-10px] group-hover:translate-x-0">
                             →
