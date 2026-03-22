@@ -1,3 +1,4 @@
+import "./load-env";
 import { httpServer } from "./app";
 import { logger } from "./lib/logger";
 

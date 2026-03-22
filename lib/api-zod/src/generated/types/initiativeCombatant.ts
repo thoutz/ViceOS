@@ -5,6 +5,7 @@
  * TavernOS API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { TokenSize } from "./tokenSize";
 
 export interface InitiativeCombatant {
   characterId: string;
@@ -16,4 +17,7 @@ export interface InitiativeCombatant {
   conditions?: string[];
   isNpc?: boolean;
   tokenColor?: string;
+  /** Optional data URL portrait for NPC/monster token */
+  tokenImageData?: string;
+  tokenSize?: TokenSize;
 }

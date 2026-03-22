@@ -22,6 +22,10 @@ tags:
     description: Map management
   - name: messages
     description: Chat messages
+  - name: player-characters
+    description: Player-owned character sheets (pool or campaign-linked)
+  - name: invites
+    description: Campaign invite acceptance
 paths:
   /healthz:
     get:
@@ -75,20 +79,167 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /campaigns:
+  /characters:
     get:
-      operationId: listCampaigns
-      tags: [campaigns]
-      summary: List user campaigns
+      operationId: listPlayerCharacters
+      tags: [player-characters]
+      summary: List my character sheets
       responses:
         "200":
-          description: List of campaigns
+          description: Active characters owned by the current user
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/CampaignWithRole"
+                  $ref: "#/components/schemas/PlayerCharacter"
+    post:
+      operationId: createPlayerCharacter
+      tags: [player-characters]
+      summary: Create a character sheet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlayerCharacterRequest"
+      responses:
+        "201":
+          description: Character created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerCharacter"
+
+  /characters/{characterId}:
+    get:
+      operationId: getPlayerCharacter
+      tags: [player-characters]
+      summary: Get a character sheet
+      parameters:
+        - name: characterId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Character details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerCharacter"
+    put:
+      operationId: updatePlayerCharacter
+      tags: [player-characters]
+      summary: Update my character sheet
+      parameters:
+        - name: characterId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePlayerCharacterRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerCharacter"
+    delete:
+      operationId: deletePlayerCharacter
+      tags: [player-characters]
+      summary: Soft-delete a character sheet
+      parameters:
+        - name: characterId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /invites/pending:
+    get:
+      operationId: listPendingInvites
+      tags: [invites]
+      summary: Pending campaign invites for the current user
+      responses:
+        "200":
+          description: Invites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PendingInvite"
+
+  /invites/{inviteId}/accept:
+    post:
+      operationId: acceptCampaignInvite
+      tags: [invites]
+      summary: Accept a campaign invite
+      parameters:
+        - name: inviteId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptInviteRequest"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptInviteResponse"
+
+  /invites/{inviteId}/decline:
+    post:
+      operationId: declineCampaignInvite
+      tags: [invites]
+      summary: Decline a campaign invite
+      parameters:
+        - name: inviteId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Declined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /campaigns:
+    get:
+      operationId: listCampaigns
+      tags: [campaigns]
+      summary: List user campaigns (as DM vs as player)
+      responses:
+        "200":
+          description: Campaigns grouped by role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampaignListResponse"
     post:
       operationId: createCampaign
       tags: [campaigns]
@@ -105,7 +256,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Campaign"
+                $ref: "#/components/schemas/CampaignWithRole"
 
   /campaigns/join:
     post:
@@ -124,7 +275,81 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Campaign"
+                $ref: "#/components/schemas/CampaignWithRole"
+
+  /campaigns/{campaignId}/invite:
+    post:
+      operationId: inviteCampaignUser
+      tags: [campaigns]
+      summary: DM invites a user by username
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteCampaignUserRequest"
+      responses:
+        "200":
+          description: Invite created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InviteCampaignUserResponse"
+
+  /campaigns/{campaignId}/members:
+    post:
+      operationId: addCampaignMember
+      tags: [campaigns]
+      summary: DM adds a character sheet to the campaign
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddCampaignMemberRequest"
+      responses:
+        "200":
+          description: Member added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /campaigns/{campaignId}/members/{characterId}:
+    delete:
+      operationId: removeCampaignMember
+      tags: [campaigns]
+      summary: DM removes a character from the campaign
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: characterId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Member removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
 
   /campaigns/{campaignId}:
     get:
@@ -139,11 +364,11 @@ paths:
             type: string
       responses:
         "200":
-          description: Campaign details
+          description: Campaign details with party members
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CampaignWithRole"
+                $ref: "#/components/schemas/CampaignWithMembers"
 
   /campaigns/{campaignId}/characters:
     get:
@@ -330,6 +555,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GameSession"
+
+  /campaigns/{campaignId}/sessions/{sessionId}/livekit-token:
+    post:
+      operationId: createLivekitToken
+      tags: [sessions]
+      summary: Mint a LiveKit JWT for the session video room
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Token and connection details for LiveKit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LiveKitTokenResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: LiveKit is not configured on the server
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /campaigns/{campaignId}/maps:
     get:
@@ -534,6 +795,16 @@ components:
           type: string
         gameSystem:
           type: string
+        setting:
+          type: string
+        startingLocation:
+          type: string
+        tone:
+          type: string
+        houseRules:
+          type: string
+        status:
+          type: string
         inviteCode:
           type: string
         dmUserId:
@@ -544,6 +815,9 @@ components:
         createdAt:
           type: string
           format: date-time
+        updatedAt:
+          type: string
+          format: date-time
       required:
         - id
         - name
@@ -551,6 +825,78 @@ components:
         - inviteCode
         - dmUserId
         - createdAt
+
+    CampaignListResponse:
+      type: object
+      properties:
+        as_dm:
+          type: array
+          items:
+            $ref: "#/components/schemas/CampaignWithRole"
+        as_player:
+          type: array
+          items:
+            $ref: "#/components/schemas/CampaignWithRole"
+      required:
+        - as_dm
+        - as_player
+
+    CampaignMemberRow:
+      type: object
+      description: campaign_members row with joined character + player display fields
+      properties:
+        id:
+          type: string
+        campaignId:
+          type: string
+        userId:
+          type: string
+        characterId:
+          type: string
+          nullable: true
+        role:
+          type: string
+        status:
+          type: string
+        joinedAt:
+          type: string
+          format: date-time
+        characterName:
+          type: string
+          nullable: true
+        race:
+          type: string
+          nullable: true
+        class:
+          type: string
+          nullable: true
+        level:
+          type: integer
+          nullable: true
+        personality:
+          type: string
+          nullable: true
+        backstory:
+          type: string
+          nullable: true
+        avatarUrl:
+          type: string
+          nullable: true
+        playerUsername:
+          type: string
+          nullable: true
+
+    CampaignWithMembers:
+      allOf:
+        - $ref: "#/components/schemas/CampaignWithRole"
+        - type: object
+          properties:
+            members:
+              type: array
+              items:
+                $ref: "#/components/schemas/CampaignMemberRow"
+          required:
+            - members
 
     CampaignWithRole:
       allOf:
@@ -581,8 +927,43 @@ components:
       properties:
         inviteCode:
           type: string
+        characterId:
+          type: string
+          description: Optional. When set, binds this membership to your character sheet.
       required:
         - inviteCode
+
+    InviteCampaignUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+      required:
+        - username
+
+    InviteCampaignUserResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        inviteCode:
+          type: string
+
+    AddCampaignMemberRequest:
+      type: object
+      properties:
+        characterId:
+          type: string
+      required:
+        - characterId
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
 
     AbilityScores:
       type: object
@@ -614,15 +995,22 @@ components:
           type: string
         campaignId:
           type: string
+          nullable: true
         userId:
           type: string
         name:
           type: string
         race:
           type: string
+        subrace:
+          type: string
         class:
           type: string
+        subclass:
+          type: string
         background:
+          type: string
+        alignment:
           type: string
         level:
           type: integer
@@ -638,6 +1026,38 @@ components:
           type: integer
         initiativeBonus:
           type: integer
+        strength:
+          type: integer
+        dexterity:
+          type: integer
+        constitution:
+          type: integer
+        intelligence:
+          type: integer
+        wisdom:
+          type: integer
+        charisma:
+          type: integer
+        personality:
+          type: string
+        backstory:
+          type: string
+        ideals:
+          type: string
+        bonds:
+          type: string
+        flaws:
+          type: string
+        appearance:
+          type: string
+        notes:
+          type: string
+        avatarUrl:
+          type: string
+        gameSystem:
+          type: string
+        isActive:
+          type: boolean
         stats:
           $ref: "#/components/schemas/AbilityScores"
         sheetData:
@@ -650,9 +1070,11 @@ components:
         createdAt:
           type: string
           format: date-time
+        updatedAt:
+          type: string
+          format: date-time
       required:
         - id
-        - campaignId
         - userId
         - name
         - level
@@ -663,6 +1085,136 @@ components:
         - stats
         - createdAt
 
+    PlayerCharacter:
+      allOf:
+        - $ref: "#/components/schemas/Character"
+
+    CreatePlayerCharacterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        campaignId:
+          type: string
+          description: When set, links the new sheet to this campaign (e.g. while creating from a campaign flow).
+        race:
+          type: string
+        subrace:
+          type: string
+        class:
+          type: string
+        subclass:
+          type: string
+        level:
+          type: integer
+        background:
+          type: string
+        alignment:
+          type: string
+        strength:
+          type: integer
+        dexterity:
+          type: integer
+        constitution:
+          type: integer
+        intelligence:
+          type: integer
+        wisdom:
+          type: integer
+        charisma:
+          type: integer
+        hit_points:
+          type: integer
+        armor_class:
+          type: integer
+        speed:
+          type: integer
+        personality:
+          type: string
+        backstory:
+          type: string
+        ideals:
+          type: string
+        bonds:
+          type: string
+        flaws:
+          type: string
+        appearance:
+          type: string
+        notes:
+          type: string
+        avatar_url:
+          type: string
+        game_system:
+          type: string
+        stats:
+          $ref: "#/components/schemas/AbilityScores"
+        sheetData:
+          type: object
+          additionalProperties: true
+        tokenColor:
+          type: string
+      required:
+        - name
+
+    UpdatePlayerCharacterRequest:
+      type: object
+      additionalProperties: true
+
+    PendingInvite:
+      type: object
+      properties:
+        id:
+          type: string
+        campaignId:
+          type: string
+        campaignName:
+          type: string
+        campaignInviteCode:
+          type: string
+        inviteCode:
+          type: string
+        invitedByUserId:
+          type: string
+        invitedByUsername:
+          type: string
+        status:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - campaignId
+        - campaignName
+        - inviteCode
+        - invitedByUserId
+        - invitedByUsername
+        - status
+        - createdAt
+
+    AcceptInviteRequest:
+      type: object
+      properties:
+        characterId:
+          type: string
+          description: Optional character sheet to attach when joining the campaign.
+
+    AcceptInviteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        campaignId:
+          type: string
+      required:
+        - message
+        - campaignId
+
     CreateCharacterRequest:
       type: object
       properties:
@@ -670,7 +1222,11 @@ components:
           type: string
         race:
           type: string
+        subrace:
+          type: string
         class:
+          type: string
+        subclass:
           type: string
         background:
           type: string
@@ -707,7 +1263,11 @@ components:
           type: string
         race:
           type: string
+        subrace:
+          type: string
         class:
+          type: string
+        subclass:
           type: string
         background:
           type: string
@@ -730,6 +1290,11 @@ components:
           additionalProperties: true
         tokenColor:
           type: string
+
+    TokenSize:
+      type: string
+      enum: [small, medium, large]
+      description: Map token footprint relative to grid (small, medium one cell, large spans two cells per side)
 
     InitiativeCombatant:
       type: object
@@ -754,6 +1319,11 @@ components:
           type: boolean
         tokenColor:
           type: string
+        tokenImageData:
+          type: string
+          description: Optional data URL portrait for NPC/monster token
+        tokenSize:
+          $ref: "#/components/schemas/TokenSize"
       required:
         - characterId
         - name
@@ -829,6 +1399,11 @@ components:
           type: number
         color:
           type: string
+        imageData:
+          type: string
+          description: Optional data URL (e.g. image/png;base64,...) for custom token portrait
+        tokenSize:
+          $ref: "#/components/schemas/TokenSize"
         hp:
           type: integer
         maxHp:
@@ -983,3 +1558,19 @@ components:
           additionalProperties: true
       required:
         - content
+
+    LiveKitTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        url:
+          type: string
+          description: LiveKit server URL (e.g. wss://project.livekit.cloud)
+        roomName:
+          type: string
+          description: Room name all participants in this game session join
+      required:
+        - token
+        - url
+        - roomName

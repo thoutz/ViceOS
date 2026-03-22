@@ -29,10 +29,16 @@ export interface Campaign {
   name: string;
   description?: string;
   gameSystem: string;
+  setting?: string;
+  startingLocation?: string;
+  tone?: string;
+  houseRules?: string;
+  status?: string;
   inviteCode: string;
   dmUserId: string;
   settings?: CampaignSettings;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export type CampaignWithRoleRole =
@@ -47,6 +53,36 @@ export type CampaignWithRole = Campaign & {
   role: CampaignWithRoleRole;
 };
 
+export interface CampaignListResponse {
+  as_dm: CampaignWithRole[];
+  as_player: CampaignWithRole[];
+}
+
+/**
+ * campaign_members row with joined character + player display fields
+ */
+export interface CampaignMemberRow {
+  id?: string;
+  campaignId?: string;
+  userId?: string;
+  characterId?: string | null;
+  role?: string;
+  status?: string;
+  joinedAt?: string;
+  characterName?: string | null;
+  race?: string | null;
+  class?: string | null;
+  level?: number | null;
+  personality?: string | null;
+  backstory?: string | null;
+  avatarUrl?: string | null;
+  playerUsername?: string | null;
+}
+
+export type CampaignWithMembers = CampaignWithRole & {
+  members: CampaignMemberRow[];
+};
+
 export interface CreateCampaignRequest {
   name: string;
   description?: string;
@@ -55,6 +91,25 @@ export interface CreateCampaignRequest {
 
 export interface JoinCampaignRequest {
   inviteCode: string;
+  /** Optional. When set, binds this membership to your character sheet. */
+  characterId?: string;
+}
+
+export interface InviteCampaignUserRequest {
+  username: string;
+}
+
+export interface InviteCampaignUserResponse {
+  message?: string;
+  inviteCode?: string;
+}
+
+export interface AddCampaignMemberRequest {
+  characterId: string;
+}
+
+export interface MessageResponse {
+  message: string;
 }
 
 export interface AbilityScores {
@@ -70,7 +125,7 @@ export type CharacterSheetData = { [key: string]: unknown };
 
 export interface Character {
   id: string;
-  campaignId: string;
+  campaignId?: string | null;
   userId: string;
   name: string;
   race?: string;
@@ -78,6 +133,7 @@ export interface Character {
   class?: string;
   subclass?: string;
   background?: string;
+  alignment?: string;
   level: number;
   hp: number;
   maxHp: number;
@@ -85,11 +141,93 @@ export interface Character {
   ac: number;
   speed: number;
   initiativeBonus?: number;
+  strength?: number;
+  dexterity?: number;
+  constitution?: number;
+  intelligence?: number;
+  wisdom?: number;
+  charisma?: number;
+  personality?: string;
+  backstory?: string;
+  ideals?: string;
+  bonds?: string;
+  flaws?: string;
+  appearance?: string;
+  notes?: string;
+  avatarUrl?: string;
+  gameSystem?: string;
+  isActive?: boolean;
   stats: AbilityScores;
   sheetData?: CharacterSheetData;
   tokenColor?: string;
   isNpc?: boolean;
   createdAt: string;
+  updatedAt?: string;
+}
+
+export type PlayerCharacter = Character;
+
+export type CreatePlayerCharacterRequestSheetData = { [key: string]: unknown };
+
+export interface CreatePlayerCharacterRequest {
+  name: string;
+  /** When set, links the new sheet to this campaign (e.g. while creating from a campaign flow). */
+  campaignId?: string;
+  race?: string;
+  subrace?: string;
+  class?: string;
+  subclass?: string;
+  level?: number;
+  background?: string;
+  alignment?: string;
+  strength?: number;
+  dexterity?: number;
+  constitution?: number;
+  intelligence?: number;
+  wisdom?: number;
+  charisma?: number;
+  hit_points?: number;
+  armor_class?: number;
+  speed?: number;
+  personality?: string;
+  backstory?: string;
+  ideals?: string;
+  bonds?: string;
+  flaws?: string;
+  appearance?: string;
+  notes?: string;
+  avatar_url?: string;
+  game_system?: string;
+  stats?: AbilityScores;
+  sheetData?: CreatePlayerCharacterRequestSheetData;
+  tokenColor?: string;
+}
+
+export interface UpdatePlayerCharacterRequest {
+  [key: string]: unknown;
+}
+
+export interface PendingInvite {
+  id: string;
+  campaignId: string;
+  campaignName: string;
+  campaignInviteCode?: string;
+  inviteCode: string;
+  invitedByUserId: string;
+  invitedByUsername: string;
+  status: string;
+  expiresAt?: string | null;
+  createdAt: string;
+}
+
+export interface AcceptInviteRequest {
+  /** Optional character sheet to attach when joining the campaign. */
+  characterId?: string;
+}
+
+export interface AcceptInviteResponse {
+  message: string;
+  campaignId: string;
 }
 
 export type CreateCharacterRequestSheetData = { [key: string]: unknown };
@@ -117,7 +255,9 @@ export type UpdateCharacterRequestSheetData = { [key: string]: unknown };
 export interface UpdateCharacterRequest {
   name?: string;
   race?: string;
+  subrace?: string;
   class?: string;
+  subclass?: string;
   background?: string;
   level?: number;
   hp?: number;
@@ -130,6 +270,17 @@ export interface UpdateCharacterRequest {
   tokenColor?: string;
 }
 
+/**
+ * Map token footprint relative to grid (small, medium one cell, large spans two cells per side)
+ */
+export type TokenSize = (typeof TokenSize)[keyof typeof TokenSize];
+
+export const TokenSize = {
+  small: "small",
+  medium: "medium",
+  large: "large",
+} as const;
+
 export interface InitiativeCombatant {
   characterId: string;
   name: string;
@@ -140,6 +291,9 @@ export interface InitiativeCombatant {
   conditions?: string[];
   isNpc?: boolean;
   tokenColor?: string;
+  /** Optional data URL portrait for NPC/monster token */
+  tokenImageData?: string;
+  tokenSize?: TokenSize;
 }
 
 export type GameSessionStatus =
@@ -188,6 +342,9 @@ export interface Token {
   x: number;
   y: number;
   color?: string;
+  /** Optional data URL (e.g. image/png;base64,...) for custom token portrait */
+  imageData?: string;
+  tokenSize?: TokenSize;
   hp?: number;
   maxHp?: number;
   ac?: number;
@@ -284,6 +441,14 @@ export interface PostMessageRequest {
   type?: PostMessageRequestType;
   recipientId?: string;
   diceData?: PostMessageRequestDiceData;
+}
+
+export interface LiveKitTokenResponse {
+  token: string;
+  /** LiveKit server URL (e.g. wss://project.livekit.cloud) */
+  url: string;
+  /** Room name all participants in this game session join */
+  roomName: string;
 }
 
 export type ListMessagesParams = {

@@ -1,6 +1,8 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import authRouter from "./auth";
+import invitesRouter from "./invites";
+import playerCharactersRouter from "./player-characters";
 import campaignsRouter from "./campaigns";
 import charactersRouter from "./characters";
 import sessionsRouter from "./sessions";
@@ -11,6 +13,8 @@ const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(invitesRouter);
+router.use(playerCharactersRouter);
 router.use(campaignsRouter);
 router.use(charactersRouter);
 router.use(sessionsRouter);

@@ -5,6 +5,8 @@ import { z } from "zod/v4";
 export const usersTable = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   username: text("username").notNull().unique(),
+  /** Optional; login is username-only today. Add a partial unique index when email is required. */
+  email: text("email"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

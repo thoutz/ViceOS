@@ -10,9 +10,16 @@ interface FogRect {
   h: number;
 }
 
-interface FogData {
+/** Closed polygon as flat [x1,y1,x2,y2,...] in map space */
+export interface FogPolygon {
+  points: number[];
+}
+
+export interface FogData {
   revealed: FogRect[];
   hidden: FogRect[];
+  hiddenPolygons?: FogPolygon[];
+  revealedPolygons?: FogPolygon[];
 }
 
 interface TokenData {
@@ -21,9 +28,14 @@ interface TokenData {
   x: number;
   y: number;
   color?: string;
+  /** Data URL for custom token image */
+  imageData?: string;
+  tokenSize?: "small" | "medium" | "large";
   hp?: number;
   maxHp?: number;
+  ac?: number;
   characterId?: string;
+  isNpc?: boolean;
 }
 
 export interface VttSocketEmitEvents {

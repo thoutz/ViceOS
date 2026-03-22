@@ -5,6 +5,7 @@
  * TavernOS API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { TokenSize } from "./tokenSize";
 
 export interface Token {
   id: string;
@@ -13,6 +14,9 @@ export interface Token {
   x: number;
   y: number;
   color?: string;
+  /** Optional data URL (e.g. image/png;base64,...) for custom token portrait */
+  imageData?: string;
+  tokenSize?: TokenSize;
   hp?: number;
   maxHp?: number;
   ac?: number;

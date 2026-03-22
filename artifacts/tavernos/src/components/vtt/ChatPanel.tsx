@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChatMessage, Character, GameSession } from '@workspace/api-client-react';
 import { DiceRoll } from 'rpg-dice-roller';
-import { Send, Dices, Users, MessageSquare, Swords, Heart, ShieldAlert, Eye, EyeOff, Search, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { Send, Dices, Users, MessageSquare, Swords, Heart, ShieldAlert, Eye, EyeOff, Search, Loader2, ImagePlus } from 'lucide-react';
+import { SessionVideoCall } from './SessionVideoCall';
 import { VttButton } from '../VttButton';
+import { MessageBubble } from './message-bubble';
 import type { InitiativeCombatant } from './InitiativeBar';
 
 interface Open5eMonster {
@@ -25,9 +26,12 @@ interface Open5eMonster {
 
 type MessageType = 'chat' | 'dice' | 'system' | 'whisper';
 
-type Tab = 'chat' | 'dice' | 'dm';
+const MAX_NPC_PORTRAIT_BYTES = 750_000;
 
 interface MapRef { id: string; name: string; }
+
+/** communications = session sidebar (video + chat + rolls). dmTools = DM Command Center drawer only. */
+export type ChatPanelVariant = 'communications' | 'dmTools';
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -41,7 +45,8 @@ interface ChatPanelProps {
   onCreateMap?: (name: string, imageData?: string) => void;
   onSwitchMap?: (mapId: string) => void;
   allMaps?: MapRef[];
-  defaultTab?: Tab;
+  /** Default: communications (video + chat; dice messages excluded from chat stream). Use dmTools for the DM drawer. */
+  panelVariant?: ChatPanelVariant;
 }
 
 const QUICK_ROLLS = [
@@ -54,30 +59,21 @@ const QUICK_ROLLS = [
   { label: 'd100', expr: '1d100' },
 ];
 
-const QUICK_CHECKS = [
-  { label: 'Perc', expr: '1d20', bonus: 'wis' },
-  { label: 'Inv', expr: '1d20', bonus: 'int' },
-  { label: 'Ath', expr: '1d20', bonus: 'str' },
-  { label: 'Ste', expr: '1d20', bonus: 'dex' },
-  { label: 'Ins', expr: '1d20', bonus: 'wis' },
-  { label: 'Pers', expr: '1d20', bonus: 'cha' },
-];
-
-function mod(score: number) { return Math.floor((score - 10) / 2); }
-function fmtMod(n: number) { return n >= 0 ? `+${n}` : `${n}`; }
 
 export function ChatPanel({
-  messages, onSendMessage, isDm, myCharacter, allCharacters, activeSession, campaignId, onOrderUpdate, onCreateMap, onSwitchMap, allMaps, defaultTab,
+  messages, onSendMessage, isDm, myCharacter, allCharacters, activeSession, campaignId, onOrderUpdate, onCreateMap, onSwitchMap, allMaps,
+  panelVariant = 'communications',
 }: ChatPanelProps) {
-  const [tab, setTab] = useState<Tab>(defaultTab ?? 'chat');
   const [input, setInput] = useState('');
   const [whisperTo, setWhisperTo] = useState<string>('all');
-  const [showDiceHistory, setShowDiceHistory] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  /** Table talk only — dice posts appear on the Rolls tab, not here */
+  const chatStreamMessages = messages.filter((m) => m.type !== 'dice');
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, tab]);
+  }, [chatStreamMessages.length]);
 
   const performRoll = (expr: string, label: string) => {
     try {
@@ -114,130 +110,9 @@ export function ChatPanel({
     setInput('');
   };
 
-  const filteredMessages = tab === 'dice'
-    ? messages.filter(m => m.type === 'dice')
-    : messages;
-
-  const stats = (myCharacter?.stats as unknown as Record<string, number>) || {};
-
-  return (
-    <div className="h-full flex flex-col bg-card">
-      {/* Tab header */}
-      <div className="flex border-b border-border bg-background flex-shrink-0">
-        <button
-          onClick={() => setTab('chat')}
-          className={`flex-1 py-2.5 text-xs font-label font-bold border-b-2 transition-colors flex items-center justify-center gap-1 ${tab === 'chat' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-        >
-          <MessageSquare className="w-3.5 h-3.5" /> Chat
-        </button>
-        <button
-          onClick={() => setTab('dice')}
-          className={`flex-1 py-2.5 text-xs font-label font-bold border-b-2 transition-colors flex items-center justify-center gap-1 ${tab === 'dice' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-        >
-          <Dices className="w-3.5 h-3.5" /> Rolls
-        </button>
-        {isDm && (
-          <button
-            onClick={() => setTab('dm')}
-            className={`flex-1 py-2.5 text-xs font-label font-bold border-b-2 transition-colors flex items-center justify-center gap-1 ${tab === 'dm' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-          >
-            <Swords className="w-3.5 h-3.5" /> DM
-          </button>
-        )}
-      </div>
-
-      {/* Message area (chat and dice tabs) */}
-      {tab !== 'dm' && (
-        <>
-          <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            {filteredMessages.length === 0 && (
-              <div className="text-center text-muted-foreground text-xs italic pt-8">
-                {tab === 'dice' ? 'No dice rolled yet.' : 'No messages yet. Say hello!'}
-              </div>
-            )}
-            {filteredMessages.map((msg, idx) => (
-              <MessageBubble key={msg.id || idx} msg={msg} />
-            ))}
-            <div ref={bottomRef} />
-          </div>
-
-          {/* Quick roll bar */}
-          {tab === 'dice' && (
-            <div className="border-t border-border bg-background/50 px-2 py-2">
-              <div className="text-[10px] font-label text-muted-foreground uppercase mb-1.5">Quick Roll</div>
-              <div className="flex flex-wrap gap-1 mb-2">
-                {QUICK_ROLLS.map(r => (
-                  <button
-                    key={r.label}
-                    onClick={() => performRoll(r.expr, r.label)}
-                    className="px-2 py-1 text-xs font-label font-bold bg-primary/10 border border-primary/30 text-primary rounded hover:bg-primary/20 transition-colors"
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-              {myCharacter && (
-                <>
-                  <div className="text-[10px] font-label text-muted-foreground uppercase mb-1">Skill Checks</div>
-                  <div className="flex flex-wrap gap-1">
-                    {QUICK_CHECKS.map(c => {
-                      const m = mod(stats[c.bonus] || 10);
-                      const expr = `1d20${fmtMod(m)}`;
-                      return (
-                        <button
-                          key={c.label}
-                          onClick={() => performRoll(expr, c.label)}
-                          className="px-1.5 py-0.5 text-[10px] font-label bg-card border border-border rounded hover:bg-primary/10 hover:border-primary/30 transition-colors"
-                        >
-                          {c.label} {fmtMod(m)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Input area */}
-          <div className="p-2.5 bg-background border-t border-border flex-shrink-0">
-            <div className="flex items-center gap-2 mb-2">
-              <select
-                value={whisperTo}
-                onChange={e => setWhisperTo(e.target.value)}
-                className="flex-1 bg-background border border-border/50 rounded px-2 py-1 text-xs font-sans text-muted-foreground"
-              >
-                <option value="all">To: Everyone</option>
-                {isDm ? (
-                  allCharacters.map(c => (
-                    <option key={c.id} value={c.userId || c.id}>🤫 Whisper → {c.name}</option>
-                  ))
-                ) : (
-                  <option value="dm">🤫 Whisper → DM</option>
-                )}
-              </select>
-            </div>
-            <form onSubmit={handleSend} className="flex gap-2">
-              <input
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                placeholder={input.startsWith('/r') ? 'e.g. /r 2d6+3' : 'Message or /r 1d20...'}
-                className="flex-1 bg-card border border-border rounded px-3 py-2 text-sm font-sans focus:outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
-              />
-              <button
-                type="submit"
-                className={`w-9 h-9 flex items-center justify-center rounded border transition-colors ${input.startsWith('/r') ? 'bg-magic/20 border-magic text-magic hover:bg-magic/30' : 'bg-primary/20 border-primary/50 text-primary hover:bg-primary/30'}`}
-              >
-                {input.startsWith('/r') ? <Dices className="w-4 h-4" /> : <Send className="w-4 h-4" />}
-              </button>
-            </form>
-            <div className="mt-1 text-[10px] text-muted-foreground font-label">/r 2d6+3 to roll · /w [msg] to whisper</div>
-          </div>
-        </>
-      )}
-
-      {/* DM Tab */}
-      {tab === 'dm' && isDm && (
+  if (panelVariant === 'dmTools') {
+    return (
+      <div className="h-full flex flex-col bg-card min-h-0">
         <DmToolsPanel
           allCharacters={allCharacters}
           activeSession={activeSession}
@@ -249,51 +124,78 @@ export function ChatPanel({
           onSwitchMap={onSwitchMap}
           allMaps={allMaps}
         />
-      )}
-    </div>
-  );
-}
-
-function MessageBubble({ msg }: { msg: ChatMessage }) {
-  const isSystem = msg.type === 'system';
-  const isDice = msg.type === 'dice';
-  const isWhisper = msg.type === 'whisper';
-
-  if (isSystem) {
-    return (
-      <div className="flex justify-center">
-        <div className="bg-primary/10 border border-primary/30 text-primary/80 px-3 py-1 rounded-full text-[10px] font-label uppercase tracking-wider">
-          {msg.content}
-        </div>
       </div>
     );
   }
 
   return (
-    <div className={`${isWhisper ? 'bg-magic/10 border border-magic/30 rounded p-2' : ''}`}>
-      <div className="flex items-center justify-between mb-0.5">
-        <span className={`font-label font-bold text-xs ${isWhisper ? 'text-magic' : 'text-primary'}`}>
-          {msg.senderName}
-          {isWhisper && <span className="ml-1 opacity-70">(Whisper)</span>}
-        </span>
-        <span className="text-[9px] text-muted-foreground">
-          {format(new Date(msg.createdAt), 'HH:mm')}
-        </span>
+    <div className="h-full flex flex-col bg-card min-h-0">
+      {/* Video + table talk: one column */}
+      <div className="flex-shrink-0 border-b border-border/60 bg-background/40">
+        <div className="flex items-center justify-between px-2 py-1.5">
+          <span className="text-[10px] font-label font-bold uppercase tracking-widest text-primary/90">Session video</span>
+          <span className="text-[9px] font-label text-muted-foreground hidden sm:inline">Same room for everyone</span>
+        </div>
+        <div className="px-2 pb-2 h-[min(240px,34vh)] flex flex-col shrink-0">
+          <SessionVideoCall
+            campaignId={campaignId}
+            sessionId={activeSession.id}
+            className="min-h-0 flex-1 h-full"
+          />
+        </div>
       </div>
 
-      {isDice && msg.diceData ? (
-        <div className="bg-[#1A1208] border border-[#7A6228]/50 rounded p-2.5 mt-1">
-          <div className="text-xs text-muted-foreground mb-1">{msg.content}</div>
-          <div className="font-mono text-xs break-all bg-background p-1.5 rounded border border-border/40 text-foreground/80">
-            {(msg.diceData as { output: string; total: number }).output}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-background flex-shrink-0">
+        <MessageSquare className="w-4 h-4 text-primary shrink-0" />
+        <span className="text-xs font-label font-bold text-primary uppercase tracking-wider">Chat</span>
+        <span className="text-[10px] font-label text-muted-foreground ml-auto hidden sm:inline">Dice log → right panel</span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
+        {chatStreamMessages.length === 0 && (
+          <div className="text-center text-muted-foreground text-xs italic pt-8">
+            No messages yet. Say hello!
           </div>
-          <div className="flex justify-end mt-1">
-            <span className="text-2xl font-bold font-serif text-ember">{(msg.diceData as { output: string; total: number }).total}</span>
-          </div>
+        )}
+        {chatStreamMessages.map((msg, idx) => (
+          <MessageBubble key={msg.id || idx} msg={msg} />
+        ))}
+        <div ref={bottomRef} />
+      </div>
+
+      <div className="p-2.5 bg-background border-t border-border flex-shrink-0">
+        <div className="flex items-center gap-2 mb-2">
+          <select
+            value={whisperTo}
+            onChange={e => setWhisperTo(e.target.value)}
+            className="flex-1 bg-background border border-border/50 rounded px-2 py-1 text-xs font-sans text-muted-foreground"
+          >
+            <option value="all">To: Everyone</option>
+            {isDm ? (
+              allCharacters.map(c => (
+                <option key={c.id} value={c.userId || c.id}>🤫 Whisper → {c.name}</option>
+              ))
+            ) : (
+              <option value="dm">🤫 Whisper → DM</option>
+            )}
+          </select>
         </div>
-      ) : (
-        <div className="text-sm text-foreground/90 font-sans leading-relaxed whitespace-pre-wrap">{msg.content}</div>
-      )}
+        <form onSubmit={handleSend} className="flex gap-2">
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder={input.startsWith('/r') ? 'e.g. /r 2d6+3 (shown in Rolls →)' : 'Message… /r to roll · /w to whisper'}
+            className="flex-1 bg-card border border-border rounded px-3 py-2 text-sm font-sans focus:outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
+          />
+          <button
+            type="submit"
+            className={`w-9 h-9 flex items-center justify-center rounded border transition-colors ${input.startsWith('/r') ? 'bg-magic/20 border-magic text-magic hover:bg-magic/30' : 'bg-primary/20 border-primary/50 text-primary hover:bg-primary/30'}`}
+          >
+            {input.startsWith('/r') ? <Dices className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+          </button>
+        </form>
+        <div className="mt-1 text-[10px] text-muted-foreground font-label">/r posts to the Rolls tab · /w [msg] to whisper</div>
+      </div>
     </div>
   );
 }
@@ -316,6 +218,9 @@ function DmToolsPanel({
   const [npcResults, setNpcResults] = useState<Open5eMonster[]>([]);
   const [npcLoading, setNpcLoading] = useState(false);
   const [npcSelected, setNpcSelected] = useState<Open5eMonster | null>(null);
+  const [npcTokenImageData, setNpcTokenImageData] = useState<string | null>(null);
+  const [npcTokenSize, setNpcTokenSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const npcPortraitInputRef = useRef<HTMLInputElement>(null);
   const [mapName, setMapName] = useState('');
   const [mapImageData, setMapImageData] = useState('');
   const [mapCreating, setMapCreating] = useState(false);
@@ -351,6 +256,8 @@ function DmToolsPanel({
       ac: monster.armor_class,
       tokenColor: '#8B1A1A',
       isNpc: true,
+      ...(npcTokenImageData ? { tokenImageData: npcTokenImageData } : {}),
+      ...(npcTokenSize !== 'medium' ? { tokenSize: npcTokenSize } : {}),
     };
     const newOrder = [...existing, newCombatant].sort((a, b) => b.initiative - a.initiative);
     onOrderUpdate(newOrder);
@@ -358,6 +265,8 @@ function DmToolsPanel({
     setNpcSelected(null);
     setNpcQuery('');
     setNpcResults([]);
+    setNpcTokenImageData(null);
+    setNpcTokenSize('medium');
   };
 
   const sendAnnouncement = () => {
@@ -512,7 +421,62 @@ function DmToolsPanel({
           <div className="bg-background border border-primary/30 rounded p-2 mb-2">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-xs font-label font-bold text-primary">{npcSelected.name}</span>
-              <button onClick={() => setNpcSelected(null)} className="text-[10px] text-muted-foreground hover:text-foreground">✕</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setNpcSelected(null);
+                  setNpcTokenImageData(null);
+                  setNpcTokenSize('medium');
+                }}
+                className="text-[10px] text-muted-foreground hover:text-foreground"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <input
+                ref={npcPortraitInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > MAX_NPC_PORTRAIT_BYTES) return;
+                  const reader = new FileReader();
+                  reader.onload = () => setNpcTokenImageData(reader.result as string);
+                  reader.readAsDataURL(file);
+                  e.target.value = '';
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => npcPortraitInputRef.current?.click()}
+                className="flex items-center gap-1 text-[10px] font-label text-muted-foreground border border-border rounded px-2 py-1 hover:bg-white/5"
+              >
+                <ImagePlus className="w-3 h-3" /> Token image
+              </button>
+              {npcTokenImageData && (
+                <>
+                  <img src={npcTokenImageData} alt="" className="w-8 h-8 rounded-full object-cover border border-border" />
+                  <button type="button" onClick={() => setNpcTokenImageData(null)} className="text-[10px] text-muted-foreground">
+                    Clear
+                  </button>
+                </>
+              )}
+              <div className="flex items-center gap-0.5 border border-border/60 rounded px-1 py-0.5">
+                <span className="text-[9px] text-muted-foreground pr-0.5">Size</span>
+                {(['small', 'medium', 'large'] as const).map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setNpcTokenSize(s)}
+                    className={`text-[9px] font-label px-1.5 py-0.5 rounded capitalize ${npcTokenSize === s ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-white/5'}`}
+                  >
+                    {s[0]}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground mb-2">
               <span>CR <strong className="text-foreground">{npcSelected.challenge_rating}</strong></span>

@@ -17,23 +17,35 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
-  Campaign,
+  AcceptInviteRequest,
+  AcceptInviteResponse,
+  AddCampaignMemberRequest,
+  CampaignListResponse,
+  CampaignWithMembers,
   CampaignWithRole,
   Character,
   ChatMessage,
   CreateCampaignRequest,
   CreateCharacterRequest,
   CreateMapRequest,
+  CreatePlayerCharacterRequest,
   ErrorResponse,
   GameMap,
   GameSession,
   HealthStatus,
+  InviteCampaignUserRequest,
+  InviteCampaignUserResponse,
   JoinCampaignRequest,
   ListMessagesParams,
+  LiveKitTokenResponse,
   LoginRequest,
+  MessageResponse,
+  PendingInvite,
+  PlayerCharacter,
   PostMessageRequest,
   UpdateCharacterRequest,
   UpdateMapRequest,
+  UpdatePlayerCharacterRequest,
   UpdateSessionRequest,
   UserResponse,
 } from "./api.schemas";
@@ -273,7 +285,685 @@ export function useGetMe<
 }
 
 /**
- * @summary List user campaigns
+ * @summary List my character sheets
+ */
+export const getListPlayerCharactersUrl = () => {
+  return `/api/characters`;
+};
+
+export const listPlayerCharacters = async (
+  options?: RequestInit,
+): Promise<PlayerCharacter[]> => {
+  return customFetch<PlayerCharacter[]>(getListPlayerCharactersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListPlayerCharactersQueryKey = () => {
+  return [`/api/characters`] as const;
+};
+
+export const getListPlayerCharactersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPlayerCharacters>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPlayerCharacters>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListPlayerCharactersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listPlayerCharacters>>
+  > = ({ signal }) => listPlayerCharacters({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPlayerCharacters>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListPlayerCharactersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listPlayerCharacters>>
+>;
+export type ListPlayerCharactersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List my character sheets
+ */
+
+export function useListPlayerCharacters<
+  TData = Awaited<ReturnType<typeof listPlayerCharacters>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPlayerCharacters>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPlayerCharactersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a character sheet
+ */
+export const getCreatePlayerCharacterUrl = () => {
+  return `/api/characters`;
+};
+
+export const createPlayerCharacter = async (
+  createPlayerCharacterRequest: CreatePlayerCharacterRequest,
+  options?: RequestInit,
+): Promise<PlayerCharacter> => {
+  return customFetch<PlayerCharacter>(getCreatePlayerCharacterUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createPlayerCharacterRequest),
+  });
+};
+
+export const getCreatePlayerCharacterMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPlayerCharacter>>,
+    TError,
+    { data: BodyType<CreatePlayerCharacterRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createPlayerCharacter>>,
+  TError,
+  { data: BodyType<CreatePlayerCharacterRequest> },
+  TContext
+> => {
+  const mutationKey = ["createPlayerCharacter"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createPlayerCharacter>>,
+    { data: BodyType<CreatePlayerCharacterRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createPlayerCharacter(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreatePlayerCharacterMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createPlayerCharacter>>
+>;
+export type CreatePlayerCharacterMutationBody =
+  BodyType<CreatePlayerCharacterRequest>;
+export type CreatePlayerCharacterMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a character sheet
+ */
+export const useCreatePlayerCharacter = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPlayerCharacter>>,
+    TError,
+    { data: BodyType<CreatePlayerCharacterRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createPlayerCharacter>>,
+  TError,
+  { data: BodyType<CreatePlayerCharacterRequest> },
+  TContext
+> => {
+  return useMutation(getCreatePlayerCharacterMutationOptions(options));
+};
+
+/**
+ * @summary Get a character sheet
+ */
+export const getGetPlayerCharacterUrl = (characterId: string) => {
+  return `/api/characters/${characterId}`;
+};
+
+export const getPlayerCharacter = async (
+  characterId: string,
+  options?: RequestInit,
+): Promise<PlayerCharacter> => {
+  return customFetch<PlayerCharacter>(getGetPlayerCharacterUrl(characterId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlayerCharacterQueryKey = (characterId: string) => {
+  return [`/api/characters/${characterId}`] as const;
+};
+
+export const getGetPlayerCharacterQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlayerCharacter>>,
+  TError = ErrorType<unknown>,
+>(
+  characterId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerCharacter>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetPlayerCharacterQueryKey(characterId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getPlayerCharacter>>
+  > = ({ signal }) =>
+    getPlayerCharacter(characterId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!characterId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlayerCharacter>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPlayerCharacterQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlayerCharacter>>
+>;
+export type GetPlayerCharacterQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get a character sheet
+ */
+
+export function useGetPlayerCharacter<
+  TData = Awaited<ReturnType<typeof getPlayerCharacter>>,
+  TError = ErrorType<unknown>,
+>(
+  characterId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerCharacter>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlayerCharacterQueryOptions(characterId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update my character sheet
+ */
+export const getUpdatePlayerCharacterUrl = (characterId: string) => {
+  return `/api/characters/${characterId}`;
+};
+
+export const updatePlayerCharacter = async (
+  characterId: string,
+  updatePlayerCharacterRequest: UpdatePlayerCharacterRequest,
+  options?: RequestInit,
+): Promise<PlayerCharacter> => {
+  return customFetch<PlayerCharacter>(
+    getUpdatePlayerCharacterUrl(characterId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updatePlayerCharacterRequest),
+    },
+  );
+};
+
+export const getUpdatePlayerCharacterMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePlayerCharacter>>,
+    TError,
+    { characterId: string; data: BodyType<UpdatePlayerCharacterRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updatePlayerCharacter>>,
+  TError,
+  { characterId: string; data: BodyType<UpdatePlayerCharacterRequest> },
+  TContext
+> => {
+  const mutationKey = ["updatePlayerCharacter"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updatePlayerCharacter>>,
+    { characterId: string; data: BodyType<UpdatePlayerCharacterRequest> }
+  > = (props) => {
+    const { characterId, data } = props ?? {};
+
+    return updatePlayerCharacter(characterId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdatePlayerCharacterMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updatePlayerCharacter>>
+>;
+export type UpdatePlayerCharacterMutationBody =
+  BodyType<UpdatePlayerCharacterRequest>;
+export type UpdatePlayerCharacterMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update my character sheet
+ */
+export const useUpdatePlayerCharacter = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePlayerCharacter>>,
+    TError,
+    { characterId: string; data: BodyType<UpdatePlayerCharacterRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updatePlayerCharacter>>,
+  TError,
+  { characterId: string; data: BodyType<UpdatePlayerCharacterRequest> },
+  TContext
+> => {
+  return useMutation(getUpdatePlayerCharacterMutationOptions(options));
+};
+
+/**
+ * @summary Soft-delete a character sheet
+ */
+export const getDeletePlayerCharacterUrl = (characterId: string) => {
+  return `/api/characters/${characterId}`;
+};
+
+export const deletePlayerCharacter = async (
+  characterId: string,
+  options?: RequestInit,
+): Promise<MessageResponse> => {
+  return customFetch<MessageResponse>(
+    getDeletePlayerCharacterUrl(characterId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getDeletePlayerCharacterMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deletePlayerCharacter>>,
+    TError,
+    { characterId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deletePlayerCharacter>>,
+  TError,
+  { characterId: string },
+  TContext
+> => {
+  const mutationKey = ["deletePlayerCharacter"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deletePlayerCharacter>>,
+    { characterId: string }
+  > = (props) => {
+    const { characterId } = props ?? {};
+
+    return deletePlayerCharacter(characterId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeletePlayerCharacterMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deletePlayerCharacter>>
+>;
+
+export type DeletePlayerCharacterMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Soft-delete a character sheet
+ */
+export const useDeletePlayerCharacter = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deletePlayerCharacter>>,
+    TError,
+    { characterId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deletePlayerCharacter>>,
+  TError,
+  { characterId: string },
+  TContext
+> => {
+  return useMutation(getDeletePlayerCharacterMutationOptions(options));
+};
+
+/**
+ * @summary Pending campaign invites for the current user
+ */
+export const getListPendingInvitesUrl = () => {
+  return `/api/invites/pending`;
+};
+
+export const listPendingInvites = async (
+  options?: RequestInit,
+): Promise<PendingInvite[]> => {
+  return customFetch<PendingInvite[]>(getListPendingInvitesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListPendingInvitesQueryKey = () => {
+  return [`/api/invites/pending`] as const;
+};
+
+export const getListPendingInvitesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPendingInvites>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPendingInvites>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListPendingInvitesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listPendingInvites>>
+  > = ({ signal }) => listPendingInvites({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPendingInvites>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListPendingInvitesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listPendingInvites>>
+>;
+export type ListPendingInvitesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Pending campaign invites for the current user
+ */
+
+export function useListPendingInvites<
+  TData = Awaited<ReturnType<typeof listPendingInvites>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPendingInvites>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPendingInvitesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Accept a campaign invite
+ */
+export const getAcceptCampaignInviteUrl = (inviteId: string) => {
+  return `/api/invites/${inviteId}/accept`;
+};
+
+export const acceptCampaignInvite = async (
+  inviteId: string,
+  acceptInviteRequest: AcceptInviteRequest,
+  options?: RequestInit,
+): Promise<AcceptInviteResponse> => {
+  return customFetch<AcceptInviteResponse>(
+    getAcceptCampaignInviteUrl(inviteId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(acceptInviteRequest),
+    },
+  );
+};
+
+export const getAcceptCampaignInviteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acceptCampaignInvite>>,
+    TError,
+    { inviteId: string; data: BodyType<AcceptInviteRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof acceptCampaignInvite>>,
+  TError,
+  { inviteId: string; data: BodyType<AcceptInviteRequest> },
+  TContext
+> => {
+  const mutationKey = ["acceptCampaignInvite"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof acceptCampaignInvite>>,
+    { inviteId: string; data: BodyType<AcceptInviteRequest> }
+  > = (props) => {
+    const { inviteId, data } = props ?? {};
+
+    return acceptCampaignInvite(inviteId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AcceptCampaignInviteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof acceptCampaignInvite>>
+>;
+export type AcceptCampaignInviteMutationBody = BodyType<AcceptInviteRequest>;
+export type AcceptCampaignInviteMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Accept a campaign invite
+ */
+export const useAcceptCampaignInvite = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acceptCampaignInvite>>,
+    TError,
+    { inviteId: string; data: BodyType<AcceptInviteRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof acceptCampaignInvite>>,
+  TError,
+  { inviteId: string; data: BodyType<AcceptInviteRequest> },
+  TContext
+> => {
+  return useMutation(getAcceptCampaignInviteMutationOptions(options));
+};
+
+/**
+ * @summary Decline a campaign invite
+ */
+export const getDeclineCampaignInviteUrl = (inviteId: string) => {
+  return `/api/invites/${inviteId}/decline`;
+};
+
+export const declineCampaignInvite = async (
+  inviteId: string,
+  options?: RequestInit,
+): Promise<MessageResponse> => {
+  return customFetch<MessageResponse>(getDeclineCampaignInviteUrl(inviteId), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getDeclineCampaignInviteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof declineCampaignInvite>>,
+    TError,
+    { inviteId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof declineCampaignInvite>>,
+  TError,
+  { inviteId: string },
+  TContext
+> => {
+  const mutationKey = ["declineCampaignInvite"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof declineCampaignInvite>>,
+    { inviteId: string }
+  > = (props) => {
+    const { inviteId } = props ?? {};
+
+    return declineCampaignInvite(inviteId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeclineCampaignInviteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof declineCampaignInvite>>
+>;
+
+export type DeclineCampaignInviteMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Decline a campaign invite
+ */
+export const useDeclineCampaignInvite = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof declineCampaignInvite>>,
+    TError,
+    { inviteId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof declineCampaignInvite>>,
+  TError,
+  { inviteId: string },
+  TContext
+> => {
+  return useMutation(getDeclineCampaignInviteMutationOptions(options));
+};
+
+/**
+ * @summary List user campaigns (as DM vs as player)
  */
 export const getListCampaignsUrl = () => {
   return `/api/campaigns`;
@@ -281,8 +971,8 @@ export const getListCampaignsUrl = () => {
 
 export const listCampaigns = async (
   options?: RequestInit,
-): Promise<CampaignWithRole[]> => {
-  return customFetch<CampaignWithRole[]>(getListCampaignsUrl(), {
+): Promise<CampaignListResponse> => {
+  return customFetch<CampaignListResponse>(getListCampaignsUrl(), {
     ...options,
     method: "GET",
   });
@@ -324,7 +1014,7 @@ export type ListCampaignsQueryResult = NonNullable<
 export type ListCampaignsQueryError = ErrorType<unknown>;
 
 /**
- * @summary List user campaigns
+ * @summary List user campaigns (as DM vs as player)
  */
 
 export function useListCampaigns<
@@ -357,8 +1047,8 @@ export const getCreateCampaignUrl = () => {
 export const createCampaign = async (
   createCampaignRequest: CreateCampaignRequest,
   options?: RequestInit,
-): Promise<Campaign> => {
-  return customFetch<Campaign>(getCreateCampaignUrl(), {
+): Promise<CampaignWithRole> => {
+  return customFetch<CampaignWithRole>(getCreateCampaignUrl(), {
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },
@@ -443,8 +1133,8 @@ export const getJoinCampaignUrl = () => {
 export const joinCampaign = async (
   joinCampaignRequest: JoinCampaignRequest,
   options?: RequestInit,
-): Promise<Campaign> => {
-  return customFetch<Campaign>(getJoinCampaignUrl(), {
+): Promise<CampaignWithRole> => {
+  return customFetch<CampaignWithRole>(getJoinCampaignUrl(), {
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },
@@ -520,6 +1210,275 @@ export const useJoinCampaign = <
 };
 
 /**
+ * @summary DM invites a user by username
+ */
+export const getInviteCampaignUserUrl = (campaignId: string) => {
+  return `/api/campaigns/${campaignId}/invite`;
+};
+
+export const inviteCampaignUser = async (
+  campaignId: string,
+  inviteCampaignUserRequest: InviteCampaignUserRequest,
+  options?: RequestInit,
+): Promise<InviteCampaignUserResponse> => {
+  return customFetch<InviteCampaignUserResponse>(
+    getInviteCampaignUserUrl(campaignId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(inviteCampaignUserRequest),
+    },
+  );
+};
+
+export const getInviteCampaignUserMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof inviteCampaignUser>>,
+    TError,
+    { campaignId: string; data: BodyType<InviteCampaignUserRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof inviteCampaignUser>>,
+  TError,
+  { campaignId: string; data: BodyType<InviteCampaignUserRequest> },
+  TContext
+> => {
+  const mutationKey = ["inviteCampaignUser"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof inviteCampaignUser>>,
+    { campaignId: string; data: BodyType<InviteCampaignUserRequest> }
+  > = (props) => {
+    const { campaignId, data } = props ?? {};
+
+    return inviteCampaignUser(campaignId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type InviteCampaignUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof inviteCampaignUser>>
+>;
+export type InviteCampaignUserMutationBody =
+  BodyType<InviteCampaignUserRequest>;
+export type InviteCampaignUserMutationError = ErrorType<unknown>;
+
+/**
+ * @summary DM invites a user by username
+ */
+export const useInviteCampaignUser = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof inviteCampaignUser>>,
+    TError,
+    { campaignId: string; data: BodyType<InviteCampaignUserRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof inviteCampaignUser>>,
+  TError,
+  { campaignId: string; data: BodyType<InviteCampaignUserRequest> },
+  TContext
+> => {
+  return useMutation(getInviteCampaignUserMutationOptions(options));
+};
+
+/**
+ * @summary DM adds a character sheet to the campaign
+ */
+export const getAddCampaignMemberUrl = (campaignId: string) => {
+  return `/api/campaigns/${campaignId}/members`;
+};
+
+export const addCampaignMember = async (
+  campaignId: string,
+  addCampaignMemberRequest: AddCampaignMemberRequest,
+  options?: RequestInit,
+): Promise<MessageResponse> => {
+  return customFetch<MessageResponse>(getAddCampaignMemberUrl(campaignId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(addCampaignMemberRequest),
+  });
+};
+
+export const getAddCampaignMemberMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addCampaignMember>>,
+    TError,
+    { campaignId: string; data: BodyType<AddCampaignMemberRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addCampaignMember>>,
+  TError,
+  { campaignId: string; data: BodyType<AddCampaignMemberRequest> },
+  TContext
+> => {
+  const mutationKey = ["addCampaignMember"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addCampaignMember>>,
+    { campaignId: string; data: BodyType<AddCampaignMemberRequest> }
+  > = (props) => {
+    const { campaignId, data } = props ?? {};
+
+    return addCampaignMember(campaignId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AddCampaignMemberMutationResult = NonNullable<
+  Awaited<ReturnType<typeof addCampaignMember>>
+>;
+export type AddCampaignMemberMutationBody = BodyType<AddCampaignMemberRequest>;
+export type AddCampaignMemberMutationError = ErrorType<unknown>;
+
+/**
+ * @summary DM adds a character sheet to the campaign
+ */
+export const useAddCampaignMember = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addCampaignMember>>,
+    TError,
+    { campaignId: string; data: BodyType<AddCampaignMemberRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof addCampaignMember>>,
+  TError,
+  { campaignId: string; data: BodyType<AddCampaignMemberRequest> },
+  TContext
+> => {
+  return useMutation(getAddCampaignMemberMutationOptions(options));
+};
+
+/**
+ * @summary DM removes a character from the campaign
+ */
+export const getRemoveCampaignMemberUrl = (
+  campaignId: string,
+  characterId: string,
+) => {
+  return `/api/campaigns/${campaignId}/members/${characterId}`;
+};
+
+export const removeCampaignMember = async (
+  campaignId: string,
+  characterId: string,
+  options?: RequestInit,
+): Promise<MessageResponse> => {
+  return customFetch<MessageResponse>(
+    getRemoveCampaignMemberUrl(campaignId, characterId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getRemoveCampaignMemberMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeCampaignMember>>,
+    TError,
+    { campaignId: string; characterId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof removeCampaignMember>>,
+  TError,
+  { campaignId: string; characterId: string },
+  TContext
+> => {
+  const mutationKey = ["removeCampaignMember"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof removeCampaignMember>>,
+    { campaignId: string; characterId: string }
+  > = (props) => {
+    const { campaignId, characterId } = props ?? {};
+
+    return removeCampaignMember(campaignId, characterId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RemoveCampaignMemberMutationResult = NonNullable<
+  Awaited<ReturnType<typeof removeCampaignMember>>
+>;
+
+export type RemoveCampaignMemberMutationError = ErrorType<unknown>;
+
+/**
+ * @summary DM removes a character from the campaign
+ */
+export const useRemoveCampaignMember = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeCampaignMember>>,
+    TError,
+    { campaignId: string; characterId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof removeCampaignMember>>,
+  TError,
+  { campaignId: string; characterId: string },
+  TContext
+> => {
+  return useMutation(getRemoveCampaignMemberMutationOptions(options));
+};
+
+/**
  * @summary Get a campaign
  */
 export const getGetCampaignUrl = (campaignId: string) => {
@@ -529,8 +1488,8 @@ export const getGetCampaignUrl = (campaignId: string) => {
 export const getCampaign = async (
   campaignId: string,
   options?: RequestInit,
-): Promise<CampaignWithRole> => {
-  return customFetch<CampaignWithRole>(getGetCampaignUrl(campaignId), {
+): Promise<CampaignWithMembers> => {
+  return customFetch<CampaignWithMembers>(getGetCampaignUrl(campaignId), {
     ...options,
     method: "GET",
   });
@@ -1369,6 +2328,97 @@ export const useUpdateSession = <
   TContext
 > => {
   return useMutation(getUpdateSessionMutationOptions(options));
+};
+
+/**
+ * @summary Mint a LiveKit JWT for the session video room
+ */
+export const getCreateLivekitTokenUrl = (
+  campaignId: string,
+  sessionId: string,
+) => {
+  return `/api/campaigns/${campaignId}/sessions/${sessionId}/livekit-token`;
+};
+
+export const createLivekitToken = async (
+  campaignId: string,
+  sessionId: string,
+  options?: RequestInit,
+): Promise<LiveKitTokenResponse> => {
+  return customFetch<LiveKitTokenResponse>(
+    getCreateLivekitTokenUrl(campaignId, sessionId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getCreateLivekitTokenMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createLivekitToken>>,
+    TError,
+    { campaignId: string; sessionId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createLivekitToken>>,
+  TError,
+  { campaignId: string; sessionId: string },
+  TContext
+> => {
+  const mutationKey = ["createLivekitToken"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createLivekitToken>>,
+    { campaignId: string; sessionId: string }
+  > = (props) => {
+    const { campaignId, sessionId } = props ?? {};
+
+    return createLivekitToken(campaignId, sessionId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateLivekitTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createLivekitToken>>
+>;
+
+export type CreateLivekitTokenMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Mint a LiveKit JWT for the session video room
+ */
+export const useCreateLivekitToken = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createLivekitToken>>,
+    TError,
+    { campaignId: string; sessionId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createLivekitToken>>,
+  TError,
+  { campaignId: string; sessionId: string },
+  TContext
+> => {
+  return useMutation(getCreateLivekitTokenMutationOptions(options));
 };
 
 /**

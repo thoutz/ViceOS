@@ -11,7 +11,9 @@ import type { UpdateCharacterRequestSheetData } from "./updateCharacterRequestSh
 export interface UpdateCharacterRequest {
   name?: string;
   race?: string;
+  subrace?: string;
   class?: string;
+  subclass?: string;
   background?: string;
   level?: number;
   hp?: number;

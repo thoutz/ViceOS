@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Character } from '@workspace/api-client-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Heart, Skull, Plus, Trash2, ArrowUp, ArrowDown, ChevronRight, ChevronLeft, Swords } from 'lucide-react';
+import { Shield, Heart, Skull, Plus, Trash2, ArrowUp, ArrowDown, ChevronRight, ChevronLeft, Swords, MapPin } from 'lucide-react';
 import { VttButton } from '../VttButton';
 import { DiceRoll } from 'rpg-dice-roller';
 
@@ -15,6 +15,10 @@ export interface InitiativeCombatant {
   tokenColor?: string;
   isNpc?: boolean;
   conditions?: string[];
+  /** Optional data URL portrait for map token */
+  tokenImageData?: string;
+  /** Map footprint; default medium when omitted */
+  tokenSize?: "small" | "medium" | "large";
 }
 
 interface InitiativeBarProps {
@@ -26,9 +30,13 @@ interface InitiativeBarProps {
   onNextTurn: () => void;
   onPrevTurn: () => void;
   onOrderUpdate: (order: InitiativeCombatant[]) => void;
+  /** DM: start map placement for this NPC combatant */
+  onBeginMapPlacement?: (combatant: InitiativeCombatant) => void;
 }
 
 const CONDITIONS = ['Blinded', 'Charmed', 'Deafened', 'Frightened', 'Grappled', 'Incapacitated', 'Invisible', 'Paralyzed', 'Petrified', 'Poisoned', 'Prone', 'Restrained', 'Stunned', 'Unconscious', 'Exhaustion'];
+
+const MAX_NPC_PORTRAIT_BYTES = 750_000;
 
 function rollInitiative(character: Character): number {
   const stats = (character.stats as unknown as Record<string, number>) || {};
@@ -43,12 +51,25 @@ function rollInitiative(character: Character): number {
   }
 }
 
-export function InitiativeBar({ order, currentIndex, roundNumber, isDm, characters, onNextTurn, onPrevTurn, onOrderUpdate }: InitiativeBarProps) {
+export function InitiativeBar({
+  order,
+  currentIndex,
+  roundNumber,
+  isDm,
+  characters,
+  onNextTurn,
+  onPrevTurn,
+  onOrderUpdate,
+  onBeginMapPlacement,
+}: InitiativeBarProps) {
   const [showAdd, setShowAdd] = useState(false);
   const [addName, setAddName] = useState('');
   const [addInit, setAddInit] = useState('');
   const [addHp, setAddHp] = useState('');
   const [addAc, setAddAc] = useState('10');
+  const [addTokenSize, setAddTokenSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [addTokenImageData, setAddTokenImageData] = useState<string | null>(null);
+  const addPortraitInputRef = useRef<HTMLInputElement>(null);
   const [selectedConditionTarget, setSelectedConditionTarget] = useState<string | null>(null);
 
   const handleAddCombatant = () => {
@@ -62,6 +83,8 @@ export function InitiativeBar({ order, currentIndex, roundNumber, isDm, characte
       ac: parseInt(addAc, 10) || 10,
       tokenColor: '#8B1A1A',
       isNpc: true,
+      ...(addTokenImageData ? { tokenImageData: addTokenImageData } : {}),
+      ...(addTokenSize !== 'medium' ? { tokenSize: addTokenSize } : {}),
     };
     const newOrder = [...order, newCombatant].sort((a, b) => b.initiative - a.initiative);
     onOrderUpdate(newOrder);
@@ -69,6 +92,8 @@ export function InitiativeBar({ order, currentIndex, roundNumber, isDm, characte
     setAddInit('');
     setAddHp('');
     setAddAc('10');
+    setAddTokenSize('medium');
+    setAddTokenImageData(null);
     setShowAdd(false);
   };
 
@@ -244,6 +269,20 @@ export function InitiativeBar({ order, currentIndex, roundNumber, isDm, characte
                     </div>
                   )}
 
+                  {isDm && combatant.isNpc && onBeginMapPlacement && (
+                    <button
+                      type="button"
+                      className="absolute bottom-0 right-0 w-6 h-6 flex items-center justify-center bg-card/95 border border-primary/40 rounded text-primary hover:bg-primary/15 z-10"
+                      title="Place on map"
+                      onClick={e => {
+                        e.stopPropagation();
+                        onBeginMapPlacement(combatant);
+                      }}
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
                   {/* DM controls overlay */}
                   {isDm && isActive && (
                     <div className="absolute -top-1.5 -right-1.5 flex gap-0.5">
@@ -292,18 +331,57 @@ export function InitiativeBar({ order, currentIndex, roundNumber, isDm, characte
 
       {/* Add Combatant form */}
       {isDm && showAdd && (
-        <div className="border-t border-border bg-card/90 px-4 py-2 flex items-center gap-2">
+        <div className="border-t border-border bg-card/90 px-4 py-2 flex flex-wrap items-center gap-2">
           <input
             autoFocus
             placeholder="Name (NPC/monster)"
             value={addName}
             onChange={e => setAddName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAddCombatant()}
-            className="bg-background border border-border rounded px-2 py-1 text-sm flex-1 font-sans"
+            className="bg-background border border-border rounded px-2 py-1 text-sm flex-1 min-w-[120px] font-sans"
           />
           <input placeholder="Init" type="number" value={addInit} onChange={e => setAddInit(e.target.value)} className="w-14 bg-background border border-border rounded px-2 py-1 text-sm text-center" />
           <input placeholder="HP" type="number" value={addHp} onChange={e => setAddHp(e.target.value)} className="w-14 bg-background border border-border rounded px-2 py-1 text-sm text-center" />
           <input placeholder="AC" type="number" value={addAc} onChange={e => setAddAc(e.target.value)} className="w-12 bg-background border border-border rounded px-2 py-1 text-sm text-center" />
+          <div className="flex items-center gap-0.5 border border-border/60 rounded px-1">
+            {(['small', 'medium', 'large'] as const).map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setAddTokenSize(s)}
+                className={`text-[9px] font-label px-1.5 py-0.5 rounded capitalize ${addTokenSize === s ? 'bg-primary/25 text-primary' : 'text-muted-foreground'}`}
+              >
+                {s[0]}
+              </button>
+            ))}
+          </div>
+          <input
+            ref={addPortraitInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (file.size > MAX_NPC_PORTRAIT_BYTES) return;
+              const reader = new FileReader();
+              reader.onload = () => setAddTokenImageData(reader.result as string);
+              reader.readAsDataURL(file);
+              e.target.value = '';
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => addPortraitInputRef.current?.click()}
+            className="text-[10px] font-label text-muted-foreground border border-border rounded px-2 py-1 hover:bg-white/5"
+          >
+            Portrait
+          </button>
+          {addTokenImageData && (
+            <button type="button" onClick={() => setAddTokenImageData(null)} className="text-[10px] text-muted-foreground">
+              Clear img
+            </button>
+          )}
           <VttButton size="sm" onClick={handleAddCombatant}>Add</VttButton>
           <VttButton size="sm" variant="ghost" onClick={() => setShowAdd(false)}>×</VttButton>
         </div>

@@ -215,7 +215,23 @@ io.on("connection", (socket) => {
 
   socket.on(
     "token_place",
-    async (data: { mapId: string; token: { id: string; name: string; x: number; y: number; color?: string; hp?: number; maxHp?: number; characterId?: string } }) => {
+    async (data: {
+      mapId: string;
+      token: {
+        id: string;
+        name: string;
+        x: number;
+        y: number;
+        color?: string;
+        imageData?: string;
+        tokenSize?: "small" | "medium" | "large";
+        hp?: number;
+        maxHp?: number;
+        ac?: number;
+        characterId?: string;
+        isNpc?: boolean;
+      };
+    }) => {
       const sd = socket.data as SocketData;
       if (!sd.sessionId || !sd.campaignId) return;
       if (sd.role !== "dm") {

@@ -8,22 +8,22 @@ export const campaignsTable = pgTable("campaigns", {
   name: text("name").notNull(),
   description: text("description"),
   gameSystem: text("game_system").notNull().default("D&D 5e"),
+  setting: text("setting"),
+  startingLocation: text("starting_location"),
+  tone: text("tone"),
+  houseRules: text("house_rules"),
+  status: text("status").notNull().default("recruiting"),
   inviteCode: text("invite_code").notNull().unique(),
   dmUserId: uuid("dm_user_id").notNull().references(() => usersTable.id),
   settings: jsonb("settings").default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const campaignMembersTable = pgTable("campaign_members", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  campaignId: uuid("campaign_id").notNull().references(() => campaignsTable.id),
-  userId: uuid("user_id").notNull().references(() => usersTable.id),
-  role: text("role").notNull().default("player"),
-  joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
+export const insertCampaignSchema = createInsertSchema(campaignsTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
-
-export const insertCampaignSchema = createInsertSchema(campaignsTable).omit({ id: true, createdAt: true });
-export const insertCampaignMemberSchema = createInsertSchema(campaignMembersTable).omit({ id: true, joinedAt: true });
 export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
 export type Campaign = typeof campaignsTable.$inferSelect;
-export type CampaignMember = typeof campaignMembersTable.$inferSelect;

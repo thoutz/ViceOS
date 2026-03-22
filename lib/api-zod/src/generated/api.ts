@@ -36,25 +36,340 @@ export const GetMeResponse = zod.object({
 });
 
 /**
- * @summary List user campaigns
+ * @summary List my character sheets
  */
-export const ListCampaignsResponseItem = zod
-  .object({
-    id: zod.string(),
-    name: zod.string(),
-    description: zod.string().optional(),
-    gameSystem: zod.string(),
-    inviteCode: zod.string(),
-    dmUserId: zod.string(),
-    settings: zod.record(zod.string(), zod.unknown()).optional(),
-    createdAt: zod.date(),
-  })
-  .and(
-    zod.object({
-      role: zod.enum(["dm", "player"]),
-    }),
-  );
-export const ListCampaignsResponse = zod.array(ListCampaignsResponseItem);
+export const ListPlayerCharactersResponseItem = zod.object({
+  id: zod.string(),
+  campaignId: zod.string().nullish(),
+  userId: zod.string(),
+  name: zod.string(),
+  race: zod.string().optional(),
+  subrace: zod.string().optional(),
+  class: zod.string().optional(),
+  subclass: zod.string().optional(),
+  background: zod.string().optional(),
+  alignment: zod.string().optional(),
+  level: zod.number(),
+  hp: zod.number(),
+  maxHp: zod.number(),
+  tempHp: zod.number().optional(),
+  ac: zod.number(),
+  speed: zod.number(),
+  initiativeBonus: zod.number().optional(),
+  strength: zod.number().optional(),
+  dexterity: zod.number().optional(),
+  constitution: zod.number().optional(),
+  intelligence: zod.number().optional(),
+  wisdom: zod.number().optional(),
+  charisma: zod.number().optional(),
+  personality: zod.string().optional(),
+  backstory: zod.string().optional(),
+  ideals: zod.string().optional(),
+  bonds: zod.string().optional(),
+  flaws: zod.string().optional(),
+  appearance: zod.string().optional(),
+  notes: zod.string().optional(),
+  avatarUrl: zod.string().optional(),
+  gameSystem: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+  stats: zod.object({
+    str: zod.number(),
+    dex: zod.number(),
+    con: zod.number(),
+    int: zod.number(),
+    wis: zod.number(),
+    cha: zod.number(),
+  }),
+  sheetData: zod.record(zod.string(), zod.unknown()).optional(),
+  tokenColor: zod.string().optional(),
+  isNpc: zod.boolean().optional(),
+  createdAt: zod.date(),
+  updatedAt: zod.date().optional(),
+});
+export const ListPlayerCharactersResponse = zod.array(
+  ListPlayerCharactersResponseItem,
+);
+
+/**
+ * @summary Create a character sheet
+ */
+export const CreatePlayerCharacterBody = zod.object({
+  name: zod.string(),
+  campaignId: zod
+    .string()
+    .optional()
+    .describe(
+      "When set, links the new sheet to this campaign (e.g. while creating from a campaign flow).",
+    ),
+  race: zod.string().optional(),
+  subrace: zod.string().optional(),
+  class: zod.string().optional(),
+  subclass: zod.string().optional(),
+  level: zod.number().optional(),
+  background: zod.string().optional(),
+  alignment: zod.string().optional(),
+  strength: zod.number().optional(),
+  dexterity: zod.number().optional(),
+  constitution: zod.number().optional(),
+  intelligence: zod.number().optional(),
+  wisdom: zod.number().optional(),
+  charisma: zod.number().optional(),
+  hit_points: zod.number().optional(),
+  armor_class: zod.number().optional(),
+  speed: zod.number().optional(),
+  personality: zod.string().optional(),
+  backstory: zod.string().optional(),
+  ideals: zod.string().optional(),
+  bonds: zod.string().optional(),
+  flaws: zod.string().optional(),
+  appearance: zod.string().optional(),
+  notes: zod.string().optional(),
+  avatar_url: zod.string().optional(),
+  game_system: zod.string().optional(),
+  stats: zod
+    .object({
+      str: zod.number(),
+      dex: zod.number(),
+      con: zod.number(),
+      int: zod.number(),
+      wis: zod.number(),
+      cha: zod.number(),
+    })
+    .optional(),
+  sheetData: zod.record(zod.string(), zod.unknown()).optional(),
+  tokenColor: zod.string().optional(),
+});
+
+/**
+ * @summary Get a character sheet
+ */
+export const GetPlayerCharacterParams = zod.object({
+  characterId: zod.coerce.string(),
+});
+
+export const GetPlayerCharacterResponse = zod.object({
+  id: zod.string(),
+  campaignId: zod.string().nullish(),
+  userId: zod.string(),
+  name: zod.string(),
+  race: zod.string().optional(),
+  subrace: zod.string().optional(),
+  class: zod.string().optional(),
+  subclass: zod.string().optional(),
+  background: zod.string().optional(),
+  alignment: zod.string().optional(),
+  level: zod.number(),
+  hp: zod.number(),
+  maxHp: zod.number(),
+  tempHp: zod.number().optional(),
+  ac: zod.number(),
+  speed: zod.number(),
+  initiativeBonus: zod.number().optional(),
+  strength: zod.number().optional(),
+  dexterity: zod.number().optional(),
+  constitution: zod.number().optional(),
+  intelligence: zod.number().optional(),
+  wisdom: zod.number().optional(),
+  charisma: zod.number().optional(),
+  personality: zod.string().optional(),
+  backstory: zod.string().optional(),
+  ideals: zod.string().optional(),
+  bonds: zod.string().optional(),
+  flaws: zod.string().optional(),
+  appearance: zod.string().optional(),
+  notes: zod.string().optional(),
+  avatarUrl: zod.string().optional(),
+  gameSystem: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+  stats: zod.object({
+    str: zod.number(),
+    dex: zod.number(),
+    con: zod.number(),
+    int: zod.number(),
+    wis: zod.number(),
+    cha: zod.number(),
+  }),
+  sheetData: zod.record(zod.string(), zod.unknown()).optional(),
+  tokenColor: zod.string().optional(),
+  isNpc: zod.boolean().optional(),
+  createdAt: zod.date(),
+  updatedAt: zod.date().optional(),
+});
+
+/**
+ * @summary Update my character sheet
+ */
+export const UpdatePlayerCharacterParams = zod.object({
+  characterId: zod.coerce.string(),
+});
+
+export const UpdatePlayerCharacterBody = zod.record(
+  zod.string(),
+  zod.unknown(),
+);
+
+export const UpdatePlayerCharacterResponse = zod.object({
+  id: zod.string(),
+  campaignId: zod.string().nullish(),
+  userId: zod.string(),
+  name: zod.string(),
+  race: zod.string().optional(),
+  subrace: zod.string().optional(),
+  class: zod.string().optional(),
+  subclass: zod.string().optional(),
+  background: zod.string().optional(),
+  alignment: zod.string().optional(),
+  level: zod.number(),
+  hp: zod.number(),
+  maxHp: zod.number(),
+  tempHp: zod.number().optional(),
+  ac: zod.number(),
+  speed: zod.number(),
+  initiativeBonus: zod.number().optional(),
+  strength: zod.number().optional(),
+  dexterity: zod.number().optional(),
+  constitution: zod.number().optional(),
+  intelligence: zod.number().optional(),
+  wisdom: zod.number().optional(),
+  charisma: zod.number().optional(),
+  personality: zod.string().optional(),
+  backstory: zod.string().optional(),
+  ideals: zod.string().optional(),
+  bonds: zod.string().optional(),
+  flaws: zod.string().optional(),
+  appearance: zod.string().optional(),
+  notes: zod.string().optional(),
+  avatarUrl: zod.string().optional(),
+  gameSystem: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+  stats: zod.object({
+    str: zod.number(),
+    dex: zod.number(),
+    con: zod.number(),
+    int: zod.number(),
+    wis: zod.number(),
+    cha: zod.number(),
+  }),
+  sheetData: zod.record(zod.string(), zod.unknown()).optional(),
+  tokenColor: zod.string().optional(),
+  isNpc: zod.boolean().optional(),
+  createdAt: zod.date(),
+  updatedAt: zod.date().optional(),
+});
+
+/**
+ * @summary Soft-delete a character sheet
+ */
+export const DeletePlayerCharacterParams = zod.object({
+  characterId: zod.coerce.string(),
+});
+
+export const DeletePlayerCharacterResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
+ * @summary Pending campaign invites for the current user
+ */
+export const ListPendingInvitesResponseItem = zod.object({
+  id: zod.string(),
+  campaignId: zod.string(),
+  campaignName: zod.string(),
+  campaignInviteCode: zod.string().optional(),
+  inviteCode: zod.string(),
+  invitedByUserId: zod.string(),
+  invitedByUsername: zod.string(),
+  status: zod.string(),
+  expiresAt: zod.date().nullish(),
+  createdAt: zod.date(),
+});
+export const ListPendingInvitesResponse = zod.array(
+  ListPendingInvitesResponseItem,
+);
+
+/**
+ * @summary Accept a campaign invite
+ */
+export const AcceptCampaignInviteParams = zod.object({
+  inviteId: zod.coerce.string(),
+});
+
+export const AcceptCampaignInviteBody = zod.object({
+  characterId: zod
+    .string()
+    .optional()
+    .describe("Optional character sheet to attach when joining the campaign."),
+});
+
+export const AcceptCampaignInviteResponse = zod.object({
+  message: zod.string(),
+  campaignId: zod.string(),
+});
+
+/**
+ * @summary Decline a campaign invite
+ */
+export const DeclineCampaignInviteParams = zod.object({
+  inviteId: zod.coerce.string(),
+});
+
+export const DeclineCampaignInviteResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
+ * @summary List user campaigns (as DM vs as player)
+ */
+export const ListCampaignsResponse = zod.object({
+  as_dm: zod.array(
+    zod
+      .object({
+        id: zod.string(),
+        name: zod.string(),
+        description: zod.string().optional(),
+        gameSystem: zod.string(),
+        setting: zod.string().optional(),
+        startingLocation: zod.string().optional(),
+        tone: zod.string().optional(),
+        houseRules: zod.string().optional(),
+        status: zod.string().optional(),
+        inviteCode: zod.string(),
+        dmUserId: zod.string(),
+        settings: zod.record(zod.string(), zod.unknown()).optional(),
+        createdAt: zod.date(),
+        updatedAt: zod.date().optional(),
+      })
+      .and(
+        zod.object({
+          role: zod.enum(["dm", "player"]),
+        }),
+      ),
+  ),
+  as_player: zod.array(
+    zod
+      .object({
+        id: zod.string(),
+        name: zod.string(),
+        description: zod.string().optional(),
+        gameSystem: zod.string(),
+        setting: zod.string().optional(),
+        startingLocation: zod.string().optional(),
+        tone: zod.string().optional(),
+        houseRules: zod.string().optional(),
+        status: zod.string().optional(),
+        inviteCode: zod.string(),
+        dmUserId: zod.string(),
+        settings: zod.record(zod.string(), zod.unknown()).optional(),
+        createdAt: zod.date(),
+        updatedAt: zod.date().optional(),
+      })
+      .and(
+        zod.object({
+          role: zod.enum(["dm", "player"]),
+        }),
+      ),
+  ),
+});
 
 /**
  * @summary Create a campaign
@@ -72,17 +387,78 @@ export const CreateCampaignBody = zod.object({
  */
 export const JoinCampaignBody = zod.object({
   inviteCode: zod.string(),
+  characterId: zod
+    .string()
+    .optional()
+    .describe(
+      "Optional. When set, binds this membership to your character sheet.",
+    ),
 });
 
-export const JoinCampaignResponse = zod.object({
-  id: zod.string(),
-  name: zod.string(),
-  description: zod.string().optional(),
-  gameSystem: zod.string(),
-  inviteCode: zod.string(),
-  dmUserId: zod.string(),
-  settings: zod.record(zod.string(), zod.unknown()).optional(),
-  createdAt: zod.date(),
+export const JoinCampaignResponse = zod
+  .object({
+    id: zod.string(),
+    name: zod.string(),
+    description: zod.string().optional(),
+    gameSystem: zod.string(),
+    setting: zod.string().optional(),
+    startingLocation: zod.string().optional(),
+    tone: zod.string().optional(),
+    houseRules: zod.string().optional(),
+    status: zod.string().optional(),
+    inviteCode: zod.string(),
+    dmUserId: zod.string(),
+    settings: zod.record(zod.string(), zod.unknown()).optional(),
+    createdAt: zod.date(),
+    updatedAt: zod.date().optional(),
+  })
+  .and(
+    zod.object({
+      role: zod.enum(["dm", "player"]),
+    }),
+  );
+
+/**
+ * @summary DM invites a user by username
+ */
+export const InviteCampaignUserParams = zod.object({
+  campaignId: zod.coerce.string(),
+});
+
+export const InviteCampaignUserBody = zod.object({
+  username: zod.string(),
+});
+
+export const InviteCampaignUserResponse = zod.object({
+  message: zod.string().optional(),
+  inviteCode: zod.string().optional(),
+});
+
+/**
+ * @summary DM adds a character sheet to the campaign
+ */
+export const AddCampaignMemberParams = zod.object({
+  campaignId: zod.coerce.string(),
+});
+
+export const AddCampaignMemberBody = zod.object({
+  characterId: zod.string(),
+});
+
+export const AddCampaignMemberResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
+ * @summary DM removes a character from the campaign
+ */
+export const RemoveCampaignMemberParams = zod.object({
+  campaignId: zod.coerce.string(),
+  characterId: zod.coerce.string(),
+});
+
+export const RemoveCampaignMemberResponse = zod.object({
+  message: zod.string(),
 });
 
 /**
@@ -98,14 +474,47 @@ export const GetCampaignResponse = zod
     name: zod.string(),
     description: zod.string().optional(),
     gameSystem: zod.string(),
+    setting: zod.string().optional(),
+    startingLocation: zod.string().optional(),
+    tone: zod.string().optional(),
+    houseRules: zod.string().optional(),
+    status: zod.string().optional(),
     inviteCode: zod.string(),
     dmUserId: zod.string(),
     settings: zod.record(zod.string(), zod.unknown()).optional(),
     createdAt: zod.date(),
+    updatedAt: zod.date().optional(),
   })
   .and(
     zod.object({
       role: zod.enum(["dm", "player"]),
+    }),
+  )
+  .and(
+    zod.object({
+      members: zod.array(
+        zod
+          .object({
+            id: zod.string().optional(),
+            campaignId: zod.string().optional(),
+            userId: zod.string().optional(),
+            characterId: zod.string().nullish(),
+            role: zod.string().optional(),
+            status: zod.string().optional(),
+            joinedAt: zod.date().optional(),
+            characterName: zod.string().nullish(),
+            race: zod.string().nullish(),
+            class: zod.string().nullish(),
+            level: zod.number().nullish(),
+            personality: zod.string().nullish(),
+            backstory: zod.string().nullish(),
+            avatarUrl: zod.string().nullish(),
+            playerUsername: zod.string().nullish(),
+          })
+          .describe(
+            "campaign_members row with joined character + player display fields",
+          ),
+      ),
     }),
   );
 
@@ -118,12 +527,15 @@ export const ListCharactersParams = zod.object({
 
 export const ListCharactersResponseItem = zod.object({
   id: zod.string(),
-  campaignId: zod.string(),
+  campaignId: zod.string().nullish(),
   userId: zod.string(),
   name: zod.string(),
   race: zod.string().optional(),
+  subrace: zod.string().optional(),
   class: zod.string().optional(),
+  subclass: zod.string().optional(),
   background: zod.string().optional(),
+  alignment: zod.string().optional(),
   level: zod.number(),
   hp: zod.number(),
   maxHp: zod.number(),
@@ -131,6 +543,22 @@ export const ListCharactersResponseItem = zod.object({
   ac: zod.number(),
   speed: zod.number(),
   initiativeBonus: zod.number().optional(),
+  strength: zod.number().optional(),
+  dexterity: zod.number().optional(),
+  constitution: zod.number().optional(),
+  intelligence: zod.number().optional(),
+  wisdom: zod.number().optional(),
+  charisma: zod.number().optional(),
+  personality: zod.string().optional(),
+  backstory: zod.string().optional(),
+  ideals: zod.string().optional(),
+  bonds: zod.string().optional(),
+  flaws: zod.string().optional(),
+  appearance: zod.string().optional(),
+  notes: zod.string().optional(),
+  avatarUrl: zod.string().optional(),
+  gameSystem: zod.string().optional(),
+  isActive: zod.boolean().optional(),
   stats: zod.object({
     str: zod.number(),
     dex: zod.number(),
@@ -143,6 +571,7 @@ export const ListCharactersResponseItem = zod.object({
   tokenColor: zod.string().optional(),
   isNpc: zod.boolean().optional(),
   createdAt: zod.date(),
+  updatedAt: zod.date().optional(),
 });
 export const ListCharactersResponse = zod.array(ListCharactersResponseItem);
 
@@ -160,7 +589,9 @@ export const createCharacterBodyIsNpcDefault = false;
 export const CreateCharacterBody = zod.object({
   name: zod.string(),
   race: zod.string().optional(),
+  subrace: zod.string().optional(),
   class: zod.string().optional(),
+  subclass: zod.string().optional(),
   background: zod.string().optional(),
   level: zod.number().default(createCharacterBodyLevelDefault),
   hp: zod.number().optional(),
@@ -190,12 +621,15 @@ export const GetCharacterParams = zod.object({
 
 export const GetCharacterResponse = zod.object({
   id: zod.string(),
-  campaignId: zod.string(),
+  campaignId: zod.string().nullish(),
   userId: zod.string(),
   name: zod.string(),
   race: zod.string().optional(),
+  subrace: zod.string().optional(),
   class: zod.string().optional(),
+  subclass: zod.string().optional(),
   background: zod.string().optional(),
+  alignment: zod.string().optional(),
   level: zod.number(),
   hp: zod.number(),
   maxHp: zod.number(),
@@ -203,6 +637,22 @@ export const GetCharacterResponse = zod.object({
   ac: zod.number(),
   speed: zod.number(),
   initiativeBonus: zod.number().optional(),
+  strength: zod.number().optional(),
+  dexterity: zod.number().optional(),
+  constitution: zod.number().optional(),
+  intelligence: zod.number().optional(),
+  wisdom: zod.number().optional(),
+  charisma: zod.number().optional(),
+  personality: zod.string().optional(),
+  backstory: zod.string().optional(),
+  ideals: zod.string().optional(),
+  bonds: zod.string().optional(),
+  flaws: zod.string().optional(),
+  appearance: zod.string().optional(),
+  notes: zod.string().optional(),
+  avatarUrl: zod.string().optional(),
+  gameSystem: zod.string().optional(),
+  isActive: zod.boolean().optional(),
   stats: zod.object({
     str: zod.number(),
     dex: zod.number(),
@@ -215,6 +665,7 @@ export const GetCharacterResponse = zod.object({
   tokenColor: zod.string().optional(),
   isNpc: zod.boolean().optional(),
   createdAt: zod.date(),
+  updatedAt: zod.date().optional(),
 });
 
 /**
@@ -228,7 +679,9 @@ export const UpdateCharacterParams = zod.object({
 export const UpdateCharacterBody = zod.object({
   name: zod.string().optional(),
   race: zod.string().optional(),
+  subrace: zod.string().optional(),
   class: zod.string().optional(),
+  subclass: zod.string().optional(),
   background: zod.string().optional(),
   level: zod.number().optional(),
   hp: zod.number().optional(),
@@ -252,12 +705,15 @@ export const UpdateCharacterBody = zod.object({
 
 export const UpdateCharacterResponse = zod.object({
   id: zod.string(),
-  campaignId: zod.string(),
+  campaignId: zod.string().nullish(),
   userId: zod.string(),
   name: zod.string(),
   race: zod.string().optional(),
+  subrace: zod.string().optional(),
   class: zod.string().optional(),
+  subclass: zod.string().optional(),
   background: zod.string().optional(),
+  alignment: zod.string().optional(),
   level: zod.number(),
   hp: zod.number(),
   maxHp: zod.number(),
@@ -265,6 +721,22 @@ export const UpdateCharacterResponse = zod.object({
   ac: zod.number(),
   speed: zod.number(),
   initiativeBonus: zod.number().optional(),
+  strength: zod.number().optional(),
+  dexterity: zod.number().optional(),
+  constitution: zod.number().optional(),
+  intelligence: zod.number().optional(),
+  wisdom: zod.number().optional(),
+  charisma: zod.number().optional(),
+  personality: zod.string().optional(),
+  backstory: zod.string().optional(),
+  ideals: zod.string().optional(),
+  bonds: zod.string().optional(),
+  flaws: zod.string().optional(),
+  appearance: zod.string().optional(),
+  notes: zod.string().optional(),
+  avatarUrl: zod.string().optional(),
+  gameSystem: zod.string().optional(),
+  isActive: zod.boolean().optional(),
   stats: zod.object({
     str: zod.number(),
     dex: zod.number(),
@@ -277,6 +749,7 @@ export const UpdateCharacterResponse = zod.object({
   tokenColor: zod.string().optional(),
   isNpc: zod.boolean().optional(),
   createdAt: zod.date(),
+  updatedAt: zod.date().optional(),
 });
 
 /**
@@ -303,6 +776,16 @@ export const ListSessionsResponseItem = zod.object({
         conditions: zod.array(zod.string()).optional(),
         isNpc: zod.boolean().optional(),
         tokenColor: zod.string().optional(),
+        tokenImageData: zod
+          .string()
+          .optional()
+          .describe("Optional data URL portrait for NPC\/monster token"),
+        tokenSize: zod
+          .enum(["small", "medium", "large"])
+          .optional()
+          .describe(
+            "Map token footprint relative to grid (small, medium one cell, large spans two cells per side)",
+          ),
       }),
     )
     .optional(),
@@ -345,6 +828,16 @@ export const GetSessionResponse = zod.object({
         conditions: zod.array(zod.string()).optional(),
         isNpc: zod.boolean().optional(),
         tokenColor: zod.string().optional(),
+        tokenImageData: zod
+          .string()
+          .optional()
+          .describe("Optional data URL portrait for NPC\/monster token"),
+        tokenSize: zod
+          .enum(["small", "medium", "large"])
+          .optional()
+          .describe(
+            "Map token footprint relative to grid (small, medium one cell, large spans two cells per side)",
+          ),
       }),
     )
     .optional(),
@@ -377,6 +870,16 @@ export const UpdateSessionBody = zod.object({
         conditions: zod.array(zod.string()).optional(),
         isNpc: zod.boolean().optional(),
         tokenColor: zod.string().optional(),
+        tokenImageData: zod
+          .string()
+          .optional()
+          .describe("Optional data URL portrait for NPC\/monster token"),
+        tokenSize: zod
+          .enum(["small", "medium", "large"])
+          .optional()
+          .describe(
+            "Map token footprint relative to grid (small, medium one cell, large spans two cells per side)",
+          ),
       }),
     )
     .optional(),
@@ -402,6 +905,16 @@ export const UpdateSessionResponse = zod.object({
         conditions: zod.array(zod.string()).optional(),
         isNpc: zod.boolean().optional(),
         tokenColor: zod.string().optional(),
+        tokenImageData: zod
+          .string()
+          .optional()
+          .describe("Optional data URL portrait for NPC\/monster token"),
+        tokenSize: zod
+          .enum(["small", "medium", "large"])
+          .optional()
+          .describe(
+            "Map token footprint relative to grid (small, medium one cell, large spans two cells per side)",
+          ),
       }),
     )
     .optional(),
@@ -409,6 +922,24 @@ export const UpdateSessionResponse = zod.object({
   roundNumber: zod.number(),
   status: zod.enum(["active", "paused", "ended"]),
   createdAt: zod.date(),
+});
+
+/**
+ * @summary Mint a LiveKit JWT for the session video room
+ */
+export const CreateLivekitTokenParams = zod.object({
+  campaignId: zod.coerce.string(),
+  sessionId: zod.coerce.string(),
+});
+
+export const CreateLivekitTokenResponse = zod.object({
+  token: zod.string(),
+  url: zod
+    .string()
+    .describe("LiveKit server URL (e.g. wss:\/\/project.livekit.cloud)"),
+  roomName: zod
+    .string()
+    .describe("Room name all participants in this game session join"),
 });
 
 /**
@@ -452,6 +983,18 @@ export const ListMapsResponseItem = zod.object({
         x: zod.number(),
         y: zod.number(),
         color: zod.string().optional(),
+        imageData: zod
+          .string()
+          .optional()
+          .describe(
+            "Optional data URL (e.g. image\/png;base64,...) for custom token portrait",
+          ),
+        tokenSize: zod
+          .enum(["small", "medium", "large"])
+          .optional()
+          .describe(
+            "Map token footprint relative to grid (small, medium one cell, large spans two cells per side)",
+          ),
         hp: zod.number().optional(),
         maxHp: zod.number().optional(),
         ac: zod.number().optional(),
@@ -539,6 +1082,18 @@ export const GetMapResponse = zod.object({
         x: zod.number(),
         y: zod.number(),
         color: zod.string().optional(),
+        imageData: zod
+          .string()
+          .optional()
+          .describe(
+            "Optional data URL (e.g. image\/png;base64,...) for custom token portrait",
+          ),
+        tokenSize: zod
+          .enum(["small", "medium", "large"])
+          .optional()
+          .describe(
+            "Map token footprint relative to grid (small, medium one cell, large spans two cells per side)",
+          ),
         hp: zod.number().optional(),
         maxHp: zod.number().optional(),
         ac: zod.number().optional(),
@@ -592,6 +1147,18 @@ export const UpdateMapBody = zod.object({
         x: zod.number(),
         y: zod.number(),
         color: zod.string().optional(),
+        imageData: zod
+          .string()
+          .optional()
+          .describe(
+            "Optional data URL (e.g. image\/png;base64,...) for custom token portrait",
+          ),
+        tokenSize: zod
+          .enum(["small", "medium", "large"])
+          .optional()
+          .describe(
+            "Map token footprint relative to grid (small, medium one cell, large spans two cells per side)",
+          ),
         hp: zod.number().optional(),
         maxHp: zod.number().optional(),
         ac: zod.number().optional(),
@@ -640,6 +1207,18 @@ export const UpdateMapResponse = zod.object({
         x: zod.number(),
         y: zod.number(),
         color: zod.string().optional(),
+        imageData: zod
+          .string()
+          .optional()
+          .describe(
+            "Optional data URL (e.g. image\/png;base64,...) for custom token portrait",
+          ),
+        tokenSize: zod
+          .enum(["small", "medium", "large"])
+          .optional()
+          .describe(
+            "Map token footprint relative to grid (small, medium one cell, large spans two cells per side)",
+          ),
         hp: zod.number().optional(),
         maxHp: zod.number().optional(),
         ac: zod.number().optional(),

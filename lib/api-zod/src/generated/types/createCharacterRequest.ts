@@ -11,7 +11,9 @@ import type { CreateCharacterRequestSheetData } from "./createCharacterRequestSh
 export interface CreateCharacterRequest {
   name: string;
   race?: string;
+  subrace?: string;
   class?: string;
+  subclass?: string;
   background?: string;
   level?: number;
   hp?: number;

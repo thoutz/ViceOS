@@ -1,216 +1,81 @@
-import React, { useState } from 'react';
-import { useLocation, useParams } from 'wouter';
-import { useGetCampaign, useCreateCharacter } from '@workspace/api-client-react';
-import { DiceRoll } from 'rpg-dice-roller';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronLeft, Dices, Check } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { useLocation, useParams } from "wouter";
+import { useGetCampaign, useCreatePlayerCharacter } from "@workspace/api-client-react";
+import { DiceRoll } from "rpg-dice-roller";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronRight, ChevronLeft, Dices, Check, Save } from "lucide-react";
+import { VttButton } from "@/components/VttButton";
+import { VttInput } from "@/components/VttInput";
+import {
+  RACES,
+  CLASSES,
+  BACKGROUNDS,
+  STANDARD_ARRAY,
+  STAT_KEYS,
+  STAT_NAMES,
+  EQUIPMENT_PACKS,
+  CLASS_EQUIPMENT,
+  CREATOR_STEPS,
+  TOKEN_COLORS,
+  ALIGNMENTS,
+  mod,
+  fmtMod,
+  skillNameToKey,
+  computeFinalStats,
+  pickAutoClassSkills,
+  defaultCharacterForm,
+  type CharacterFormState,
+  type StatKey,
+} from "./character-creator-data";
 
-// ─── D&D 5e data ────────────────────────────────────────────────────────────────
-
-const RACES: Array<{ name: string; subrace?: string[]; speed: number; traits: string[]; bonus: Record<string, number> }> = [
-  { name: 'Human', speed: 30, traits: ['+1 to all ability scores', 'Extra language', 'Extra skill'], bonus: { str:1,dex:1,con:1,int:1,wis:1,cha:1 } },
-  { name: 'Elf', subrace: ['High Elf', 'Wood Elf', 'Dark Elf (Drow)'], speed: 30, traits: ['Darkvision', 'Fey Ancestry', 'Trance', 'Keen Senses'], bonus: { dex:2 } },
-  { name: 'Dwarf', subrace: ['Hill Dwarf', 'Mountain Dwarf'], speed: 25, traits: ['Darkvision', 'Dwarven Resilience', 'Stonecunning', 'Tool Proficiency'], bonus: { con:2 } },
-  { name: 'Halfling', subrace: ['Lightfoot', 'Stout'], speed: 25, traits: ['Lucky', 'Brave', 'Halfling Nimbleness'], bonus: { dex:2 } },
-  { name: 'Gnome', subrace: ['Forest Gnome', 'Rock Gnome'], speed: 25, traits: ['Darkvision', 'Gnome Cunning'], bonus: { int:2 } },
-  { name: 'Half-Elf', speed: 30, traits: ['Darkvision', 'Fey Ancestry', 'Skill Versatility (+2 skills)'], bonus: { cha:2 } },
-  { name: 'Half-Orc', speed: 30, traits: ['Darkvision', 'Menacing', 'Relentless Endurance', 'Savage Attacks'], bonus: { str:2,con:1 } },
-  { name: 'Tiefling', speed: 30, traits: ['Darkvision', 'Hellish Resistance', 'Infernal Legacy'], bonus: { int:1,cha:2 } },
-  { name: 'Dragonborn', speed: 30, traits: ['Draconic Ancestry', 'Breath Weapon', 'Damage Resistance'], bonus: { str:2,cha:1 } },
-];
-
-const CLASSES: Array<{ name: string; hitDie: number; savingThrows: string[]; skills: string[]; features: string[]; spellcaster: boolean }> = [
-  { name: 'Barbarian', hitDie: 12, savingThrows: ['str','con'], skills: ['Athletics','Intimidation','Nature','Perception','Survival'], features: ['Rage','Unarmored Defense'], spellcaster: false },
-  { name: 'Bard', hitDie: 8, savingThrows: ['dex','cha'], skills: ['Any (3 skills)'], features: ['Spellcasting','Bardic Inspiration'], spellcaster: true },
-  { name: 'Cleric', hitDie: 8, savingThrows: ['wis','cha'], skills: ['History','Insight','Medicine','Persuasion','Religion'], features: ['Spellcasting','Divine Domain','Channel Divinity'], spellcaster: true },
-  { name: 'Druid', hitDie: 8, savingThrows: ['int','wis'], skills: ['Arcana','Animal Handling','Insight','Medicine','Nature','Perception','Religion','Survival'], features: ['Spellcasting','Druidic','Wild Shape'], spellcaster: true },
-  { name: 'Fighter', hitDie: 10, savingThrows: ['str','con'], skills: ['Acrobatics','Animal Handling','Athletics','History','Insight','Intimidation','Perception','Survival'], features: ['Fighting Style','Second Wind','Action Surge'], spellcaster: false },
-  { name: 'Monk', hitDie: 8, savingThrows: ['str','dex'], skills: ['Acrobatics','Athletics','History','Insight','Religion','Stealth'], features: ['Unarmored Defense','Martial Arts','Ki'], spellcaster: false },
-  { name: 'Paladin', hitDie: 10, savingThrows: ['wis','cha'], skills: ['Athletics','Insight','Intimidation','Medicine','Persuasion','Religion'], features: ['Divine Sense','Lay on Hands','Spellcasting','Divine Smite'], spellcaster: true },
-  { name: 'Ranger', hitDie: 10, savingThrows: ['str','dex'], skills: ['Animal Handling','Athletics','Insight','Investigation','Nature','Perception','Stealth','Survival'], features: ['Favored Enemy','Natural Explorer','Spellcasting'], spellcaster: true },
-  { name: 'Rogue', hitDie: 8, savingThrows: ['dex','int'], skills: ['Acrobatics','Athletics','Deception','Insight','Intimidation','Investigation','Perception','Performance','Persuasion','Sleight of Hand','Stealth'], features: ['Expertise','Sneak Attack','Thieves Cant','Cunning Action'], spellcaster: false },
-  { name: 'Sorcerer', hitDie: 6, savingThrows: ['con','cha'], skills: ['Arcana','Deception','Insight','Intimidation','Persuasion','Religion'], features: ['Spellcasting','Sorcerous Origin','Font of Magic'], spellcaster: true },
-  { name: 'Warlock', hitDie: 8, savingThrows: ['wis','cha'], skills: ['Arcana','Deception','History','Intimidation','Investigation','Nature','Religion'], features: ['Otherworldly Patron','Pact Magic','Eldritch Invocations'], spellcaster: true },
-  { name: 'Wizard', hitDie: 6, savingThrows: ['int','wis'], skills: ['Arcana','History','Insight','Investigation','Medicine','Religion'], features: ['Spellcasting','Arcane Recovery','Arcane Tradition'], spellcaster: true },
-];
-
-const BACKGROUNDS: Array<{ name: string; skills: string[]; feature: string }> = [
-  { name: 'Acolyte', skills: ['Insight', 'Religion'], feature: 'Shelter of the Faithful' },
-  { name: 'Charlatan', skills: ['Deception', 'Sleight of Hand'], feature: 'False Identity' },
-  { name: 'Criminal', skills: ['Deception', 'Stealth'], feature: 'Criminal Contact' },
-  { name: 'Entertainer', skills: ['Acrobatics', 'Performance'], feature: 'By Popular Demand' },
-  { name: 'Folk Hero', skills: ['Animal Handling', 'Survival'], feature: 'Rustic Hospitality' },
-  { name: 'Guild Artisan', skills: ['Insight', 'Persuasion'], feature: 'Guild Membership' },
-  { name: 'Hermit', skills: ['Medicine', 'Religion'], feature: 'Discovery' },
-  { name: 'Noble', skills: ['History', 'Persuasion'], feature: 'Position of Privilege' },
-  { name: 'Outlander', skills: ['Athletics', 'Survival'], feature: 'Wanderer' },
-  { name: 'Sage', skills: ['Arcana', 'History'], feature: 'Researcher' },
-  { name: 'Sailor', skills: ['Athletics', 'Perception'], feature: "Ship's Passage" },
-  { name: 'Soldier', skills: ['Athletics', 'Intimidation'], feature: 'Military Rank' },
-  { name: 'Urchin', skills: ['Sleight of Hand', 'Stealth'], feature: 'City Secrets' },
-];
-
-const SKILL_NAMES = [
-  'Acrobatics','Animal Handling','Arcana','Athletics','Deception',
-  'History','Insight','Intimidation','Investigation','Medicine',
-  'Nature','Perception','Performance','Persuasion','Religion',
-  'Sleight of Hand','Stealth','Survival',
-];
-
-const SKILL_NAME_TO_KEY: Record<string, string> = {
-  'Acrobatics': 'acrobatics',
-  'Animal Handling': 'animal_handling',
-  'Arcana': 'arcana',
-  'Athletics': 'athletics',
-  'Deception': 'deception',
-  'History': 'history',
-  'Insight': 'insight',
-  'Intimidation': 'intimidation',
-  'Investigation': 'investigation',
-  'Medicine': 'medicine',
-  'Nature': 'nature',
-  'Perception': 'perception',
-  'Performance': 'performance',
-  'Persuasion': 'persuasion',
-  'Religion': 'religion',
-  'Sleight of Hand': 'sleight_of_hand',
-  'Stealth': 'stealth',
-  'Survival': 'survival',
-};
-
-function skillNameToKey(name: string): string {
-  return SKILL_NAME_TO_KEY[name] ?? name.toLowerCase().replace(/\s+/g, '_');
-}
-
-const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
-const STAT_KEYS = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
-const STAT_NAMES: Record<string, string> = { str:'Strength', dex:'Dexterity', con:'Constitution', int:'Intelligence', wis:'Wisdom', cha:'Charisma' };
-
-const EQUIPMENT_PACKS: Record<string, string[]> = {
-  "Dungeoneer's Pack": ["Backpack", "Crowbar", "Hammer", "10 Pitons", "10 Torches", "Tinderbox", "10 days rations", "Waterskin", "50ft Hemp Rope"],
-  "Burglar's Pack": ["Backpack", "1000 Ball Bearings", "String (10ft)", "Bell", "5 Candles", "Crowbar", "Hammer", "10 Pitons", "Hooded Lantern", "2 Flasks Oil", "5 Days Rations", "Tinderbox", "Waterskin", "50ft Hemp Rope"],
-  "Explorer's Pack": ["Backpack", "Bedroll", "Mess Kit", "Tinderbox", "10 Torches", "10 Days Rations", "Waterskin", "50ft Hemp Rope"],
-  "Scholar's Pack": ["Backpack", "Book of Lore", "Ink Bottle", "Ink Pen", "10 Sheets Parchment", "Bag of Sand", "Small Knife"],
-  "Entertainer's Pack": ["Backpack", "Bedroll", "2 Costumes", "5 Candles", "5 Days Rations", "Waterskin", "Disguise Kit"],
-  "Diplomat's Pack": ["Chest", "2 Map Cases", "2 Sets Fine Clothes", "Ink & Pen", "Lamp", "2 Flasks Oil", "5 Sheets Paper", "Perfume", "Wax & Seal", "Soap"],
-  "Priest's Pack": ["Backpack", "Blanket", "10 Candles", "Tinderbox", "Alms Box", "2 Blocks Incense", "Censer", "Vestments", "2 Days Rations", "Waterskin"],
-};
-
-const CLASS_EQUIPMENT: Record<string, { weapons: string[]; armor: string[]; packs: string[] }> = {
-  Barbarian: { weapons: ["Greataxe", "Two Handaxes", "4 Javelins"], armor: ["No armor (Unarmored Defense)"], packs: ["Explorer's Pack"] },
-  Bard: { weapons: ["Rapier", "Shortbow (20 arrows)"], armor: ["Leather Armor"], packs: ["Entertainer's Pack", "Diplomat's Pack"] },
-  Cleric: { weapons: ["Mace", "Light Crossbow (20 bolts)"], armor: ["Scale Mail", "Leather Armor", "Chain Mail"], packs: ["Priest's Pack", "Explorer's Pack"] },
-  Druid: { weapons: ["Wooden Shield", "Scimitar", "Quarterstaff"], armor: ["Leather Armor"], packs: ["Explorer's Pack"] },
-  Fighter: { weapons: ["Longsword & Shield", "Two Handaxes", "Crossbow (20 bolts)", "Longbow (20 arrows)"], armor: ["Chain Mail", "Leather Armor"], packs: ["Dungeoneer's Pack", "Explorer's Pack"] },
-  Monk: { weapons: ["Shortsword", "10 Darts"], armor: ["No armor (Unarmored Defense)"], packs: ["Dungeoneer's Pack", "Explorer's Pack"] },
-  Paladin: { weapons: ["Longsword & Shield", "5 Javelins", "Martial Weapon"], armor: ["Chain Mail"], packs: ["Priest's Pack", "Explorer's Pack"] },
-  Ranger: { weapons: ["Two Shortswords", "Two Handaxes", "Longbow (20 arrows)"], armor: ["Scale Mail", "Leather Armor"], packs: ["Dungeoneer's Pack", "Explorer's Pack"] },
-  Rogue: { weapons: ["Rapier", "Shortbow (20 arrows)", "Shortsword"], armor: ["Leather Armor"], packs: ["Burglar's Pack", "Dungeoneer's Pack", "Explorer's Pack"] },
-  Sorcerer: { weapons: ["Light Crossbow (20 bolts)", "Quarterstaff", "Dagger"], armor: ["No armor"], packs: ["Dungeoneer's Pack", "Explorer's Pack"] },
-  Warlock: { weapons: ["Light Crossbow (20 bolts)", "Simple Weapon", "Arcane Focus"], armor: ["Leather Armor"], packs: ["Dungeoneer's Pack", "Scholar's Pack"] },
-  Wizard: { weapons: ["Quarterstaff", "Dagger"], armor: ["No armor"], packs: ["Scholar's Pack", "Explorer's Pack"] },
-};
-
-function mod(score: number) { return Math.floor((score - 10) / 2); }
-function fmtMod(n: number) { return n >= 0 ? `+${n}` : `${n}`; }
-
-type StatKey = typeof STAT_KEYS[number];
-type AbilityMethod = 'roll' | 'standard';
-
-const TOKEN_COLORS = ['#C9A84C','#5B3FA6','#E07B39','#1B6B3A','#8B1A1A','#1A3A8B','#5A5A5A','#8B5A2B'];
-
-// ─── Steps ──────────────────────────────────────────────────────────────────────
-
-const STEPS = [
-  { num: 1, label: 'Race' },
-  { num: 2, label: 'Class' },
-  { num: 3, label: 'Background' },
-  { num: 4, label: 'Abilities' },
-  { num: 5, label: 'Skills' },
-  { num: 6, label: 'Equipment' },
-  { num: 7, label: 'Finish' },
-];
-
-interface FormState {
-  name: string;
-  race: string;
-  subrace: string;
-  class: string;
-  background: string;
-  level: number;
-  stats: Record<StatKey, number>;
-  abilityMethod: AbilityMethod;
-  standardAssignments: Record<StatKey, number | ''>;
-  selectedSkills: string[];
-  tokenColor: string;
-  alignment: string;
-  personalityTrait: string;
-  selectedWeapon: string;
-  selectedArmor: string;
-  selectedPack: string;
-  extraItems: string;
+function draftKey(campaignId: string | undefined) {
+  return `tavernos_character_draft_v1_${campaignId ?? "pool"}`;
 }
 
 export default function CharacterCreator() {
-  const { campaignId } = useParams();
+  const params = useParams<{ campaignId?: string }>();
+  const campaignId = params.campaignId;
   const [, setLocation] = useLocation();
-  const { data: campaign, isLoading } = useGetCampaign(campaignId || '');
-  const createMutation = useCreateCharacter();
+  const { data: campaign, isLoading } = useGetCampaign(campaignId ?? "");
+  const createMutation = useCreatePlayerCharacter();
 
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState<FormState>({
-    name: '',
-    race: 'Human',
-    subrace: '',
-    class: 'Fighter',
-    background: 'Soldier',
-    level: 1,
-    stats: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
-    abilityMethod: 'standard',
-    standardAssignments: { str: '', dex: '', con: '', int: '', wis: '', cha: '' },
-    selectedSkills: [],
-    tokenColor: '#C9A84C',
-    alignment: 'Neutral',
-    personalityTrait: '',
-    selectedWeapon: '',
-    selectedArmor: '',
-    selectedPack: '',
-    extraItems: '',
-  });
+  const [form, setForm] = useState<CharacterFormState>(() => defaultCharacterForm());
 
-  const selectedRace = RACES.find(r => r.name === form.race) || RACES[0];
-  const selectedClass = CLASSES.find(c => c.name === form.class) || CLASSES[0];
-  const selectedBackground = BACKGROUNDS.find(b => b.name === form.background) || BACKGROUNDS[0];
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey(campaignId));
+      if (raw) {
+        const parsed = JSON.parse(raw) as CharacterFormState;
+        setForm({ ...defaultCharacterForm(), ...parsed });
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [campaignId]);
 
-  const finalStats = (): Record<StatKey, number> => {
-    if (form.abilityMethod === 'standard') {
-      const base: Record<StatKey, number> = { str:10, dex:10, con:10, int:10, wis:10, cha:10 };
-      for (const k of STAT_KEYS) {
-        const v = form.standardAssignments[k];
-        if (v !== '') base[k] = v as number;
-      }
-      const bonus = selectedRace.bonus;
-      for (const k of STAT_KEYS) {
-        base[k] = (base[k] || 10) + (bonus[k] || 0);
-      }
-      return base;
-    } else {
-      const bonus = selectedRace.bonus;
-      const result = { ...form.stats };
-      for (const k of STAT_KEYS) {
-        result[k] = (result[k] || 10) + (bonus[k] || 0);
-      }
-      return result;
+  const saveDraft = () => {
+    try {
+      localStorage.setItem(draftKey(campaignId), JSON.stringify(form));
+    } catch {
+      /* ignore */
     }
   };
 
+  const selectedRace = RACES.find((r) => r.name === form.race) || RACES[0];
+  const selectedClass = CLASSES.find((c) => c.name === form.class) || CLASSES[0];
+  const selectedBackground = BACKGROUNDS.find((b) => b.name === form.background) || BACKGROUNDS[0];
+
+  const finalStats = (): Record<StatKey, number> =>
+    computeFinalStats(form, selectedRace);
+
   const rollStats = () => {
-    const newStats = { ...form.stats };
+    const next = { ...form.stats };
     for (const k of STAT_KEYS) {
-      const roll = new DiceRoll('4d6d1');
-      newStats[k] = roll.total;
+      const roll = new DiceRoll("4d6d1");
+      next[k] = roll.total;
     }
-    setForm(f => ({ ...f, stats: newStats, abilityMethod: 'roll' }));
+    setForm((f) => ({ ...f, stats: next, abilityMethod: "roll" }));
   };
 
   const computeHp = (stats: Record<StatKey, number>) => {
@@ -218,51 +83,85 @@ export default function CharacterCreator() {
     return Math.max(1, selectedClass.hitDie + conMod);
   };
 
-  const computeAc = (stats: Record<StatKey, number>) => {
-    return 10 + mod(stats.dex);
+  const computeAc = (stats: Record<StatKey, number>) => 10 + mod(stats.dex);
+
+  const handleAvatar = (file: File | null) => {
+    if (!file || !file.type.startsWith("image/")) {
+      setForm((f) => ({ ...f, avatarUrl: "" }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = typeof reader.result === "string" ? reader.result : "";
+      setForm((f) => ({ ...f, avatarUrl: url }));
+    };
+    reader.readAsDataURL(file);
   };
 
-  const allSkillsFromBg = selectedBackground.skills;
-  const classSkillChoicesCount = 2;
-  const availableClassSkills = SKILL_NAMES.filter(s => !allSkillsFromBg.includes(s));
-
   const handleComplete = () => {
-    if (!campaignId || !form.name.trim()) return;
+    if (!form.name.trim()) return;
 
     const stats = finalStats();
+    const hp = computeHp(stats);
+    const ac = computeAc(stats);
     const bgSkills = selectedBackground.skills.map(skillNameToKey);
-    const allSkillProfs = [...new Set([...bgSkills, ...form.selectedSkills.map(skillNameToKey)])];
+    const extraClass = pickAutoClassSkills(form.class, selectedBackground.skills);
+    const allSkillProfs = [...new Set([...bgSkills, ...extraClass.map(skillNameToKey)])];
     const savingThrowProfs = selectedClass.savingThrows;
 
     const features: Array<{ name: string; source: string; desc: string }> = [
-      ...selectedClass.features.map(f => ({ name: f, source: `${form.class}`, desc: '' })),
-      { name: selectedBackground.feature, source: form.background, desc: '' },
-      ...selectedRace.traits.map(t => ({ name: t, source: form.race, desc: '' })),
+      ...selectedClass.features.map((feat) => ({ name: feat, source: form.class, desc: "" })),
+      { name: selectedBackground.feature, source: form.background, desc: "" },
+      ...selectedRace.traits.map((t) => ({ name: t, source: form.race, desc: "" })),
     ];
 
-    const packItems = form.selectedPack ? (EQUIPMENT_PACKS[form.selectedPack] || []) : [];
+    const classEquip = CLASS_EQUIPMENT[selectedClass.name] || { weapons: [], armor: [], packs: [] };
+    const selectedWeapon = classEquip.weapons[0] || "";
+    const selectedArmor = classEquip.armor[0] || "";
+    const selectedPack = classEquip.packs[0] || "";
+    const packItems = selectedPack ? EQUIPMENT_PACKS[selectedPack] || [] : [];
     const inventoryItems = [
-      ...(form.selectedWeapon ? [{ name: form.selectedWeapon, type: 'weapon', qty: 1 }] : []),
-      ...(form.selectedArmor ? [{ name: form.selectedArmor, type: 'armor', qty: 1 }] : []),
-      ...(form.selectedPack ? [{ name: form.selectedPack, type: 'pack', qty: 1 }] : []),
-      ...packItems.map(item => ({ name: item, type: 'item', qty: 1 })),
-      ...form.extraItems.split('\n').filter(Boolean).map(item => ({ name: item.trim(), type: 'item', qty: 1 })),
+      ...(selectedWeapon ? [{ name: selectedWeapon, type: "weapon", qty: 1 }] : []),
+      ...(selectedArmor ? [{ name: selectedArmor, type: "armor", qty: 1 }] : []),
+      ...(selectedPack ? [{ name: selectedPack, type: "pack", qty: 1 }] : []),
+      ...packItems.map((item) => ({ name: item, type: "item", qty: 1 })),
+      ...form.extraItems
+        .split("\n")
+        .filter(Boolean)
+        .map((item) => ({ name: item.trim(), type: "item", qty: 1 })),
     ];
+
     createMutation.mutate(
       {
-        campaignId,
         data: {
           name: form.name.trim(),
+          campaignId: campaignId || undefined,
           race: form.race,
           subrace: form.subrace || undefined,
           class: form.class,
+          subclass: form.subclass || undefined,
           background: form.background,
           level: form.level,
-          stats,
-          hp: computeHp(stats),
-          maxHp: computeHp(stats),
-          ac: computeAc(stats),
+          alignment: form.alignment,
+          strength: stats.str,
+          dexterity: stats.dex,
+          constitution: stats.con,
+          intelligence: stats.int,
+          wisdom: stats.wis,
+          charisma: stats.cha,
+          hit_points: hp,
+          armor_class: ac,
           speed: selectedRace.speed,
+          personality: form.personality || undefined,
+          backstory: form.backstory || undefined,
+          ideals: form.ideals || undefined,
+          bonds: form.bonds || undefined,
+          flaws: form.flaws || undefined,
+          appearance: form.appearance || undefined,
+          notes: form.notes || undefined,
+          avatar_url: form.avatarUrl || undefined,
+          stats,
+          game_system: "D&D 5e",
           tokenColor: form.tokenColor,
           sheetData: {
             saveProficiencies: savingThrowProfs,
@@ -273,35 +172,42 @@ export default function CharacterCreator() {
             inventory: inventoryItems,
             features,
             alignment: form.alignment,
-            personalityTrait: form.personalityTrait,
+            personalityTrait: form.personality,
+            subclass: form.subclass,
           },
         },
       },
       {
         onSuccess: () => {
-          setLocation(`/session/${campaignId}/latest`);
+          try {
+            localStorage.removeItem(draftKey(campaignId));
+          } catch {
+            /* ignore */
+          }
+          if (campaignId) {
+            setLocation(`/session/${campaignId}/latest`);
+          } else {
+            setLocation("/dashboard");
+          }
         },
-      }
+      },
     );
   };
 
   const canProceed = (() => {
-    if (step === 1) return !!form.race;
-    if (step === 2) return !!form.class;
-    if (step === 3) return !!form.background;
-    if (step === 4) {
-      if (form.abilityMethod === 'standard') {
-        return STAT_KEYS.every(k => form.standardAssignments[k] !== '');
+    if (step === 1) return !!(form.race && form.class && form.background);
+    if (step === 2) {
+      if (form.abilityMethod === "standard") {
+        return STAT_KEYS.every((k) => form.standardAssignments[k] !== "");
       }
       return true;
     }
-    if (step === 5) return true;
-    if (step === 6) return true;
-    if (step === 7) return !!form.name.trim();
+    if (step === 3 || step === 4) return true;
+    if (step === 5) return !!form.name.trim();
     return true;
   })();
 
-  if (isLoading) {
+  if (campaignId && isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-primary font-display text-xl animate-pulse">Consulting the archives...</div>
@@ -312,38 +218,42 @@ export default function CharacterCreator() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <div className="z-10 w-full max-w-2xl">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-display text-primary gold-text-glow mb-1">Forge Your Legend</h1>
-          <p className="text-muted-foreground font-label tracking-widest text-sm">{campaign?.name}</p>
+          <p className="text-muted-foreground font-label tracking-widest text-sm">
+            {campaign ? campaign.name : "New character sheet"}
+          </p>
         </div>
 
-        {/* Stepper */}
-        <div className="flex items-center justify-between mb-8 px-4 relative">
+        <div className="flex items-center justify-between mb-8 px-2 relative">
           <div className="absolute top-4 left-4 right-4 h-px bg-border" />
-          {STEPS.map(s => (
+          {CREATOR_STEPS.map((s) => (
             <button
               key={s.num}
+              type="button"
               onClick={() => s.num < step && setStep(s.num)}
               className="relative flex flex-col items-center bg-background px-1"
             >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 font-bold text-sm transition-all ${
-                step > s.num
-                  ? 'bg-primary border-primary text-card'
-                  : step === s.num
-                  ? 'bg-primary/20 border-primary text-primary scale-110'
-                  : 'bg-card border-border text-muted-foreground'
-              }`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 font-bold text-sm transition-all ${
+                  step > s.num
+                    ? "bg-primary border-primary text-card"
+                    : step === s.num
+                      ? "bg-primary/20 border-primary text-primary scale-110"
+                      : "bg-card border-border text-muted-foreground"
+                }`}
+              >
                 {step > s.num ? <Check className="w-4 h-4" /> : s.num}
               </div>
-              <span className={`text-[10px] font-label mt-1.5 uppercase font-bold whitespace-nowrap ${step >= s.num ? 'text-primary' : 'text-muted-foreground/50'}`}>
+              <span
+                className={`text-[10px] font-label mt-1.5 uppercase font-bold whitespace-nowrap ${step >= s.num ? "text-primary" : "text-muted-foreground/50"}`}
+              >
                 {s.label}
               </span>
             </button>
           ))}
         </div>
 
-        {/* Panel */}
         <div className="glass-panel rounded-xl overflow-hidden min-h-[420px] flex flex-col">
           <AnimatePresence mode="wait">
             <motion.div
@@ -354,598 +264,417 @@ export default function CharacterCreator() {
               transition={{ duration: 0.2 }}
               className="flex-1 flex flex-col"
             >
-              {/* Step 1: Race */}
               {step === 1 && (
-                <StepRace form={form} setForm={setForm} />
+                <div className="flex flex-col flex-1 p-6 gap-4 overflow-y-auto">
+                  <h2 className="font-display text-2xl text-primary">Identity</h2>
+                  <p className="text-xs text-muted-foreground font-sans">
+                    Name is required before you finish — you can save a draft anytime.
+                  </p>
+                  <div>
+                    <label className="text-xs font-label font-bold text-primary uppercase block mb-1">Character name</label>
+                    <VttInput
+                      value={form.name}
+                      onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                      placeholder="Who are you?"
+                      className="text-lg"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-label font-bold text-primary uppercase block mb-1">Level</label>
+                      <VttInput
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={form.level}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, level: Math.max(1, parseInt(e.target.value, 10) || 1) }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-label font-bold text-primary uppercase block mb-1">Alignment</label>
+                      <select
+                        value={form.alignment}
+                        onChange={(e) => setForm((f) => ({ ...f, alignment: e.target.value }))}
+                        className="w-full h-10 rounded-sm border border-border bg-input/50 px-3 text-sm text-foreground"
+                      >
+                        {ALIGNMENTS.map((a) => (
+                          <option key={a} value={a}>
+                            {a}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-label font-bold text-primary uppercase block mb-1">Subclass / path (optional)</label>
+                    <VttInput
+                      value={form.subclass}
+                      onChange={(e) => setForm((f) => ({ ...f, subclass: e.target.value }))}
+                      placeholder="Champion, Evocation, etc."
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-label font-bold text-primary uppercase block mb-2">Race</label>
+                    <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                      {RACES.map((race) => (
+                        <button
+                          key={race.name}
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, race: race.name, subrace: "" }))}
+                          className={`p-2 border-2 rounded text-left text-xs font-label transition-all ${
+                            form.race === race.name ? "border-primary bg-primary/10" : "border-border hover:bg-card/50"
+                          }`}
+                        >
+                          {race.name}
+                        </button>
+                      ))}
+                    </div>
+                    {selectedRace.subrace && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {selectedRace.subrace.map((sr) => (
+                          <button
+                            key={sr}
+                            type="button"
+                            onClick={() => setForm((f) => ({ ...f, subrace: sr }))}
+                            className={`text-xs px-2 py-1 rounded border ${
+                              form.subrace === sr ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground"
+                            }`}
+                          >
+                            {sr}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-xs font-label font-bold text-primary uppercase block mb-2">Class</label>
+                    <div className="grid grid-cols-3 gap-2 max-h-36 overflow-y-auto">
+                      {CLASSES.map((cls) => (
+                        <button
+                          key={cls.name}
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, class: cls.name }))}
+                          className={`p-2 border-2 rounded text-left text-xs font-label transition-all ${
+                            form.class === cls.name ? "border-primary bg-primary/10" : "border-border hover:bg-card/50"
+                          }`}
+                        >
+                          {cls.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-label font-bold text-primary uppercase block mb-2">Background</label>
+                    <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                      {BACKGROUNDS.map((bg) => (
+                        <button
+                          key={bg.name}
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, background: bg.name }))}
+                          className={`p-2 border-2 rounded text-left text-xs font-label transition-all ${
+                            form.background === bg.name ? "border-primary bg-primary/10" : "border-border hover:bg-card/50"
+                          }`}
+                        >
+                          {bg.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               )}
-              {/* Step 2: Class */}
+
               {step === 2 && (
-                <StepClass form={form} setForm={setForm} />
+                <div className="flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
+                  <h2 className="font-display text-2xl text-primary">Ability scores</h2>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          abilityMethod: "standard",
+                          standardAssignments: { str: "", dex: "", con: "", int: "", wis: "", cha: "" },
+                        }))
+                      }
+                      className={`text-xs font-label px-3 py-1.5 rounded border ${
+                        form.abilityMethod === "standard" ? "border-primary text-primary bg-primary/10" : "border-border"
+                      }`}
+                    >
+                      Standard array
+                    </button>
+                    <button
+                      type="button"
+                      onClick={rollStats}
+                      className={`flex items-center gap-1 text-xs font-label px-3 py-1.5 rounded border ${
+                        form.abilityMethod === "roll" ? "border-primary text-primary bg-primary/10" : "border-border"
+                      }`}
+                    >
+                      <Dices className="w-3.5 h-3.5" /> Roll 4d6 (drop lowest)
+                    </button>
+                  </div>
+                  {form.abilityMethod === "standard" && (
+                    <p className="text-xs text-muted-foreground">
+                      Assign each value once: <strong>{STANDARD_ARRAY.join(", ")}</strong>
+                    </p>
+                  )}
+                  <div className="grid grid-cols-3 gap-3">
+                    {STAT_KEYS.map((k) => {
+                      const raceBonus = selectedRace.bonus[k] || 0;
+                      const rawVal =
+                        form.abilityMethod === "standard"
+                          ? form.standardAssignments[k] !== ""
+                            ? (form.standardAssignments[k] as number)
+                            : 0
+                          : form.stats[k] || 10;
+                      const finalVal = rawVal + raceBonus;
+                      return (
+                        <div key={k} className="flex flex-col items-center bg-card border border-border rounded p-3 gap-2">
+                          <span className="text-[10px] font-label font-bold text-primary uppercase">{STAT_NAMES[k]}</span>
+                          {form.abilityMethod === "standard" ? (
+                            <select
+                              value={form.standardAssignments[k]}
+                              onChange={(e) => {
+                                const v = e.target.value === "" ? "" : parseInt(e.target.value, 10);
+                                setForm((f) => ({
+                                  ...f,
+                                  standardAssignments: { ...f.standardAssignments, [k]: v },
+                                }));
+                              }}
+                              className="w-full bg-background border border-border rounded px-2 py-1.5 text-center text-lg font-serif font-bold"
+                            >
+                              <option value="">—</option>
+                              {STANDARD_ARRAY.filter(
+                                (val) =>
+                                  val === form.standardAssignments[k] ||
+                                  !Object.values(form.standardAssignments).includes(val),
+                              ).map((val) => (
+                                <option key={val} value={val}>
+                                  {val}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type="number"
+                              min={3}
+                              max={20}
+                              value={form.stats[k]}
+                              onChange={(e) =>
+                                setForm((f) => ({
+                                  ...f,
+                                  stats: { ...f.stats, [k]: parseInt(e.target.value, 10) || 10 },
+                                }))
+                              }
+                              className="w-full bg-background border border-border rounded px-2 py-1.5 text-center text-lg font-serif font-bold"
+                            />
+                          )}
+                          {raceBonus !== 0 && (
+                            <div className="text-[10px] text-primary font-label">+{raceBonus} racial</div>
+                          )}
+                          <div className="text-xl font-bold font-serif text-primary">{fmtMod(mod(finalVal))}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="text-sm font-label text-muted-foreground border-t border-border/30 pt-3">
+                    <div>
+                      HP (preview): <strong className="text-foreground">{computeHp(finalStats())}</strong>
+                    </div>
+                    <div>
+                      AC (preview): <strong className="text-foreground">{computeAc(finalStats())}</strong> · Speed:{" "}
+                      <strong className="text-foreground">{selectedRace.speed} ft</strong>
+                    </div>
+                  </div>
+                </div>
               )}
-              {/* Step 3: Background */}
+
               {step === 3 && (
-                <StepBackground form={form} setForm={setForm} />
+                <div className="flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
+                  <h2 className="font-display text-2xl text-primary">Story</h2>
+                  <p className="text-xs text-amber-200/80 font-sans border border-primary/20 bg-primary/5 rounded px-3 py-2">
+                    This is what Tavern AI will use to voice your character — be descriptive.
+                  </p>
+                  <div>
+                    <label className="text-xs font-label text-muted-foreground">Personality</label>
+                    <textarea
+                      value={form.personality}
+                      onChange={(e) => setForm((f) => ({ ...f, personality: e.target.value }))}
+                      placeholder="How does your character act? What do others notice first about them?"
+                      rows={3}
+                      maxLength={2000}
+                      className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans"
+                    />
+                    <span className="text-[10px] text-muted-foreground">{form.personality.length} / 2000</span>
+                  </div>
+                  <div>
+                    <label className="text-xs font-label text-muted-foreground">Backstory</label>
+                    <textarea
+                      value={form.backstory}
+                      onChange={(e) => setForm((f) => ({ ...f, backstory: e.target.value }))}
+                      placeholder="Where did they come from? What drives them?"
+                      rows={4}
+                      maxLength={8000}
+                      className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans"
+                    />
+                    <span className="text-[10px] text-muted-foreground">{form.backstory.length} / 8000</span>
+                  </div>
+                  <div>
+                    <label className="text-xs font-label text-muted-foreground">Ideals</label>
+                    <textarea
+                      value={form.ideals}
+                      onChange={(e) => setForm((f) => ({ ...f, ideals: e.target.value }))}
+                      rows={2}
+                      className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-label text-muted-foreground">Bonds</label>
+                    <textarea
+                      value={form.bonds}
+                      onChange={(e) => setForm((f) => ({ ...f, bonds: e.target.value }))}
+                      rows={2}
+                      className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-label text-muted-foreground">Flaws</label>
+                    <textarea
+                      value={form.flaws}
+                      onChange={(e) => setForm((f) => ({ ...f, flaws: e.target.value }))}
+                      rows={2}
+                      className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-label text-muted-foreground">Appearance</label>
+                    <textarea
+                      value={form.appearance}
+                      onChange={(e) => setForm((f) => ({ ...f, appearance: e.target.value }))}
+                      rows={3}
+                      className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans"
+                    />
+                  </div>
+                </div>
               )}
-              {/* Step 4: Ability Scores */}
+
               {step === 4 && (
-                <StepAbilities
-                  form={form}
-                  setForm={setForm}
-                  selectedRace={selectedRace}
-                  rollStats={rollStats}
-                />
+                <div className="flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
+                  <h2 className="font-display text-2xl text-primary">Notes &amp; portrait</h2>
+                  <div>
+                    <label className="text-xs font-label text-muted-foreground">Notes for DM / AI</label>
+                    <textarea
+                      value={form.notes}
+                      onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                      placeholder="Anything else the DM or AI should know — secrets, goals, fears..."
+                      rows={5}
+                      className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-label text-muted-foreground block mb-1">Portrait (optional)</label>
+                    <VttInput type="file" accept="image/*" onChange={(e) => handleAvatar(e.target.files?.[0] ?? null)} />
+                    {form.avatarUrl ? (
+                      <img src={form.avatarUrl} alt="" className="mt-2 max-h-32 rounded border border-border object-cover" />
+                    ) : null}
+                  </div>
+                  <div>
+                    <label className="text-xs font-label text-muted-foreground block mb-1">Token color</label>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {TOKEN_COLORS.map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, tokenColor: c }))}
+                          className="w-8 h-8 rounded-full border-2"
+                          style={{ backgroundColor: c, borderColor: form.tokenColor === c ? "#fff" : "transparent" }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
               )}
-              {/* Step 5: Skills & Proficiencies */}
+
               {step === 5 && (
-                <StepSkills
-                  form={form}
-                  setForm={setForm}
-                  selectedBackground={selectedBackground}
-                  selectedClass={selectedClass}
-                />
-              )}
-              {/* Step 6: Equipment */}
-              {step === 6 && (
-                <StepEquipment
-                  form={form}
-                  setForm={setForm}
-                  selectedClass={selectedClass}
-                />
-              )}
-              {/* Step 7: Finish */}
-              {step === 7 && (
-                <StepFinish
-                  form={form}
-                  setForm={setForm}
-                  finalStats={finalStats()}
-                  selectedClass={selectedClass}
-                  selectedRace={selectedRace}
-                />
+                <div className="flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
+                  <h2 className="font-display text-2xl text-primary">Review</h2>
+                  <div className="bg-card/50 border border-border/30 rounded p-4 space-y-2 text-sm">
+                    <p>
+                      <span className="text-muted-foreground">Name:</span>{" "}
+                      <strong className="text-foreground">{form.name.trim() || "(required)"}</strong>
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">Ancestry:</span>{" "}
+                      <strong>
+                        {form.subrace || form.race} {form.class}
+                        {form.subclass ? ` (${form.subclass})` : ""}
+                      </strong>{" "}
+                      · Lv {form.level} · {form.alignment}
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">Background:</span> <strong>{form.background}</strong>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      HP {computeHp(finalStats())} · AC {computeAc(finalStats())} · Spd {selectedRace.speed} ft
+                    </p>
+                    {form.personality && (
+                      <p className="text-xs line-clamp-3">
+                        <span className="text-primary font-label">Personality:</span> {form.personality}
+                      </p>
+                    )}
+                  </div>
+                </div>
               )}
             </motion.div>
           </AnimatePresence>
 
-          {/* Navigation */}
-          <div className="px-6 py-4 border-t border-border/30 flex justify-between items-center flex-shrink-0">
+          <div className="px-6 py-4 border-t border-border/30 flex justify-between items-center flex-wrap gap-2 flex-shrink-0">
             <button
+              type="button"
               disabled={step === 1}
-              onClick={() => setStep(s => s - 1)}
-              className="flex items-center gap-1.5 text-sm font-label font-bold text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors px-3 py-1.5"
+              onClick={() => setStep((s) => s - 1)}
+              className="flex items-center gap-1.5 text-sm font-label font-bold text-muted-foreground hover:text-foreground disabled:opacity-30 px-3 py-1.5"
             >
               <ChevronLeft className="w-4 h-4" /> Back
             </button>
-
-            {step < 7 ? (
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground font-label hidden sm:inline">Autosave: use Save draft</span>
+              <VttButton type="button" variant="outline" size="sm" onClick={saveDraft} className="gap-1">
+                <Save className="w-3.5 h-3.5" /> Save draft
+              </VttButton>
+            </div>
+            {step < 5 ? (
               <button
+                type="button"
                 disabled={!canProceed}
-                onClick={() => setStep(s => s + 1)}
-                className="flex items-center gap-1.5 px-5 py-2 bg-primary/20 border border-primary/50 text-primary rounded font-label font-bold text-sm hover:bg-primary/30 disabled:opacity-30 transition-colors"
+                onClick={() => setStep((s) => s + 1)}
+                className="flex items-center gap-1.5 px-5 py-2 bg-primary/20 border border-primary/50 text-primary rounded font-label font-bold text-sm hover:bg-primary/30 disabled:opacity-30"
               >
                 Continue <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
-              <button
+              <VttButton
+                type="button"
                 disabled={!canProceed || createMutation.isPending}
                 onClick={handleComplete}
-                className="flex items-center gap-1.5 px-6 py-2 bg-primary border border-primary/80 text-card rounded font-label font-bold text-sm hover:bg-primary/90 disabled:opacity-30 transition-colors"
+                className="gap-1.5"
               >
-                {createMutation.isPending ? 'Forging...' : 'Enter the World'}
+                {createMutation.isPending ? "Saving…" : "Save character"}
                 <ChevronRight className="w-4 h-4" />
-              </button>
+              </VttButton>
             )}
           </div>
         </div>
 
         <div className="mt-4 text-center">
           <button
-            onClick={() => setLocation('/dashboard')}
+            type="button"
+            onClick={() => setLocation("/dashboard")}
             className="text-xs text-muted-foreground hover:text-foreground font-label transition-colors"
           >
             Cancel & return to Dashboard
           </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Step Components ────────────────────────────────────────────────────────────
-
-function StepRace({ form, setForm }: { form: FormState; setForm: React.Dispatch<React.SetStateAction<FormState>> }) {
-  const selected = RACES.find(r => r.name === form.race) || RACES[0];
-  return (
-    <div className="flex flex-col flex-1 p-6 gap-4">
-      <div>
-        <h2 className="font-display text-2xl text-primary mb-1">Choose Your Race</h2>
-        <p className="text-xs text-muted-foreground font-sans">Your race determines your ancestry, special traits, and some ability score bonuses.</p>
-      </div>
-      <div className="grid grid-cols-3 gap-2 flex-1 overflow-y-auto">
-        {RACES.map(race => (
-          <button
-            key={race.name}
-            onClick={() => setForm(f => ({ ...f, race: race.name, subrace: '' }))}
-            className={`p-3 border-2 rounded text-left transition-all ${form.race === race.name ? 'border-primary bg-primary/10' : 'border-border hover:border-border/80 hover:bg-card/50'}`}
-          >
-            <div className="font-label font-bold text-sm">{race.name}</div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">
-              Spd {race.speed}ft ·{' '}
-              {Object.entries(race.bonus).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(', ') || 'Balanced'}
-            </div>
-          </button>
-        ))}
-      </div>
-      {selected && (
-        <div className="bg-card/50 rounded p-3 border border-border/30">
-          <div className="text-xs font-label font-bold text-primary mb-1">{selected.name} Traits</div>
-          <div className="flex flex-wrap gap-1">
-            {selected.traits.map(t => (
-              <span key={t} className="text-[10px] bg-primary/10 border border-primary/20 text-primary/80 px-2 py-0.5 rounded-full">{t}</span>
-            ))}
-          </div>
-          {selected.subrace && (
-            <div className="mt-2">
-              <label className="text-[10px] font-label font-bold text-muted-foreground uppercase">Subrace</label>
-              <div className="flex gap-1.5 mt-1 flex-wrap">
-                {selected.subrace.map(sr => (
-                  <button
-                    key={sr}
-                    onClick={() => setForm(f => ({ ...f, subrace: sr }))}
-                    className={`text-xs px-2.5 py-1 rounded border transition-colors ${form.subrace === sr ? 'border-primary bg-primary/20 text-primary' : 'border-border text-muted-foreground hover:border-border/80'}`}
-                  >
-                    {sr}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StepClass({ form, setForm }: { form: FormState; setForm: React.Dispatch<React.SetStateAction<FormState>> }) {
-  const selected = CLASSES.find(c => c.name === form.class) || CLASSES[0];
-  return (
-    <div className="flex flex-col flex-1 p-6 gap-4">
-      <div>
-        <h2 className="font-display text-2xl text-primary mb-1">Choose Your Class</h2>
-        <p className="text-xs text-muted-foreground font-sans">Your class shapes your role in the party and your combat abilities.</p>
-      </div>
-      <div className="grid grid-cols-3 gap-2 overflow-y-auto">
-        {CLASSES.map(cls => (
-          <button
-            key={cls.name}
-            onClick={() => setForm(f => ({ ...f, class: cls.name }))}
-            className={`p-3 border-2 rounded text-left transition-all ${form.class === cls.name ? 'border-primary bg-primary/10' : 'border-border hover:border-border/80 hover:bg-card/50'}`}
-          >
-            <div className="font-label font-bold text-sm">{cls.name}</div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">
-              d{cls.hitDie} · {cls.spellcaster ? '✦ Caster' : '⚔ Martial'}
-            </div>
-          </button>
-        ))}
-      </div>
-      {selected && (
-        <div className="bg-card/50 rounded p-3 border border-border/30 flex-shrink-0">
-          <div className="text-xs font-label font-bold text-primary mb-1">{selected.name} Features</div>
-          <div className="flex flex-wrap gap-1 mb-1.5">
-            {selected.features.map(f => (
-              <span key={f} className="text-[10px] bg-primary/10 border border-primary/20 text-primary/80 px-2 py-0.5 rounded-full">{f}</span>
-            ))}
-          </div>
-          <div className="text-[10px] text-muted-foreground">
-            Saving Throws: <strong>{selected.savingThrows.map(s => s.toUpperCase()).join(', ')}</strong>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StepBackground({ form, setForm }: { form: FormState; setForm: React.Dispatch<React.SetStateAction<FormState>> }) {
-  const selected = BACKGROUNDS.find(b => b.name === form.background) || BACKGROUNDS[0];
-  return (
-    <div className="flex flex-col flex-1 p-6 gap-4">
-      <div>
-        <h2 className="font-display text-2xl text-primary mb-1">Choose Your Background</h2>
-        <p className="text-xs text-muted-foreground font-sans">Backgrounds provide skill proficiencies and a unique feature based on your history.</p>
-      </div>
-      <div className="grid grid-cols-2 gap-2 overflow-y-auto flex-1">
-        {BACKGROUNDS.map(bg => (
-          <button
-            key={bg.name}
-            onClick={() => setForm(f => ({ ...f, background: bg.name }))}
-            className={`p-3 border-2 rounded text-left transition-all ${form.background === bg.name ? 'border-primary bg-primary/10' : 'border-border hover:border-border/80 hover:bg-card/50'}`}
-          >
-            <div className="font-label font-bold text-sm">{bg.name}</div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">{bg.skills.join(', ')}</div>
-          </button>
-        ))}
-      </div>
-      {selected && (
-        <div className="bg-card/50 rounded p-3 border border-border/30 flex-shrink-0">
-          <div className="text-xs font-label font-bold text-primary mb-1">Feature: {selected.feature}</div>
-          <div className="text-[10px] text-muted-foreground">
-            Skill Proficiencies: <strong>{selected.skills.join(', ')}</strong>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StepAbilities({
-  form, setForm, selectedRace, rollStats,
-}: {
-  form: FormState;
-  setForm: React.Dispatch<React.SetStateAction<FormState>>;
-  selectedRace: typeof RACES[0];
-  rollStats: () => void;
-}) {
-  const unusedStandard = STANDARD_ARRAY.filter(v =>
-    !Object.values(form.standardAssignments).includes(v)
-  );
-
-  const assignStandard = (stat: StatKey, val: number | '') => {
-    const prev = form.standardAssignments[stat];
-    const newAssign = { ...form.standardAssignments, [stat]: val };
-    setForm(f => ({ ...f, standardAssignments: newAssign }));
-  };
-
-  return (
-    <div className="flex-1 p-6 flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-display text-2xl text-primary mb-0.5">Ability Scores</h2>
-          <p className="text-xs text-muted-foreground font-sans">Assign values to your six ability scores.</p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setForm(f => ({ ...f, abilityMethod: 'standard', standardAssignments: { str:'',dex:'',con:'',int:'',wis:'',cha:'' } }))}
-            className={`text-xs font-label px-3 py-1.5 rounded border transition-colors ${form.abilityMethod === 'standard' ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground'}`}
-          >
-            Standard Array
-          </button>
-          <button
-            onClick={rollStats}
-            className={`flex items-center gap-1 text-xs font-label px-3 py-1.5 rounded border transition-colors ${form.abilityMethod === 'roll' ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground hover:border-border/80'}`}
-          >
-            <Dices className="w-3.5 h-3.5" /> Roll 4d6
-          </button>
-        </div>
-      </div>
-
-      {form.abilityMethod === 'standard' && (
-        <div className="text-xs text-muted-foreground mb-1">
-          Assign each value to an ability: <strong>{STANDARD_ARRAY.join(', ')}</strong>
-        </div>
-      )}
-
-      <div className="grid grid-cols-3 gap-3">
-        {STAT_KEYS.map(k => {
-          const raceBonus = selectedRace.bonus[k] || 0;
-          const rawVal = form.abilityMethod === 'standard'
-            ? (form.standardAssignments[k] !== '' ? (form.standardAssignments[k] as number) : 0)
-            : (form.stats[k] || 10);
-          const finalVal = rawVal + raceBonus;
-
-          return (
-            <div key={k} className="flex flex-col items-center bg-card border border-border rounded p-3 gap-2">
-              <span className="text-[10px] font-label font-bold text-primary uppercase">{STAT_NAMES[k]}</span>
-
-              {form.abilityMethod === 'standard' ? (
-                <select
-                  value={form.standardAssignments[k]}
-                  onChange={e => assignStandard(k, e.target.value === '' ? '' : parseInt(e.target.value))}
-                  className="w-full bg-background border border-border rounded px-2 py-1.5 text-center text-lg font-serif font-bold focus:outline-none focus:border-primary"
-                >
-                  <option value="">—</option>
-                  {STANDARD_ARRAY.filter(v => v === form.standardAssignments[k] || !Object.values(form.standardAssignments).includes(v)).map(v => (
-                    <option key={v} value={v}>{v}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="number"
-                  min={3}
-                  max={20}
-                  value={form.stats[k]}
-                  onChange={e => setForm(f => ({ ...f, stats: { ...f.stats, [k]: parseInt(e.target.value) || 10 } }))}
-                  className="w-full bg-background border border-border rounded px-2 py-1.5 text-center text-lg font-serif font-bold focus:outline-none focus:border-primary"
-                />
-              )}
-
-              <div className="text-center">
-                {raceBonus !== 0 && (
-                  <div className="text-[10px] text-primary font-label">+{raceBonus} racial</div>
-                )}
-                <div className="text-xl font-bold font-serif text-primary">{fmtMod(mod(finalVal))}</div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function StepSkills({
-  form, setForm, selectedBackground, selectedClass,
-}: {
-  form: FormState;
-  setForm: React.Dispatch<React.SetStateAction<FormState>>;
-  selectedBackground: typeof BACKGROUNDS[0];
-  selectedClass: typeof CLASSES[0];
-}) {
-  const bgSkills = selectedBackground.skills;
-  const saveProfs = selectedClass.savingThrows;
-  const maxClassSkills = 2;
-  const classSkillsChosen = form.selectedSkills.filter(s => !bgSkills.includes(s)).length;
-
-  const toggleSkill = (skill: string) => {
-    const isBg = bgSkills.includes(skill);
-    if (isBg) return; // can't toggle background skills
-
-    if (form.selectedSkills.includes(skill)) {
-      setForm(f => ({ ...f, selectedSkills: f.selectedSkills.filter(s => s !== skill) }));
-    } else if (classSkillsChosen < maxClassSkills) {
-      setForm(f => ({ ...f, selectedSkills: [...f.selectedSkills, skill] }));
-    }
-  };
-
-  return (
-    <div className="flex-1 p-6 flex flex-col gap-4">
-      <div>
-        <h2 className="font-display text-2xl text-primary mb-0.5">Skills & Proficiencies</h2>
-        <p className="text-xs text-muted-foreground font-sans">
-          Choose {maxClassSkills} additional skill proficiencies from your class list.
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-3 overflow-y-auto flex-1">
-        <div>
-          <div className="text-xs font-label font-bold text-primary/80 uppercase mb-1.5">
-            Saving Throws ({selectedClass.name})
-          </div>
-          <div className="flex gap-1.5 flex-wrap">
-            {STAT_KEYS.map(k => (
-              <span key={k} className={`text-xs px-2 py-0.5 rounded border font-label font-bold ${saveProfs.includes(k) ? 'bg-primary/20 border-primary text-primary' : 'border-border/30 text-muted-foreground/50'}`}>
-                {k.toUpperCase()}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div className="text-xs font-label font-bold text-primary/80 uppercase mb-1.5">
-            Skills ({classSkillsChosen}/{maxClassSkills} chosen)
-          </div>
-          <div className="grid grid-cols-2 gap-1">
-            {SKILL_NAMES.map(skill => {
-              const isBg = bgSkills.includes(skill);
-              const isChosen = form.selectedSkills.includes(skill);
-              const canChoose = !isBg && (isChosen || classSkillsChosen < maxClassSkills);
-
-              return (
-                <button
-                  key={skill}
-                  disabled={!isBg && !canChoose}
-                  onClick={() => toggleSkill(skill)}
-                  className={`flex items-center gap-2 px-2 py-1.5 rounded border text-left transition-all text-xs ${
-                    isBg
-                      ? 'border-primary/30 bg-primary/10 text-primary/80 cursor-default'
-                      : isChosen
-                      ? 'border-primary bg-primary/20 text-primary'
-                      : canChoose
-                      ? 'border-border text-muted-foreground hover:border-border/80 hover:bg-card/30'
-                      : 'border-border/20 text-muted-foreground/30 cursor-not-allowed'
-                  }`}
-                >
-                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${isBg || isChosen ? 'bg-primary border-primary' : 'border-border'}`} />
-                  {skill}
-                  {isBg && <span className="text-[9px] opacity-60 ml-auto">BG</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StepEquipment({
-  form, setForm, selectedClass,
-}: {
-  form: FormState;
-  setForm: React.Dispatch<React.SetStateAction<FormState>>;
-  selectedClass: typeof CLASSES[0];
-}) {
-  const classEquip = CLASS_EQUIPMENT[selectedClass.name] || { weapons: [], armor: [], packs: [] };
-
-  return (
-    <div className="flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
-      <div>
-        <h2 className="font-display text-2xl text-primary mb-1">Starting Equipment</h2>
-        <p className="text-xs text-muted-foreground font-sans">Choose your {selectedClass.name}'s starting gear.</p>
-      </div>
-
-      <div className="space-y-4">
-        {/* Weapon choice */}
-        <div>
-          <label className="text-xs font-label font-bold text-primary/80 uppercase mb-1.5 block">Weapon</label>
-          <div className="grid grid-cols-2 gap-1.5">
-            {classEquip.weapons.map(w => (
-              <button
-                key={w}
-                onClick={() => setForm(f => ({ ...f, selectedWeapon: f.selectedWeapon === w ? '' : w }))}
-                className={`px-3 py-2 border rounded text-left text-xs font-label transition-all ${
-                  form.selectedWeapon === w
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border text-muted-foreground hover:border-border/80 hover:bg-card/30'
-                }`}
-              >
-                <span className="font-bold">{w}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Armor choice */}
-        <div>
-          <label className="text-xs font-label font-bold text-primary/80 uppercase mb-1.5 block">Armor</label>
-          <div className="grid grid-cols-2 gap-1.5">
-            {classEquip.armor.map(a => (
-              <button
-                key={a}
-                onClick={() => setForm(f => ({ ...f, selectedArmor: f.selectedArmor === a ? '' : a }))}
-                className={`px-3 py-2 border rounded text-left text-xs font-label transition-all ${
-                  form.selectedArmor === a
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border text-muted-foreground hover:border-border/80 hover:bg-card/30'
-                }`}
-              >
-                {a}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Pack choice */}
-        <div>
-          <label className="text-xs font-label font-bold text-primary/80 uppercase mb-1.5 block">Adventuring Pack</label>
-          <div className="grid grid-cols-2 gap-1.5">
-            {classEquip.packs.map(p => (
-              <button
-                key={p}
-                onClick={() => setForm(f => ({ ...f, selectedPack: f.selectedPack === p ? '' : p }))}
-                className={`px-3 py-2 border rounded text-left text-xs font-label transition-all ${
-                  form.selectedPack === p
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border text-muted-foreground hover:border-border/80 hover:bg-card/30'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-          {form.selectedPack && EQUIPMENT_PACKS[form.selectedPack] && (
-            <div className="mt-2 p-2 bg-card/30 rounded border border-border/20">
-              <div className="text-[10px] font-label text-muted-foreground">
-                {EQUIPMENT_PACKS[form.selectedPack].join(' · ')}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Extra items */}
-        <div>
-          <label className="text-xs font-label font-bold text-primary/80 uppercase mb-1 block">Additional Items (optional, one per line)</label>
-          <textarea
-            value={form.extraItems}
-            onChange={e => setForm(f => ({ ...f, extraItems: e.target.value }))}
-            placeholder="Holy symbol&#10;Thieves' tools&#10;..."
-            rows={3}
-            className="w-full bg-background border border-border rounded px-3 py-2 text-xs font-sans text-foreground focus:outline-none focus:border-primary resize-none"
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StepFinish({
-  form, setForm, finalStats, selectedClass, selectedRace,
-}: {
-  form: FormState;
-  setForm: React.Dispatch<React.SetStateAction<FormState>>;
-  finalStats: Record<StatKey, number>;
-  selectedClass: typeof CLASSES[0];
-  selectedRace: typeof RACES[0];
-}) {
-  const conMod = mod(finalStats.con);
-  const hp = Math.max(1, selectedClass.hitDie + conMod);
-  const ac = 10 + mod(finalStats.dex);
-
-  return (
-    <div className="flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
-      <div>
-        <h2 className="font-display text-2xl text-primary mb-1">Finishing Touches</h2>
-        <p className="text-xs text-muted-foreground font-sans">Name your character and choose their appearance.</p>
-      </div>
-
-      <div className="space-y-3">
-        <div>
-          <label className="text-xs font-label font-bold text-primary uppercase block mb-1">Character Name *</label>
-          <input
-            autoFocus
-            value={form.name}
-            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder="Enter your character's name..."
-            className="w-full bg-background border-2 border-primary/30 focus:border-primary rounded px-3 py-2.5 text-lg font-serif text-foreground focus:outline-none transition-colors"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs font-label font-bold text-primary uppercase block mb-1">Alignment</label>
-            <select
-              value={form.alignment}
-              onChange={e => setForm(f => ({ ...f, alignment: e.target.value }))}
-              className="w-full bg-background border border-border rounded px-2.5 py-2 text-sm text-foreground font-sans focus:outline-none focus:border-primary"
-            >
-              {['Lawful Good','Neutral Good','Chaotic Good','Lawful Neutral','True Neutral','Chaotic Neutral','Lawful Evil','Neutral Evil','Chaotic Evil'].map(a => (
-                <option key={a}>{a}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-label font-bold text-primary uppercase block mb-1">Token Color</label>
-            <div className="flex gap-1.5 flex-wrap mt-1">
-              {TOKEN_COLORS.map(c => (
-                <button
-                  key={c}
-                  onClick={() => setForm(f => ({ ...f, tokenColor: c }))}
-                  className="w-7 h-7 rounded-full border-2 transition-all"
-                  style={{ backgroundColor: c, borderColor: form.tokenColor === c ? '#fff' : 'transparent' }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <label className="text-xs font-label font-bold text-primary uppercase block mb-1">Personality Trait (optional)</label>
-          <textarea
-            value={form.personalityTrait}
-            onChange={e => setForm(f => ({ ...f, personalityTrait: e.target.value }))}
-            placeholder="Describe a personality trait..."
-            rows={2}
-            className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground focus:outline-none focus:border-primary resize-none"
-          />
-        </div>
-      </div>
-
-      {/* Summary */}
-      <div className="bg-card/50 border border-border/30 rounded p-3">
-        <div className="text-xs font-label font-bold text-primary mb-2">Character Summary</div>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs font-sans text-muted-foreground">
-          <span>Race: <strong className="text-foreground">{form.subrace || form.race}</strong></span>
-          <span>Class: <strong className="text-foreground">{form.class}</strong></span>
-          <span>Background: <strong className="text-foreground">{form.background}</strong></span>
-          <span>Speed: <strong className="text-foreground">{selectedRace.speed} ft</strong></span>
-          <span>HP: <strong className="text-foreground">{hp}</strong></span>
-          <span>AC: <strong className="text-foreground">{ac}</strong></span>
-        </div>
-        <div className="flex gap-3 mt-2 flex-wrap">
-          {STAT_KEYS.map(k => (
-            <div key={k} className="text-center">
-              <div className="text-[9px] font-label uppercase text-muted-foreground">{k.toUpperCase()}</div>
-              <div className="text-sm font-bold font-serif">{finalStats[k]}</div>
-              <div className="text-[9px] text-primary/70">{fmtMod(mod(finalStats[k]))}</div>
-            </div>
-          ))}
         </div>
       </div>
     </div>

@@ -14,14 +14,16 @@ import {
   useUpdateSession,
   Character,
   GameSession,
+  type Token,
 } from '@workspace/api-client-react';
 import { useVttSocket } from '@/hooks/use-socket';
 import { MapCanvas } from '@/components/vtt/MapCanvas';
 import { CharacterSheet } from '@/components/vtt/CharacterSheet';
 import { InitiativeBar, type InitiativeCombatant } from '@/components/vtt/InitiativeBar';
 import { ChatPanel } from '@/components/vtt/ChatPanel';
+import { RollsPanel } from '@/components/vtt/RollsPanel';
 import { DiceRoll } from 'rpg-dice-roller';
-import { LogOut, Menu, X, Wifi, WifiOff, Dices, StickyNote, Shield, Swords } from 'lucide-react';
+import { LogOut, X, Wifi, WifiOff, Dices, StickyNote, Shield, Swords, MessageSquare, User, ScrollText } from 'lucide-react';
 
 const CONDITIONS = [
   'Blinded','Charmed','Deafened','Exhaustion','Frightened',
@@ -47,6 +49,17 @@ interface FogRect {
   y: number;
   w: number;
   h: number;
+}
+
+interface FogPolygon {
+  points: number[];
+}
+
+interface FogData {
+  revealed: FogRect[];
+  hidden: FogRect[];
+  hiddenPolygons?: FogPolygon[];
+  revealedPolygons?: FogPolygon[];
 }
 
 export default function Session() {
@@ -125,7 +138,9 @@ export default function Session() {
 
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [rightSidebarTab, setRightSidebarTab] = useState<'character' | 'rolls'>('character');
   const [dmDrawerOpen, setDmDrawerOpen] = useState(false);
+  const [placementCombatant, setPlacementCombatant] = useState<InitiativeCombatant | null>(null);
 
   const [hotbarDiceExpr, setHotbarDiceExpr] = useState('');
   const [hotbarLastRoll, setHotbarLastRoll] = useState<{ total: number; output: string } | null>(null);
@@ -192,7 +207,7 @@ export default function Session() {
     refetchMaps();
   };
 
-  const handleTokenPlace = (mapId: string, token: { id: string; name: string; x: number; y: number; color?: string; hp?: number; maxHp?: number; characterId?: string }) => {
+  const handleTokenPlace = (mapId: string, token: Token) => {
     emit('token_place', { mapId, token });
   };
 
@@ -200,7 +215,7 @@ export default function Session() {
     emit('token_remove', { mapId, tokenId });
   };
 
-  const handleFogUpdate = (mapId: string, fogData: { revealed: FogRect[]; hidden: FogRect[] }) => {
+  const handleFogUpdate = (mapId: string, fogData: FogData) => {
     emit('fog_update', { mapId, fogData });
   };
 
@@ -308,9 +323,9 @@ export default function Session() {
           <button
             onClick={() => setLeftPanelOpen(!leftPanelOpen)}
             className="p-1 hover:bg-white/10 rounded"
-            title="Toggle Character Sheet"
+            title="Party chat & video"
           >
-            <Menu className="w-5 h-5 text-primary" />
+            <MessageSquare className="w-5 h-5 text-primary" />
           </button>
           <div className="font-display font-bold text-lg text-primary gold-text-glow tracking-wider">
             {campaign.name}
@@ -351,9 +366,9 @@ export default function Session() {
           <button
             onClick={() => setRightPanelOpen(!rightPanelOpen)}
             className="p-1 hover:bg-white/10 rounded"
-            title="Toggle Chat Panel"
+            title="Character sheet & rolls"
           >
-            <Menu className="w-5 h-5 text-primary" />
+            <User className="w-5 h-5 text-primary" />
           </button>
         </div>
       </header>
@@ -368,14 +383,15 @@ export default function Session() {
         onPrevTurn={handlePrevTurn}
         onOrderUpdate={handleInitiativeOrderUpdate}
         characters={characters || []}
+        onBeginMapPlacement={isDm ? (c) => setPlacementCombatant(c) : undefined}
       />
 
       {/* MAIN WORKSPACE */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* LEFT PANEL: Character Sheet */}
+        {/* LEFT PANEL: Party chat + video + dice */}
         <div
-          className={`absolute lg:relative z-20 h-full transition-all duration-300 ease-in-out border-r border-border shadow-2xl lg:shadow-none bg-background flex-shrink-0 ${
-            leftPanelOpen ? 'translate-x-0 w-[360px]' : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-none lg:overflow-hidden'
+          className={`absolute lg:relative z-20 h-full transition-all duration-300 ease-in-out border-r border-border shadow-2xl lg:shadow-none bg-background flex-shrink-0 flex flex-col min-h-0 min-w-0 ${
+            leftPanelOpen ? 'translate-x-0 w-[min(100vw,400px)] lg:w-[400px]' : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-none lg:overflow-hidden'
           }`}
         >
           {leftPanelOpen && (
@@ -383,45 +399,6 @@ export default function Session() {
               <button
                 className="lg:hidden absolute top-2 right-2 p-1 z-50 bg-card rounded-full border border-border"
                 onClick={() => setLeftPanelOpen(false)}
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <CharacterSheet
-                character={myCharacter}
-                isDm={isDm}
-                allCharacters={characters || []}
-                onRoll={handleRoll}
-                onUpdateHp={handleHpChange}
-                campaignId={campaignId || ''}
-              />
-            </>
-          )}
-        </div>
-
-        {/* CENTER: Map Canvas */}
-        <div className="flex-1 relative bg-black min-w-0">
-          <MapCanvas
-            map={activeMap}
-            characters={characters || []}
-            onTokenMove={handleTokenMove}
-            onFogUpdate={handleFogUpdate}
-            onTokenPlace={handleTokenPlace}
-            onTokenRemove={handleTokenRemove}
-            isDm={isDm}
-          />
-        </div>
-
-        {/* RIGHT PANEL: Chat & DM Tools */}
-        <div
-          className={`absolute right-0 lg:relative z-20 h-full transition-all duration-300 ease-in-out border-l border-border shadow-2xl lg:shadow-none bg-background flex-shrink-0 ${
-            rightPanelOpen ? 'translate-x-0 w-[340px]' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:border-none lg:overflow-hidden'
-          }`}
-        >
-          {rightPanelOpen && (
-            <>
-              <button
-                className="lg:hidden absolute top-2 left-2 p-1 z-50 bg-card rounded-full border border-border"
-                onClick={() => setRightPanelOpen(false)}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -437,7 +414,83 @@ export default function Session() {
                 onCreateMap={isDm ? handleCreateMap : undefined}
                 onSwitchMap={isDm ? handleSwitchMap : undefined}
                 allMaps={maps ?? []}
+                panelVariant="communications"
               />
+            </>
+          )}
+        </div>
+
+        {/* CENTER: Map Canvas */}
+        <div className="flex-1 relative bg-black min-w-0">
+          <MapCanvas
+            map={activeMap}
+            characters={characters || []}
+            onTokenMove={handleTokenMove}
+            onFogUpdate={handleFogUpdate}
+            onTokenPlace={handleTokenPlace}
+            onTokenRemove={handleTokenRemove}
+            isDm={isDm}
+            placementDraft={placementCombatant}
+            onPlacementDraftConsumed={() => setPlacementCombatant(null)}
+          />
+        </div>
+
+        {/* RIGHT PANEL: Character sheet + Rolls */}
+        <div
+          className={`absolute right-0 lg:relative z-20 h-full transition-all duration-300 ease-in-out border-l border-border shadow-2xl lg:shadow-none bg-background flex-shrink-0 min-h-0 min-w-0 flex flex-col ${
+            rightPanelOpen ? 'translate-x-0 w-[min(100vw,400px)] lg:w-[400px]' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:border-none lg:overflow-hidden'
+          }`}
+        >
+          {rightPanelOpen && (
+            <>
+              <button
+                className="lg:hidden absolute top-2 left-2 p-1 z-50 bg-card rounded-full border border-border"
+                onClick={() => setRightPanelOpen(false)}
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="flex border-b border-border bg-card shrink-0 pt-8 lg:pt-0">
+                <button
+                  type="button"
+                  onClick={() => setRightSidebarTab('character')}
+                  className={`flex-1 py-2.5 text-xs font-label font-bold border-b-2 transition-colors flex items-center justify-center gap-1 ${
+                    rightSidebarTab === 'character'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <ScrollText className="w-3.5 h-3.5" /> Sheet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRightSidebarTab('rolls')}
+                  className={`flex-1 py-2.5 text-xs font-label font-bold border-b-2 transition-colors flex items-center justify-center gap-1 ${
+                    rightSidebarTab === 'rolls'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Dices className="w-3.5 h-3.5" /> Rolls
+                </button>
+              </div>
+              <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                {rightSidebarTab === 'character' ? (
+                  <CharacterSheet
+                    character={myCharacter}
+                    isDm={isDm}
+                    allCharacters={characters || []}
+                    onRoll={handleRoll}
+                    onUpdateHp={handleHpChange}
+                    campaignId={campaignId || ''}
+                  />
+                ) : (
+                  <RollsPanel
+                    messages={messages || []}
+                    myCharacter={myCharacter}
+                    onSendMessage={handleSendMessage}
+                  />
+                )}
+              </div>
             </>
           )}
         </div>
@@ -473,7 +526,7 @@ export default function Session() {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            {/* Drawer Content — reuse ChatPanel locked to DM tab */}
+            {/* Drawer Content — DM tools only (ChatPanel dmTools variant) */}
             <div className="flex-1 overflow-y-auto">
               <ChatPanel
                 messages={messages || []}
@@ -487,7 +540,7 @@ export default function Session() {
                 onCreateMap={handleCreateMap}
                 onSwitchMap={handleSwitchMap}
                 allMaps={maps ?? []}
-                defaultTab="dm"
+                panelVariant="dmTools"
               />
             </div>
           </div>

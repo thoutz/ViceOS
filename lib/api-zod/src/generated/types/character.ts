@@ -10,12 +10,15 @@ import type { CharacterSheetData } from "./characterSheetData";
 
 export interface Character {
   id: string;
-  campaignId: string;
+  campaignId?: string | null;
   userId: string;
   name: string;
   race?: string;
+  subrace?: string;
   class?: string;
+  subclass?: string;
   background?: string;
+  alignment?: string;
   level: number;
   hp: number;
   maxHp: number;
@@ -23,9 +26,26 @@ export interface Character {
   ac: number;
   speed: number;
   initiativeBonus?: number;
+  strength?: number;
+  dexterity?: number;
+  constitution?: number;
+  intelligence?: number;
+  wisdom?: number;
+  charisma?: number;
+  personality?: string;
+  backstory?: string;
+  ideals?: string;
+  bonds?: string;
+  flaws?: string;
+  appearance?: string;
+  notes?: string;
+  avatarUrl?: string;
+  gameSystem?: string;
+  isActive?: boolean;
   stats: AbilityScores;
   sheetData?: CharacterSheetData;
   tokenColor?: string;
   isNpc?: boolean;
   createdAt: Date;
+  updatedAt?: Date;
 }

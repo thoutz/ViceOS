@@ -33,6 +33,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/create-character" component={CharacterCreator} />
       <Route path="/campaign/:campaignId/create-character" component={CharacterCreator} />
       <Route path="/session/:campaignId/:sessionId" component={Session} />
       <Route component={NotFound} />

@@ -8,4 +8,6 @@
 
 export interface JoinCampaignRequest {
   inviteCode: string;
+  /** Optional. When set, binds this membership to your character sheet. */
+  characterId?: string;
 }

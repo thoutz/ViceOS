@@ -12,8 +12,14 @@ export interface Campaign {
   name: string;
   description?: string;
   gameSystem: string;
+  setting?: string;
+  startingLocation?: string;
+  tone?: string;
+  houseRules?: string;
+  status?: string;
   inviteCode: string;
   dmUserId: string;
   settings?: CampaignSettings;
   createdAt: Date;
+  updatedAt?: Date;
 }

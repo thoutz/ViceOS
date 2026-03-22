@@ -4,17 +4,42 @@ import {
   useGetMe, 
   useListCampaigns, 
   useCreateCampaign, 
-  useJoinCampaign 
+  useJoinCampaign,
+  useListPendingInvites,
+  useAcceptCampaignInvite,
+  useDeclineCampaignInvite,
 } from '@workspace/api-client-react';
 import { VttButton } from '@/components/VttButton';
 import { VttInput } from '@/components/VttInput';
-import { Book, Plus, Users, Swords, LogOut } from 'lucide-react';
+import { Book, Plus, Users, Swords, LogOut, Mail } from 'lucide-react';
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { data: user, isLoading: userLoading, isError } = useGetMe();
   
-  const { data: campaigns, refetch: refetchCampaigns } = useListCampaigns();
+  const { data: campaignList, refetch: refetchCampaigns } = useListCampaigns();
+  const { data: pendingInvites = [], refetch: refetchPendingInvites } = useListPendingInvites();
+  const acceptInviteMutation = useAcceptCampaignInvite({
+    mutation: {
+      onSuccess: async (data) => {
+        await refetchCampaigns();
+        await refetchPendingInvites();
+        setLocation(`/campaign/${data.campaignId}/create-character`);
+      },
+    },
+  });
+  const declineInviteMutation = useDeclineCampaignInvite({
+    mutation: {
+      onSuccess: async () => {
+        await refetchCampaigns();
+        await refetchPendingInvites();
+      },
+    },
+  });
+  const campaigns = [
+    ...(campaignList?.as_dm ?? []),
+    ...(campaignList?.as_player ?? []),
+  ];
   const createMutation = useCreateCampaign();
   const joinMutation = useJoinCampaign();
 
@@ -118,6 +143,54 @@ export default function Dashboard() {
               </form>
             </div>
           </div>
+        )}
+
+        {pendingInvites.length > 0 && (
+          <section className="mb-10" aria-label="Pending campaign invitations">
+            <h3 className="text-2xl font-display mb-4 flex items-center gap-2">
+              <Mail className="w-6 h-6 text-primary" />
+              Invitations
+            </h3>
+            <ul className="space-y-3">
+              {pendingInvites.map((inv) => (
+                <li
+                  key={inv.id}
+                  className="glass-panel rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                >
+                  <div>
+                    <p className="text-lg font-display text-primary">{inv.campaignName}</p>
+                    <p className="text-sm text-muted-foreground font-sans">
+                      From <span className="text-foreground">{inv.invitedByUsername}</span>
+                      {inv.expiresAt && (
+                        <> · Expires {new Date(inv.expiresAt).toLocaleString()}</>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <VttButton
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={declineInviteMutation.isPending}
+                      onClick={() => declineInviteMutation.mutate({ inviteId: inv.id })}
+                    >
+                      Decline
+                    </VttButton>
+                    <VttButton
+                      type="button"
+                      size="sm"
+                      disabled={acceptInviteMutation.isPending}
+                      onClick={() =>
+                        acceptInviteMutation.mutate({ inviteId: inv.id, data: {} })
+                      }
+                    >
+                      Accept
+                    </VttButton>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
 
         {/* Campaigns Grid */}

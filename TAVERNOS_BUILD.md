@@ -277,6 +277,7 @@ GET    /api/campaigns/:cId/sessions              — List sessions
 POST   /api/campaigns/:cId/sessions              — Create session (DM only)
 GET    /api/campaigns/:cId/sessions/:sId         — Get session
 PUT    /api/campaigns/:cId/sessions/:sId         — Update session (DM only)
+POST   /api/campaigns/:cId/sessions/:sId/livekit-token — Mint LiveKit JWT for session video (member)
 ```
 
 ### Map Routes
@@ -421,10 +422,10 @@ File: `artifacts/tavernos/src/pages/session.tsx`
 │  INITIATIVE STRIP (scrollable horizontal)         │
 ├────────────────┬───────────────┬──────────────────┤
 │                │               │                  │
-│  CHARACTER     │   MAP CANVAS  │   CHAT / DM      │
-│  SHEET         │   (Konva.js)  │   TOOLS          │
-│  (left panel)  │   (center)    │   (right panel)  │
-│                │               │                  │
+│  CHAT + VIDEO  │   MAP CANVAS  │   SHEET + ROLLS  │
+│  (LiveKit +    │   (Konva.js)  │   (tabs)         │
+│   table chat)  │   (center)    │   (right panel)  │
+│  (left panel)  │               │                  │
 └────────────────┴───────────────┴──────────────────┘
 │  BOTTOM HOTBAR: Dice | Conditions | Notes         │
 └──────────────────────────────────────────────────┘
@@ -439,7 +440,7 @@ const activeMap = (maps && activeSession?.activeMapId
 The session stores an `activeMapId`. The DM can switch it via the map switcher UI in the DM tools panel, which calls `updateSession({ activeMapId: newMapId })`.
 
 ### Responsive Panels
-Both the character sheet (left) and chat panel (right) collapse on small screens, controlled by hamburger buttons in the top bar.
+The party chat/video column (left) and character sheet (right) collapse on small screens, controlled by the toggles in the top bar (message and user icons).
 
 ---
 
@@ -523,10 +524,11 @@ HP can be edited inline with +/- buttons; changes emit `hp_update` socket event.
 
 File: `artifacts/tavernos/src/components/vtt/ChatPanel.tsx`
 
-### Chat Tabs
-1. **Chat** — all messages + dice rolls, with input area
-2. **Dice** — filtered to dice-type messages only
-3. **DM** — DM tools panel (initiative, NPC search, map management, encounter builder, ambient scenes, secret layer)
+### Chat / communications (left panel)
+- **Session video** — LiveKit room stacked above chat (same session for all players).
+- **Chat** — table talk only; messages with `type === 'dice'` are excluded from this stream so dice are not duplicated (they appear only on the **Rolls** tab on the right).
+- **Rolls** (right sidebar tab) — dice message log, quick rolls, and skill check shortcuts (`RollsPanel`).
+- **DM tools** — only in the DM Command Center drawer (`ChatPanel` `dmTools` variant).
 
 ### Dice Rolling
 Uses `rpg-dice-roller` npm package for expression parsing:
@@ -556,7 +558,7 @@ Bottom bar includes quick-roll buttons for d4, d6, d8, d10, d12, d20, d100 and a
 ### Trigger
 A "⚔ DM" button in the top header bar (DM only) slides open a full-height overlay drawer from the right side of the screen.
 
-### Drawer Contents (reuses ChatPanel in DM tab mode)
+### Drawer Contents (`ChatPanel` `dmTools` variant)
 - **Initiative Manager** — drag-to-reorder initiative order
 - **NPC Quick Add** — searches Open5e API (`https://api.open5e.com/v1/monsters/`) and adds NPC to initiative
 - **Encounter Builder** — add creatures from Open5e to active encounter
@@ -751,6 +753,9 @@ pnpm --filter @workspace/api-spec run codegen
 | `SESSION_SECRET` | Yes (prod) | dev-only fallback | Express session secret |
 | `PORT` | No | 8080 | API server port |
 | `NODE_ENV` | No | development | `production` enables session hardening |
+| `LIVEKIT_URL` | For video | — | WebSocket URL (e.g. `wss://….livekit.cloud`) — returned to clients with token |
+| `LIVEKIT_API_KEY` | For video | — | LiveKit API key (server-only) |
+| `LIVEKIT_API_SECRET` | For video | — | LiveKit API secret (server-only) |
 
 ### Production Security Notes
 - `SESSION_SECRET` must be set — server exits with error if missing in `production` mode

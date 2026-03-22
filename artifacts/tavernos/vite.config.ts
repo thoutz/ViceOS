@@ -26,6 +26,8 @@ if (!basePath) {
   );
 }
 
+const workspaceRoot = path.resolve(import.meta.dirname, "..", "..");
+
 export default defineConfig({
   base: basePath,
   plugins: [
@@ -53,6 +55,10 @@ export default defineConfig({
     },
     dedupe: ["react", "react-dom"],
   },
+  optimizeDeps: {
+    // Pre-bundle the workspace client so dev matches production and `export *` re-exports stay stable.
+    include: ["@workspace/api-client-react"],
+  },
   root: path.resolve(import.meta.dirname),
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
@@ -64,6 +70,7 @@ export default defineConfig({
     allowedHosts: true,
     fs: {
       strict: true,
+      allow: [path.resolve(import.meta.dirname), workspaceRoot],
       deny: ["**/.*"],
     },
     proxy: {
