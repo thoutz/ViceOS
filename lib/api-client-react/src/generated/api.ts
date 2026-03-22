@@ -29,6 +29,8 @@ import type {
   CreateCharacterRequest,
   CreateMapRequest,
   CreatePlayerCharacterRequest,
+  DmStoryAssistantRequest,
+  DmStoryAssistantResponse,
   ErrorResponse,
   GameMap,
   GameSession,
@@ -43,6 +45,7 @@ import type {
   PendingInvite,
   PlayerCharacter,
   PostMessageRequest,
+  SessionAiContext,
   UpdateCharacterRequest,
   UpdateMapRequest,
   UpdatePlayerCharacterRequest,
@@ -2328,6 +2331,231 @@ export const useUpdateSession = <
   TContext
 > => {
   return useMutation(getUpdateSessionMutationOptions(options));
+};
+
+/**
+ * Returns campaign summary, party, session memory JSON blobs, recent chat, and a compiled plain-text narrative suitable for LLM prompts.
+ * @summary DM-only aggregated context for AI assistants
+ */
+export const getGetSessionAiContextUrl = (
+  campaignId: string,
+  sessionId: string,
+) => {
+  return `/api/campaigns/${campaignId}/sessions/${sessionId}/ai-context`;
+};
+
+export const getSessionAiContext = async (
+  campaignId: string,
+  sessionId: string,
+  options?: RequestInit,
+): Promise<SessionAiContext> => {
+  return customFetch<SessionAiContext>(
+    getGetSessionAiContextUrl(campaignId, sessionId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetSessionAiContextQueryKey = (
+  campaignId: string,
+  sessionId: string,
+) => {
+  return [
+    `/api/campaigns/${campaignId}/sessions/${sessionId}/ai-context`,
+  ] as const;
+};
+
+export const getGetSessionAiContextQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSessionAiContext>>,
+  TError = ErrorType<void>,
+>(
+  campaignId: string,
+  sessionId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSessionAiContext>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getGetSessionAiContextQueryKey(campaignId, sessionId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSessionAiContext>>
+  > = ({ signal }) =>
+    getSessionAiContext(campaignId, sessionId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(campaignId && sessionId),
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSessionAiContext>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSessionAiContextQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSessionAiContext>>
+>;
+export type GetSessionAiContextQueryError = ErrorType<void>;
+
+/**
+ * @summary DM-only aggregated context for AI assistants
+ */
+
+export function useGetSessionAiContext<
+  TData = Awaited<ReturnType<typeof getSessionAiContext>>,
+  TError = ErrorType<void>,
+>(
+  campaignId: string,
+  sessionId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSessionAiContext>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSessionAiContextQueryOptions(
+    campaignId,
+    sessionId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Server-side chat completion via Groq (OpenAI-compatible API). Requires GROQ_API_KEY. Default model is meta-llama/llama-4-scout-17b-16e-instruct.
+ * @summary DM story assistant (Groq)
+ */
+export const getPostDmStoryAssistantUrl = (
+  campaignId: string,
+  sessionId: string,
+) => {
+  return `/api/campaigns/${campaignId}/sessions/${sessionId}/ai-story-assistant`;
+};
+
+export const postDmStoryAssistant = async (
+  campaignId: string,
+  sessionId: string,
+  dmStoryAssistantRequest: DmStoryAssistantRequest,
+  options?: RequestInit,
+): Promise<DmStoryAssistantResponse> => {
+  return customFetch<DmStoryAssistantResponse>(
+    getPostDmStoryAssistantUrl(campaignId, sessionId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(dmStoryAssistantRequest),
+    },
+  );
+};
+
+export const getPostDmStoryAssistantMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof postDmStoryAssistant>>,
+    TError,
+    {
+      campaignId: string;
+      sessionId: string;
+      data: BodyType<DmStoryAssistantRequest>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof postDmStoryAssistant>>,
+  TError,
+  {
+    campaignId: string;
+    sessionId: string;
+    data: BodyType<DmStoryAssistantRequest>;
+  },
+  TContext
+> => {
+  const mutationKey = ["postDmStoryAssistant"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof postDmStoryAssistant>>,
+    {
+      campaignId: string;
+      sessionId: string;
+      data: BodyType<DmStoryAssistantRequest>;
+    }
+  > = (props) => {
+    const { campaignId, sessionId, data } = props ?? {};
+
+    return postDmStoryAssistant(campaignId, sessionId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PostDmStoryAssistantMutationResult = NonNullable<
+  Awaited<ReturnType<typeof postDmStoryAssistant>>
+>;
+export type PostDmStoryAssistantMutationBody =
+  BodyType<DmStoryAssistantRequest>;
+export type PostDmStoryAssistantMutationError = ErrorType<void>;
+
+/**
+ * @summary DM story assistant (Groq)
+ */
+export const usePostDmStoryAssistant = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof postDmStoryAssistant>>,
+    TError,
+    {
+      campaignId: string;
+      sessionId: string;
+      data: BodyType<DmStoryAssistantRequest>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof postDmStoryAssistant>>,
+  TError,
+  {
+    campaignId: string;
+    sessionId: string;
+    data: BodyType<DmStoryAssistantRequest>;
+  },
+  TContext
+> => {
+  return useMutation(getPostDmStoryAssistantMutationOptions(options));
 };
 
 /**

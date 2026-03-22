@@ -14,5 +14,13 @@ export interface UpdateSessionRequest {
   initiativeOrder?: InitiativeCombatant[];
   currentTurnIndex?: number;
   roundNumber?: number;
+  sessionNumber?: number;
   status?: UpdateSessionRequestStatus;
+  storyLog?: unknown[];
+  locationsData?: unknown[];
+  itemsData?: unknown[];
+  openThreads?: unknown[];
+  messageHistory?: unknown[];
+  startedAt?: Date | null;
+  endedAt?: Date | null;
 }

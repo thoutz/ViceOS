@@ -10,4 +10,6 @@ import type { CampaignWithRoleRole } from "./campaignWithRoleRole";
 
 export type CampaignWithRole = Campaign & {
   role: CampaignWithRoleRole;
+  /** When role is player, the character sheet UUID linked on the membership row (null until a hero is chosen or created). */
+  playerMembershipCharacterId?: string | null;
 };

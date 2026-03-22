@@ -556,6 +556,80 @@ paths:
               schema:
                 $ref: "#/components/schemas/GameSession"
 
+  /campaigns/{campaignId}/sessions/{sessionId}/ai-context:
+    get:
+      operationId: getSessionAiContext
+      tags: [sessions]
+      summary: DM-only aggregated context for AI assistants
+      description: >-
+        Returns campaign summary, party, session memory JSON blobs, recent chat,
+        and a compiled plain-text narrative suitable for LLM prompts.
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session AI context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionAiContext"
+        "403":
+          description: Forbidden — not the campaign DM
+        "404":
+          description: Session not found
+
+  /campaigns/{campaignId}/sessions/{sessionId}/ai-story-assistant:
+    post:
+      operationId: postDmStoryAssistant
+      tags: [sessions]
+      summary: DM story assistant (Groq)
+      description: >-
+        Server-side chat completion via Groq (OpenAI-compatible API). Requires GROQ_API_KEY.
+        Default model is meta-llama/llama-4-scout-17b-16e-instruct.
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DmStoryAssistantRequest"
+      responses:
+        "200":
+          description: Assistant reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DmStoryAssistantResponse"
+        "400":
+          description: Bad request
+        "403":
+          description: Forbidden — not the campaign DM
+        "404":
+          description: Session not found
+        "502":
+          description: Groq API error
+        "503":
+          description: Groq not configured on the server
+
   /campaigns/{campaignId}/sessions/{sessionId}/livekit-token:
     post:
       operationId: createLivekitToken
@@ -906,6 +980,10 @@ components:
             role:
               type: string
               enum: [dm, player]
+            playerMembershipCharacterId:
+              type: string
+              nullable: true
+              description: When role is player, the character sheet UUID linked on the membership row (null until a hero is chosen or created).
           required:
             - role
 
@@ -1341,8 +1419,14 @@ components:
           type: string
         name:
           type: string
+        sessionNumber:
+          type: integer
+        dmUserId:
+          type: string
+          nullable: true
         activeMapId:
           type: string
+          nullable: true
         initiativeOrder:
           type: array
           items:
@@ -1354,7 +1438,33 @@ components:
         status:
           type: string
           enum: [active, paused, ended]
+        storyLog:
+          type: array
+          items: {}
+        locationsData:
+          type: array
+          items: {}
+        itemsData:
+          type: array
+          items: {}
+        openThreads:
+          type: array
+          items: {}
+        messageHistory:
+          type: array
+          items: {}
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
         createdAt:
+          type: string
+          format: date-time
+        updatedAt:
           type: string
           format: date-time
       required:
@@ -1380,9 +1490,171 @@ components:
           type: integer
         roundNumber:
           type: integer
+        sessionNumber:
+          type: integer
         status:
           type: string
           enum: [active, paused, ended]
+        storyLog:
+          type: array
+          items: {}
+        locationsData:
+          type: array
+          items: {}
+        itemsData:
+          type: array
+          items: {}
+        openThreads:
+          type: array
+          items: {}
+        messageHistory:
+          type: array
+          items: {}
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    SessionAiContext:
+      type: object
+      description: Aggregated DM-facing context for LLM tooling
+      properties:
+        campaign:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            gameSystem:
+              type: string
+              nullable: true
+            setting:
+              type: string
+              nullable: true
+            startingLocation:
+              type: string
+              nullable: true
+            tone:
+              type: string
+              nullable: true
+            houseRules:
+              type: string
+              nullable: true
+            description:
+              type: string
+              nullable: true
+        session:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            sessionNumber:
+              type: integer
+            status:
+              type: string
+            roundNumber:
+              type: integer
+            currentTurnIndex:
+              type: integer
+            startedAt:
+              type: string
+              nullable: true
+            endedAt:
+              type: string
+              nullable: true
+            storyLog: {}
+            locationsData: {}
+            itemsData: {}
+            openThreads: {}
+            messageHistory: {}
+        party:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartyMemberBrief"
+        recentMessages:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecentMessageBrief"
+        compiledNarrativeContext:
+          type: string
+      required:
+        - campaign
+        - session
+        - party
+        - recentMessages
+        - compiledNarrativeContext
+
+    PartyMemberBrief:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        race:
+          type: string
+          nullable: true
+        class:
+          type: string
+          nullable: true
+        level:
+          type: integer
+        isNpc:
+          type: boolean
+        hp:
+          type: integer
+        maxHp:
+          type: integer
+        ac:
+          type: integer
+        personality:
+          type: string
+          nullable: true
+        backstory:
+          type: string
+          nullable: true
+
+    RecentMessageBrief:
+      type: object
+      properties:
+        senderName:
+          type: string
+        content:
+          type: string
+        type:
+          type: string
+        createdAt:
+          type: string
+
+    DmStoryAssistantRequest:
+      type: object
+      properties:
+        message:
+          type: string
+        includeSessionContext:
+          type: boolean
+          default: true
+          description: When true, server attaches compiled session/campaign context from loadSessionForAI.
+      required:
+        - message
+
+    DmStoryAssistantResponse:
+      type: object
+      properties:
+        reply:
+          type: string
+        model:
+          type: string
+      required:
+        - reply
+        - model
 
     Token:
       type: object

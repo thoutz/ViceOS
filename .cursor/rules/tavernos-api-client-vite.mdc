@@ -1,0 +1,20 @@
+---
+description: Avoid Vite/runtime export errors when changing @workspace/api-client-react (TavernOS).
+globs:
+  - lib/api-client-react/**
+  - artifacts/tavernos/**
+---
+
+# `@workspace/api-client-react` and Vite (TavernOS)
+
+## When adding or using new generated hooks
+
+TavernOS pre-bundles `@workspace/api-client-react` (`optimizeDeps.include` in `artifacts/tavernos/vite.config.ts`). After OpenAPI codegen updates `lib/api-client-react/src/generated/api.ts`:
+
+1. **Add explicit named re-exports** in `lib/api-client-react/src/index.ts` for every new `use*` hook imported by TavernOS (same pattern as `useLogin` and the invite hooks). Relying only on `export *` can still produce a pre-bundle that omits names at runtime in some setups.
+
+2. If the app throws **“does not provide an export named …”** after a client change: clear Vite’s cache and restart dev — remove `artifacts/tavernos/node_modules/.vite` (and workspace `node_modules/.vite` if needed), then restart the dev server.
+
+## Reference
+
+See `project-docs/troubleshoot-vite-stale-api-client-cache.md` for symptoms, root causes, and the full fix order.

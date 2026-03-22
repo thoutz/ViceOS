@@ -25,7 +25,10 @@ router.get("/campaigns", requireAuth, async (req, res) => {
   const asDmPayload = asDm.map((c) => ({ ...c, role: "dm" as const }));
 
   const playerRows = await db
-    .select({ campaign: campaignsTable })
+    .select({
+      campaign: campaignsTable,
+      membershipCharacterId: campaignMembersTable.characterId,
+    })
     .from(campaignMembersTable)
     .innerJoin(campaignsTable, eq(campaignMembersTable.campaignId, campaignsTable.id))
     .where(
@@ -36,13 +39,33 @@ router.get("/campaigns", requireAuth, async (req, res) => {
       ),
     );
 
-  const seen = new Set<string>();
-  const asPlayerPayload: Array<(typeof playerRows)[number]["campaign"] & { role: "player" }> = [];
+  /** One entry per campaign; prefer a membership row that already has a character bound. */
+  const playerByCampaign = new Map<
+    string,
+    { campaign: (typeof playerRows)[number]["campaign"]; membershipCharacterId: string | null }
+  >();
   for (const row of playerRows) {
-    if (seen.has(row.campaign.id)) continue;
-    seen.add(row.campaign.id);
-    asPlayerPayload.push({ ...row.campaign, role: "player" });
+    const prev = playerByCampaign.get(row.campaign.id);
+    if (!prev) {
+      playerByCampaign.set(row.campaign.id, {
+        campaign: row.campaign,
+        membershipCharacterId: row.membershipCharacterId,
+      });
+      continue;
+    }
+    if (!prev.membershipCharacterId && row.membershipCharacterId) {
+      playerByCampaign.set(row.campaign.id, {
+        campaign: row.campaign,
+        membershipCharacterId: row.membershipCharacterId,
+      });
+    }
   }
+
+  const asPlayerPayload = [...playerByCampaign.values()].map(({ campaign, membershipCharacterId }) => ({
+    ...campaign,
+    role: "player" as const,
+    playerMembershipCharacterId: membershipCharacterId,
+  }));
 
   res.json({ as_dm: asDmPayload, as_player: asPlayerPayload });
 });

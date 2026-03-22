@@ -12,6 +12,9 @@ import {
   usePostMessage,
   useUpdateCharacter,
   useUpdateSession,
+  useGetSessionAiContext,
+  getGetSessionAiContextQueryKey,
+  usePostDmStoryAssistant,
   Character,
   GameSession,
   type Token,
@@ -23,7 +26,7 @@ import { InitiativeBar, type InitiativeCombatant } from '@/components/vtt/Initia
 import { ChatPanel } from '@/components/vtt/ChatPanel';
 import { RollsPanel } from '@/components/vtt/RollsPanel';
 import { DiceRoll } from 'rpg-dice-roller';
-import { LogOut, X, Wifi, WifiOff, Dices, StickyNote, Shield, Swords, MessageSquare, User, ScrollText } from 'lucide-react';
+import { LogOut, X, Wifi, WifiOff, Dices, StickyNote, Shield, Swords, MessageSquare, User, ScrollText, Copy, RefreshCw, Sparkles } from 'lucide-react';
 
 const CONDITIONS = [
   'Blinded','Charmed','Deafened','Exhaustion','Frightened',
@@ -128,6 +131,19 @@ export default function Session() {
   const updateChar = useUpdateCharacter();
 
   const isDm = campaign?.role === 'dm';
+
+  const {
+    data: aiContext,
+    refetch: refetchAiContext,
+    isFetching: aiContextLoading,
+    isError: aiContextError,
+  } = useGetSessionAiContext(campaignId || '', activeSession?.id || '', {
+    query: {
+      queryKey: getGetSessionAiContextQueryKey(campaignId || '', activeSession?.id || ''),
+      enabled: Boolean(isDm && campaignId && activeSession?.id),
+    },
+  });
+
   const myCharacter = characters?.find((c) => c.userId === user?.id) ?? null;
   // Prefer the session's pinned activeMapId; fall back to the first available map
   const activeMap = (maps && activeSession?.activeMapId
@@ -140,7 +156,25 @@ export default function Session() {
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [rightSidebarTab, setRightSidebarTab] = useState<'character' | 'rolls'>('character');
   const [dmDrawerOpen, setDmDrawerOpen] = useState(false);
+  const [aiCopied, setAiCopied] = useState(false);
+  const [storyPrompt, setStoryPrompt] = useState('');
+  const [storyReply, setStoryReply] = useState<string | null>(null);
+  const [storyError, setStoryError] = useState<string | null>(null);
+  const [includeStoryContext, setIncludeStoryContext] = useState(true);
   const [placementCombatant, setPlacementCombatant] = useState<InitiativeCombatant | null>(null);
+
+  const storyAssistantMutation = usePostDmStoryAssistant({
+    mutation: {
+      onSuccess: (data) => {
+        setStoryReply(data.reply);
+        setStoryError(null);
+      },
+      onError: (err: unknown) => {
+        setStoryReply(null);
+        setStoryError(err instanceof Error ? err.message : 'Story assistant request failed.');
+      },
+    },
+  });
 
   const [hotbarDiceExpr, setHotbarDiceExpr] = useState('');
   const [hotbarLastRoll, setHotbarLastRoll] = useState<{ total: number; output: string } | null>(null);
@@ -526,8 +560,120 @@ export default function Session() {
                 <X className="w-4 h-4" />
               </button>
             </div>
+            {/* AI session context (DM) — paste into external LLM tools */}
+            <div className="shrink-0 border-b border-border/50 px-4 py-3 space-y-2 bg-card/50">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <ScrollText className="w-4 h-4 text-primary shrink-0" />
+                  <span className="font-label text-xs font-bold text-primary uppercase tracking-wide truncate">
+                    AI session context
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    title="Refresh"
+                    onClick={() => void refetchAiContext()}
+                    disabled={aiContextLoading}
+                    className="p-1.5 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${aiContextLoading ? 'animate-spin' : ''}`} />
+                  </button>
+                  <button
+                    type="button"
+                    title="Copy compiled narrative"
+                    onClick={async () => {
+                      if (!aiContext?.compiledNarrativeContext) return;
+                      try {
+                        await navigator.clipboard.writeText(aiContext.compiledNarrativeContext);
+                        setAiCopied(true);
+                        setTimeout(() => setAiCopied(false), 2000);
+                      } catch {
+                        /* ignore */
+                      }
+                    }}
+                    disabled={!aiContext?.compiledNarrativeContext || aiContextLoading}
+                    className="p-1.5 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground font-sans leading-snug">
+                Campaign summary, party, memory JSON, and recent chat as one text block. Paste into your
+                favorite AI assistant.
+              </p>
+              {aiContextError && (
+                <p className="text-[10px] text-destructive font-sans">Could not load AI context.</p>
+              )}
+              {aiCopied && (
+                <p className="text-[10px] text-emerald-500 font-sans">Copied to clipboard.</p>
+              )}
+            </div>
+            {/* Groq DM story assistant */}
+            <div className="shrink-0 border-b border-border/50 px-4 py-3 space-y-2 bg-card/40 flex flex-col max-h-[min(42vh,320px)]">
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="w-4 h-4 text-magic shrink-0" />
+                <span className="font-label text-xs font-bold text-magic uppercase tracking-wide truncate">
+                  Story assistant (Groq)
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground font-sans leading-snug">
+                Model: <span className="text-foreground/90 font-mono">llama-4-scout-17b-16e-instruct</span> ·
+                Requires <code className="text-[9px]">GROQ_API_KEY</code> on the API server.
+              </p>
+              <label className="flex items-center gap-2 text-[10px] font-sans text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="rounded border-border"
+                  checked={includeStoryContext}
+                  onChange={(e) => setIncludeStoryContext(e.target.checked)}
+                />
+                Include compiled session & campaign context
+              </label>
+              <textarea
+                value={storyPrompt}
+                onChange={(e) => setStoryPrompt(e.target.value)}
+                placeholder="Ask for narration, NPC lines, consequences, or brainstorming…"
+                rows={3}
+                className="w-full bg-background border border-border rounded px-2 py-1.5 text-xs font-sans text-foreground focus:outline-none focus:border-primary resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!campaignId || !activeSession?.id || !storyPrompt.trim()) return;
+                    setStoryError(null);
+                    storyAssistantMutation.mutate({
+                      campaignId,
+                      sessionId: activeSession.id,
+                      data: {
+                        message: storyPrompt.trim(),
+                        includeSessionContext: includeStoryContext,
+                      },
+                    });
+                  }}
+                  disabled={
+                    storyAssistantMutation.isPending ||
+                    !storyPrompt.trim() ||
+                    !activeSession?.id
+                  }
+                  className="flex-1 h-8 rounded border border-magic/50 bg-magic/10 text-magic text-xs font-label font-bold hover:bg-magic/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {storyAssistantMutation.isPending ? 'Thinking…' : 'Send to assistant'}
+                </button>
+              </div>
+              {storyError && (
+                <p className="text-[10px] text-destructive font-sans leading-snug">{storyError}</p>
+              )}
+              {storyReply && (
+                <div className="text-[10px] font-sans text-foreground/95 leading-relaxed overflow-y-auto max-h-40 pr-1 border border-border/40 rounded bg-background/80 p-2 whitespace-pre-wrap">
+                  {storyReply}
+                </div>
+              )}
+            </div>
             {/* Drawer Content — DM tools only (ChatPanel dmTools variant) */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto min-h-0">
               <ChatPanel
                 messages={messages || []}
                 onSendMessage={handleSendMessage}

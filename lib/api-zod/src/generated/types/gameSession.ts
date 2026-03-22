@@ -12,10 +12,20 @@ export interface GameSession {
   id: string;
   campaignId: string;
   name?: string;
-  activeMapId?: string;
+  sessionNumber?: number;
+  dmUserId?: string | null;
+  activeMapId?: string | null;
   initiativeOrder?: InitiativeCombatant[];
   currentTurnIndex: number;
   roundNumber: number;
   status: GameSessionStatus;
+  storyLog?: unknown[];
+  locationsData?: unknown[];
+  itemsData?: unknown[];
+  openThreads?: unknown[];
+  messageHistory?: unknown[];
+  startedAt?: Date | null;
+  endedAt?: Date | null;
   createdAt: Date;
+  updatedAt?: Date;
 }

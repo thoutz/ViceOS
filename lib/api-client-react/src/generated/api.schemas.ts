@@ -51,6 +51,8 @@ export const CampaignWithRoleRole = {
 
 export type CampaignWithRole = Campaign & {
   role: CampaignWithRoleRole;
+  /** When role is player, the character sheet UUID linked on the membership row (null until a hero is chosen or created). */
+  playerMembershipCharacterId?: string | null;
 };
 
 export interface CampaignListResponse {
@@ -309,12 +311,22 @@ export interface GameSession {
   id: string;
   campaignId: string;
   name?: string;
-  activeMapId?: string;
+  sessionNumber?: number;
+  dmUserId?: string | null;
+  activeMapId?: string | null;
   initiativeOrder?: InitiativeCombatant[];
   currentTurnIndex: number;
   roundNumber: number;
   status: GameSessionStatus;
+  storyLog?: unknown[];
+  locationsData?: unknown[];
+  itemsData?: unknown[];
+  openThreads?: unknown[];
+  messageHistory?: unknown[];
+  startedAt?: string | null;
+  endedAt?: string | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export type UpdateSessionRequestStatus =
@@ -332,7 +344,85 @@ export interface UpdateSessionRequest {
   initiativeOrder?: InitiativeCombatant[];
   currentTurnIndex?: number;
   roundNumber?: number;
+  sessionNumber?: number;
   status?: UpdateSessionRequestStatus;
+  storyLog?: unknown[];
+  locationsData?: unknown[];
+  itemsData?: unknown[];
+  openThreads?: unknown[];
+  messageHistory?: unknown[];
+  startedAt?: string | null;
+  endedAt?: string | null;
+}
+
+export type SessionAiContextCampaign = {
+  id?: string;
+  name?: string;
+  gameSystem?: string | null;
+  setting?: string | null;
+  startingLocation?: string | null;
+  tone?: string | null;
+  houseRules?: string | null;
+  description?: string | null;
+};
+
+export type SessionAiContextSession = {
+  id?: string;
+  name?: string;
+  sessionNumber?: number;
+  status?: string;
+  roundNumber?: number;
+  currentTurnIndex?: number;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  storyLog?: unknown;
+  locationsData?: unknown;
+  itemsData?: unknown;
+  openThreads?: unknown;
+  messageHistory?: unknown;
+};
+
+export interface PartyMemberBrief {
+  id?: string;
+  name?: string;
+  race?: string | null;
+  class?: string | null;
+  level?: number;
+  isNpc?: boolean;
+  hp?: number;
+  maxHp?: number;
+  ac?: number;
+  personality?: string | null;
+  backstory?: string | null;
+}
+
+export interface RecentMessageBrief {
+  senderName?: string;
+  content?: string;
+  type?: string;
+  createdAt?: string;
+}
+
+/**
+ * Aggregated DM-facing context for LLM tooling
+ */
+export interface SessionAiContext {
+  campaign: SessionAiContextCampaign;
+  session: SessionAiContextSession;
+  party: PartyMemberBrief[];
+  recentMessages: RecentMessageBrief[];
+  compiledNarrativeContext: string;
+}
+
+export interface DmStoryAssistantRequest {
+  message: string;
+  /** When true, server attaches compiled session/campaign context from loadSessionForAI. */
+  includeSessionContext?: boolean;
+}
+
+export interface DmStoryAssistantResponse {
+  reply: string;
+  model: string;
 }
 
 export interface Token {

@@ -342,6 +342,12 @@ export const ListCampaignsResponse = zod.object({
       .and(
         zod.object({
           role: zod.enum(["dm", "player"]),
+          playerMembershipCharacterId: zod
+            .string()
+            .nullish()
+            .describe(
+              "When role is player, the character sheet UUID linked on the membership row (null until a hero is chosen or created).",
+            ),
         }),
       ),
   ),
@@ -366,6 +372,12 @@ export const ListCampaignsResponse = zod.object({
       .and(
         zod.object({
           role: zod.enum(["dm", "player"]),
+          playerMembershipCharacterId: zod
+            .string()
+            .nullish()
+            .describe(
+              "When role is player, the character sheet UUID linked on the membership row (null until a hero is chosen or created).",
+            ),
         }),
       ),
   ),
@@ -415,6 +427,12 @@ export const JoinCampaignResponse = zod
   .and(
     zod.object({
       role: zod.enum(["dm", "player"]),
+      playerMembershipCharacterId: zod
+        .string()
+        .nullish()
+        .describe(
+          "When role is player, the character sheet UUID linked on the membership row (null until a hero is chosen or created).",
+        ),
     }),
   );
 
@@ -488,6 +506,12 @@ export const GetCampaignResponse = zod
   .and(
     zod.object({
       role: zod.enum(["dm", "player"]),
+      playerMembershipCharacterId: zod
+        .string()
+        .nullish()
+        .describe(
+          "When role is player, the character sheet UUID linked on the membership row (null until a hero is chosen or created).",
+        ),
     }),
   )
   .and(
@@ -763,7 +787,9 @@ export const ListSessionsResponseItem = zod.object({
   id: zod.string(),
   campaignId: zod.string(),
   name: zod.string().optional(),
-  activeMapId: zod.string().optional(),
+  sessionNumber: zod.number().optional(),
+  dmUserId: zod.string().nullish(),
+  activeMapId: zod.string().nullish(),
   initiativeOrder: zod
     .array(
       zod.object({
@@ -792,7 +818,15 @@ export const ListSessionsResponseItem = zod.object({
   currentTurnIndex: zod.number(),
   roundNumber: zod.number(),
   status: zod.enum(["active", "paused", "ended"]),
+  storyLog: zod.array(zod.unknown()).optional(),
+  locationsData: zod.array(zod.unknown()).optional(),
+  itemsData: zod.array(zod.unknown()).optional(),
+  openThreads: zod.array(zod.unknown()).optional(),
+  messageHistory: zod.array(zod.unknown()).optional(),
+  startedAt: zod.date().nullish(),
+  endedAt: zod.date().nullish(),
   createdAt: zod.date(),
+  updatedAt: zod.date().optional(),
 });
 export const ListSessionsResponse = zod.array(ListSessionsResponseItem);
 
@@ -815,7 +849,9 @@ export const GetSessionResponse = zod.object({
   id: zod.string(),
   campaignId: zod.string(),
   name: zod.string().optional(),
-  activeMapId: zod.string().optional(),
+  sessionNumber: zod.number().optional(),
+  dmUserId: zod.string().nullish(),
+  activeMapId: zod.string().nullish(),
   initiativeOrder: zod
     .array(
       zod.object({
@@ -844,7 +880,15 @@ export const GetSessionResponse = zod.object({
   currentTurnIndex: zod.number(),
   roundNumber: zod.number(),
   status: zod.enum(["active", "paused", "ended"]),
+  storyLog: zod.array(zod.unknown()).optional(),
+  locationsData: zod.array(zod.unknown()).optional(),
+  itemsData: zod.array(zod.unknown()).optional(),
+  openThreads: zod.array(zod.unknown()).optional(),
+  messageHistory: zod.array(zod.unknown()).optional(),
+  startedAt: zod.date().nullish(),
+  endedAt: zod.date().nullish(),
   createdAt: zod.date(),
+  updatedAt: zod.date().optional(),
 });
 
 /**
@@ -885,14 +929,24 @@ export const UpdateSessionBody = zod.object({
     .optional(),
   currentTurnIndex: zod.number().optional(),
   roundNumber: zod.number().optional(),
+  sessionNumber: zod.number().optional(),
   status: zod.enum(["active", "paused", "ended"]).optional(),
+  storyLog: zod.array(zod.unknown()).optional(),
+  locationsData: zod.array(zod.unknown()).optional(),
+  itemsData: zod.array(zod.unknown()).optional(),
+  openThreads: zod.array(zod.unknown()).optional(),
+  messageHistory: zod.array(zod.unknown()).optional(),
+  startedAt: zod.date().nullish(),
+  endedAt: zod.date().nullish(),
 });
 
 export const UpdateSessionResponse = zod.object({
   id: zod.string(),
   campaignId: zod.string(),
   name: zod.string().optional(),
-  activeMapId: zod.string().optional(),
+  sessionNumber: zod.number().optional(),
+  dmUserId: zod.string().nullish(),
+  activeMapId: zod.string().nullish(),
   initiativeOrder: zod
     .array(
       zod.object({
@@ -921,7 +975,104 @@ export const UpdateSessionResponse = zod.object({
   currentTurnIndex: zod.number(),
   roundNumber: zod.number(),
   status: zod.enum(["active", "paused", "ended"]),
+  storyLog: zod.array(zod.unknown()).optional(),
+  locationsData: zod.array(zod.unknown()).optional(),
+  itemsData: zod.array(zod.unknown()).optional(),
+  openThreads: zod.array(zod.unknown()).optional(),
+  messageHistory: zod.array(zod.unknown()).optional(),
+  startedAt: zod.date().nullish(),
+  endedAt: zod.date().nullish(),
   createdAt: zod.date(),
+  updatedAt: zod.date().optional(),
+});
+
+/**
+ * Returns campaign summary, party, session memory JSON blobs, recent chat, and a compiled plain-text narrative suitable for LLM prompts.
+ * @summary DM-only aggregated context for AI assistants
+ */
+export const GetSessionAiContextParams = zod.object({
+  campaignId: zod.coerce.string(),
+  sessionId: zod.coerce.string(),
+});
+
+export const GetSessionAiContextResponse = zod
+  .object({
+    campaign: zod.object({
+      id: zod.string().optional(),
+      name: zod.string().optional(),
+      gameSystem: zod.string().nullish(),
+      setting: zod.string().nullish(),
+      startingLocation: zod.string().nullish(),
+      tone: zod.string().nullish(),
+      houseRules: zod.string().nullish(),
+      description: zod.string().nullish(),
+    }),
+    session: zod.object({
+      id: zod.string().optional(),
+      name: zod.string().optional(),
+      sessionNumber: zod.number().optional(),
+      status: zod.string().optional(),
+      roundNumber: zod.number().optional(),
+      currentTurnIndex: zod.number().optional(),
+      startedAt: zod.string().nullish(),
+      endedAt: zod.string().nullish(),
+      storyLog: zod.unknown().optional(),
+      locationsData: zod.unknown().optional(),
+      itemsData: zod.unknown().optional(),
+      openThreads: zod.unknown().optional(),
+      messageHistory: zod.unknown().optional(),
+    }),
+    party: zod.array(
+      zod.object({
+        id: zod.string().optional(),
+        name: zod.string().optional(),
+        race: zod.string().nullish(),
+        class: zod.string().nullish(),
+        level: zod.number().optional(),
+        isNpc: zod.boolean().optional(),
+        hp: zod.number().optional(),
+        maxHp: zod.number().optional(),
+        ac: zod.number().optional(),
+        personality: zod.string().nullish(),
+        backstory: zod.string().nullish(),
+      }),
+    ),
+    recentMessages: zod.array(
+      zod.object({
+        senderName: zod.string().optional(),
+        content: zod.string().optional(),
+        type: zod.string().optional(),
+        createdAt: zod.string().optional(),
+      }),
+    ),
+    compiledNarrativeContext: zod.string(),
+  })
+  .describe("Aggregated DM-facing context for LLM tooling");
+
+/**
+ * Server-side chat completion via Groq (OpenAI-compatible API). Requires GROQ_API_KEY. Default model is meta-llama/llama-4-scout-17b-16e-instruct.
+ * @summary DM story assistant (Groq)
+ */
+export const PostDmStoryAssistantParams = zod.object({
+  campaignId: zod.coerce.string(),
+  sessionId: zod.coerce.string(),
+});
+
+export const postDmStoryAssistantBodyIncludeSessionContextDefault = true;
+
+export const PostDmStoryAssistantBody = zod.object({
+  message: zod.string(),
+  includeSessionContext: zod
+    .boolean()
+    .default(postDmStoryAssistantBodyIncludeSessionContextDefault)
+    .describe(
+      "When true, server attaches compiled session\/campaign context from loadSessionForAI.",
+    ),
+});
+
+export const PostDmStoryAssistantResponse = zod.object({
+  reply: zod.string(),
+  model: zod.string(),
 });
 
 /**
