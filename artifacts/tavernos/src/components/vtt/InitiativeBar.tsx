@@ -106,7 +106,7 @@ export function InitiativeBar({
       hp: c.hp || 0,
       maxHp: c.maxHp || 1,
       ac: c.ac || 10,
-      tokenColor: c.tokenColor || '#9d4dff',
+      tokenColor: c.tokenColor || '#6366f1',
     }));
     const npcs = order.filter(c => c.isNpc);
     const combined = [...fromChars, ...npcs].sort((a, b) => b.initiative - a.initiative);
@@ -213,7 +213,7 @@ export function InitiativeBar({
                   exit={{ opacity: 0, scale: 0.8 }}
                   className={`relative flex items-center gap-2 px-2.5 py-1.5 rounded min-w-[140px] max-w-[180px] flex-shrink-0 cursor-pointer transition-all ${
                     isActive
-                      ? 'bg-primary/20 border-2 border-primary shadow-[0_0_12px_rgba(255,77,240,0.5)]'
+                      ? 'bg-primary/20 border-2 border-primary shadow-md'
                       : 'bg-background/60 border border-border/50 opacity-70 hover:opacity-90'
                   }`}
                   onClick={() => isDm && setSelectedConditionTarget(selectedConditionTarget === combatant.characterId ? null : combatant.characterId)}
@@ -373,7 +373,7 @@ export function InitiativeBar({
           <button
             type="button"
             onClick={() => addPortraitInputRef.current?.click()}
-            className="text-[10px] font-sans text-muted-foreground border border-border rounded px-2 py-1 hover:bg-white/5"
+            className="text-[10px] font-sans text-muted-foreground border border-border rounded px-2 py-1 hover:bg-foreground/5"
           >
             Portrait
           </button>

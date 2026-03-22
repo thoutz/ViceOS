@@ -19,61 +19,103 @@
 
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
-  --color-card-border: hsl(var(--card-border));
 
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
-  
+
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
-  
+
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
-  
+
   --color-accent: hsl(var(--accent));
   --color-accent-foreground: hsl(var(--accent-foreground));
-  
+
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
 
-  /* Miami palette extras */
-  --color-magic: hsl(270 100% 65%);    /* #9d4dff purple */
-  --color-ember: hsl(219 97% 47%);     /* #045ded blue */
-  --color-mint: hsl(162 100% 72%);     /* #70ffdf mint */
+  --color-magic: hsl(var(--magic));
+  --color-ember: hsl(var(--ember));
+  --color-mint: hsl(var(--mint));
 }
 
+/* ──────────────────────────────
+   LIGHT THEME (default)
+   Off-white bg, high contrast, cyan accents
+   ────────────────────────────── */
 :root {
-  /* Miami Vice Dark Theme */
-  --background: 236 60% 8%;        /* #08091f midnight navy */
-  --foreground: 0 0% 100%;          /* #ffffff white */
+  --background:         58 15% 96%;    /* #f6f5f0 warm off-white */
+  --foreground:         222 47% 11%;   /* #111827 near-black blue */
 
-  --card: 234 65% 14%;              /* #0d1240 dark navy */
-  --card-foreground: 0 0% 100%;
-  --card-border: 233 69% 37%;       /* #1d269b deep indigo */
+  --card:               0 0% 100%;     /* #ffffff white */
+  --card-foreground:    222 47% 11%;
 
-  --popover: 234 65% 14%;
-  --popover-foreground: 0 0% 100%;
+  --popover:            0 0% 100%;
+  --popover-foreground: 222 47% 11%;
 
-  --primary: 302 100% 65%;          /* #ff4df0 hot pink */
-  --primary-foreground: 236 60% 8%;
+  --primary:            192 91% 36%;   /* #0891b2 cyan-600 */
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 234 50% 20%;         /* mid-dark navy */
-  --secondary-foreground: 0 0% 100%;
+  --secondary:          210 20% 94%;   /* light grey-blue */
+  --secondary-foreground: 222 47% 20%;
 
-  --muted: 234 50% 20%;
-  --muted-foreground: 229 82% 83%;  /* #b0bff5 periwinkle */
+  --muted:              210 20% 93%;   /* slightly darker off-white */
+  --muted-foreground:   220 9% 46%;    /* #6b7280 grey */
 
-  --accent: 162 100% 72%;           /* #70ffdf mint */
-  --accent-foreground: 236 60% 8%;
+  --accent:             189 94% 43%;   /* #06b6d4 cyan-500 */
+  --accent-foreground:  0 0% 100%;
 
-  --destructive: 0 84% 60%;         /* #ef4444 red */
+  --destructive:        0 84% 60%;     /* #ef4444 */
   --destructive-foreground: 0 0% 100%;
 
-  --border: 270 100% 65%;           /* #9d4dff purple */
-  --input: 234 50% 20%;
-  --ring: 302 100% 65%;             /* #ff4df0 hot pink */
+  --border:             220 13% 83%;   /* #d1d5db light grey */
+  --input:              220 13% 91%;
+  --ring:               192 91% 36%;   /* cyan focus ring */
+
+  --magic:              263 70% 50%;   /* #7c3aed violet */
+  --ember:              192 91% 36%;   /* reuse cyan for interactive */
+  --mint:               162 72% 45%;   /* muted green-cyan */
 
   --radius: 0.375rem;
+}
+
+/* ──────────────────────────────
+   DARK THEME  (.dark on <html>)
+   Midnight slate blues, cyan highlights
+   ────────────────────────────── */
+.dark {
+  --background:         222 47% 11%;   /* #0f172a midnight navy */
+  --foreground:         210 40% 95%;   /* #f1f5f9 near-white */
+
+  --card:               217 33% 17%;   /* #1e293b slate-800 */
+  --card-foreground:    210 40% 95%;
+
+  --popover:            217 33% 17%;
+  --popover-foreground: 210 40% 95%;
+
+  --primary:            188 85% 53%;   /* #22d3ee cyan-400 */
+  --primary-foreground: 222 47% 11%;
+
+  --secondary:          215 28% 25%;   /* mid slate */
+  --secondary-foreground: 210 40% 90%;
+
+  --muted:              215 33% 22%;   /* dark muted */
+  --muted-foreground:   215 20% 65%;   /* #94a3b8 slate-400 */
+
+  --accent:             188 85% 53%;   /* cyan-400 */
+  --accent-foreground:  222 47% 11%;
+
+  --destructive:        0 72% 64%;     /* #f87171 softer red for dark */
+  --destructive-foreground: 0 0% 100%;
+
+  --border:             215 28% 30%;   /* #334155 slate-700 */
+  --input:              215 33% 22%;
+  --ring:               188 85% 53%;   /* cyan ring */
+
+  --magic:              229 88% 75%;   /* #818cf8 indigo-400 */
+  --ember:              188 85% 53%;
+  --mint:               162 72% 55%;
 }
 
 @layer base {
@@ -81,9 +123,16 @@
     @apply border-border;
   }
 
+  html {
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    background-image: radial-gradient(ellipse at 50% 0%, rgba(29, 38, 155, 0.25) 0%, rgba(8, 9, 31, 1) 70%);
+  }
+
+  .dark body {
+    background-image: radial-gradient(ellipse at 50% 0%, rgba(30, 41, 59, 0.8) 0%, hsl(222 47% 11%) 70%);
     background-attachment: fixed;
   }
 
@@ -101,35 +150,46 @@
   background: hsl(var(--background));
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(270 100% 65% / 0.5);
+  background: hsl(var(--border));
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(270 100% 65% / 0.8);
+  background: hsl(var(--primary) / 0.7);
 }
 
-/* Miami utility classes (replaces old parchment/gold equivalents) */
+/* Utility classes */
 .bg-parchment-texture {
   background-color: hsl(var(--card));
   color: hsl(var(--card-foreground));
 }
 
 .glass-panel {
-  background: rgba(13, 18, 64, 0.88);
+  background: hsl(var(--card) / 0.95);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(157, 77, 255, 0.4);
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 77, 240, 0.08);
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.dark .glass-panel {
+  background: rgba(30, 41, 59, 0.92);
+  border: 1px solid hsl(215 28% 30% / 0.8);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
 }
 
 .gold-text-glow {
-  text-shadow: 0 0 16px rgba(255, 77, 240, 0.55);
+  /* Light: subtle text shadow with cyan */
+  text-shadow: 0 0 12px hsl(192 91% 36% / 0.3);
 }
 
-/* Neon glow helpers */
-.pink-glow {
-  text-shadow: 0 0 16px rgba(255, 77, 240, 0.6);
+.dark .gold-text-glow {
+  text-shadow: 0 0 16px hsl(188 85% 53% / 0.55);
 }
 
-.mint-glow {
-  text-shadow: 0 0 12px rgba(112, 255, 223, 0.5);
+/* no-scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

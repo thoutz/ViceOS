@@ -149,7 +149,7 @@ export function MapCanvas({
 
   // Token placement
   const [newTokenName, setNewTokenName] = useState('');
-  const [newTokenColor, setNewTokenColor] = useState('#ff4df0');
+  const [newTokenColor, setNewTokenColor] = useState('#0891b2');
   const [newTokenHp, setNewTokenHp] = useState('');
   const [newTokenSize, setNewTokenSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [newTokenImageData, setNewTokenImageData] = useState<string | null>(null);
@@ -836,7 +836,7 @@ export function MapCanvas({
                 type="button"
                 title="Cover rectangle — drag on map"
                 onClick={() => setFogSubtool('add_rect')}
-                className={`p-1.5 rounded ${fogSubtool === 'add_rect' ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-white/5'}`}
+                className={`p-1.5 rounded ${fogSubtool === 'add_rect' ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-foreground/5'}`}
               >
                 <Square className="w-3.5 h-3.5" />
               </button>
@@ -844,7 +844,7 @@ export function MapCanvas({
                 type="button"
                 title="Paint fog — brush"
                 onClick={() => setFogSubtool('add_brush')}
-                className={`p-1.5 rounded ${fogSubtool === 'add_brush' ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-white/5'}`}
+                className={`p-1.5 rounded ${fogSubtool === 'add_brush' ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-foreground/5'}`}
               >
                 <Paintbrush className="w-3.5 h-3.5" />
               </button>
@@ -852,7 +852,7 @@ export function MapCanvas({
                 type="button"
                 title="Fog polygon — click vertices, then Finish or Enter"
                 onClick={() => setFogSubtool('add_poly')}
-                className={`p-1.5 rounded ${fogSubtool === 'add_poly' ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-white/5'}`}
+                className={`p-1.5 rounded ${fogSubtool === 'add_poly' ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-foreground/5'}`}
               >
                 <Pentagon className="w-3.5 h-3.5" />
               </button>
@@ -863,7 +863,7 @@ export function MapCanvas({
                 type="button"
                 title="Reveal rectangle — drag"
                 onClick={() => setFogSubtool('clear_rect')}
-                className={`p-1.5 rounded ${fogSubtool === 'clear_rect' ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-white/5'}`}
+                className={`p-1.5 rounded ${fogSubtool === 'clear_rect' ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-foreground/5'}`}
               >
                 <Square className="w-3.5 h-3.5" />
               </button>
@@ -871,7 +871,7 @@ export function MapCanvas({
                 type="button"
                 title="Eraser brush — reveal"
                 onClick={() => setFogSubtool('clear_brush')}
-                className={`p-1.5 rounded ${fogSubtool === 'clear_brush' ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-white/5'}`}
+                className={`p-1.5 rounded ${fogSubtool === 'clear_brush' ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-foreground/5'}`}
               >
                 <Eraser className="w-3.5 h-3.5" />
               </button>
@@ -879,7 +879,7 @@ export function MapCanvas({
                 type="button"
                 title="Reveal polygon — click vertices, then Finish or Enter"
                 onClick={() => setFogSubtool('clear_poly')}
-                className={`p-1.5 rounded ${fogSubtool === 'clear_poly' ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-white/5'}`}
+                className={`p-1.5 rounded ${fogSubtool === 'clear_poly' ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-foreground/5'}`}
               >
                 <Pentagon className="w-3.5 h-3.5" />
               </button>
@@ -950,7 +950,7 @@ export function MapCanvas({
               <button
                 type="button"
                 onClick={() => tokenImageInputRef.current?.click()}
-                className="flex items-center gap-1 text-[10px] font-sans text-muted-foreground border border-border rounded px-2 py-1 hover:bg-white/5"
+                className="flex items-center gap-1 text-[10px] font-sans text-muted-foreground border border-border rounded px-2 py-1 hover:bg-foreground/5"
                 title="Optional portrait (PNG/JPG/WebP)"
               >
                 <ImagePlus className="w-3 h-3" /> Image
@@ -979,7 +979,7 @@ export function MapCanvas({
                     key={s}
                     type="button"
                     onClick={() => setNewTokenSize(s)}
-                    className={`text-[9px] font-sans px-1.5 py-0.5 rounded capitalize ${newTokenSize === s ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-white/5'}`}
+                    className={`text-[9px] font-sans px-1.5 py-0.5 rounded capitalize ${newTokenSize === s ? 'bg-primary/25 text-primary' : 'text-muted-foreground hover:bg-foreground/5'}`}
                   >
                     {s[0]}
                   </button>
@@ -1061,7 +1061,7 @@ function ToolButton({
       className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${
         active
           ? 'bg-primary/20 text-primary border border-primary/50'
-          : `text-muted-foreground hover:text-foreground hover:bg-white/5 ${className}`
+          : `text-muted-foreground hover:text-foreground hover:bg-foreground/5 ${className}`
       }`}
     >
       <span className="w-4 h-4 flex items-center justify-center [&>svg]:w-4 [&>svg]:h-4">
@@ -1099,7 +1099,7 @@ function TokenFaceContent({
     <>
       {!showImage && (
         <>
-          <Circle x={cx} y={cy} radius={radius} fill={token.color || '#9d4dff'} listening={false} />
+          <Circle x={cx} y={cy} radius={radius} fill={token.color || '#6366f1'} listening={false} />
           <Text
             x={0}
             y={0}
@@ -1194,7 +1194,7 @@ function TokenShape({
             x={cx}
             y={cy}
             radius={radius}
-            fill={token.color || '#9d4dff'}
+            fill={token.color || '#6366f1'}
             listening={false}
           />
           <Text
@@ -1221,7 +1221,7 @@ function TokenShape({
         fill="transparent"
         stroke={isSelected ? '#FFFFFF' : 'rgba(0,0,0,0.8)'}
         strokeWidth={isSelected ? 3 : 1.5}
-        shadowColor={isSelected ? '#ff4df0' : 'transparent'}
+        shadowColor={isSelected ? '#06b6d4' : 'transparent'}
         shadowBlur={isSelected ? 12 : 0}
         shadowOpacity={0.8}
         listening={false}

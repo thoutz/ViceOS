@@ -81,7 +81,7 @@ export function StoryMapOverlay({ sessionId, messages }: StoryMapOverlayProps) {
           <button
             type="button"
             onClick={() => dismiss(pendingStory.id)}
-            className="shrink-0 p-1.5 rounded-md border border-border/60 text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
+            className="shrink-0 p-1.5 rounded-md border border-border/60 text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-colors"
             title="Dismiss"
             aria-label="Dismiss story overlay"
           >

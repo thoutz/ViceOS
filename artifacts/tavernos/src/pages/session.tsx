@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { ThemeSlider } from '@/components/ThemeSlider';
 import { useParams, useLocation } from 'wouter';
 import {
   useGetMe,
@@ -356,7 +357,7 @@ export default function Session() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setLeftPanelOpen(!leftPanelOpen)}
-            className="p-1 hover:bg-white/10 rounded"
+            className="p-1 hover:bg-foreground/10 rounded"
             title="Party chat & video"
           >
             <MessageSquare className="w-5 h-5 text-primary" />
@@ -391,6 +392,7 @@ export default function Session() {
               <Swords className="w-4 h-4" /> DM
             </button>
           )}
+          <ThemeSlider className="hidden md:flex" />
           <button
             onClick={() => setLocation('/dashboard')}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors font-sans font-bold"
@@ -399,7 +401,7 @@ export default function Session() {
           </button>
           <button
             onClick={() => setRightPanelOpen(!rightPanelOpen)}
-            className="p-1 hover:bg-white/10 rounded"
+            className="p-1 hover:bg-foreground/10 rounded"
             title="Character sheet & rolls"
           >
             <User className="w-5 h-5 text-primary" />
@@ -560,7 +562,7 @@ export default function Session() {
               </div>
               <button
                 onClick={() => setDmDrawerOpen(false)}
-                className="p-1.5 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                className="p-1.5 rounded hover:bg-foreground/10 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -580,7 +582,7 @@ export default function Session() {
                     title="Refresh"
                     onClick={() => void refetchAiContext()}
                     disabled={aiContextLoading}
-                    className="p-1.5 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                    className="p-1.5 rounded hover:bg-foreground/10 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${aiContextLoading ? 'animate-spin' : ''}`} />
                   </button>
@@ -598,7 +600,7 @@ export default function Session() {
                       }
                     }}
                     disabled={!aiContext?.compiledNarrativeContext || aiContextLoading}
-                    className="p-1.5 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                    className="p-1.5 rounded hover:bg-foreground/10 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                   >
                     <Copy className="w-3.5 h-3.5" />
                   </button>

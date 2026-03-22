@@ -15,19 +15,30 @@ TavernOS is a full-featured browser-based virtual tabletop (VTT) platform for D&
 - **Dice Roller**: rpg-dice-roller integration with expression parsing
 - **Chat Panel**: Real-time chat messages with dice roll results
 - **Socket.IO**: Real-time sync events (token_move, hp_update, chat_message, fog_update, etc.)
-- **Miami Vice Theme**: Inter font, midnight navy + hot-pink + mint + purple palette
+- **Dual Theme**: User-controlled light/dark toggle (sun/moon slider) with localStorage persistence; defaults to system preference
 
 ## Design System
 
-- Background: `#08091f` (midnight navy)
-- Card bg: `#0d1240` (dark navy)
-- Primary: `#ff4df0` (hot pink)
-- Accent: `#70ffdf` (mint)
-- Magic/border: `#9d4dff` (purple)
-- Interactive: `#045ded` (blue)
-- Muted text: `#b0bff5` (periwinkle)
-- Font: Inter (300–700) — all headings, labels, and body use Inter
+### Light Theme (default)
+- Background: `hsl(58 15% 96%)` — warm off-white
+- Card: `#ffffff`
+- Primary: `hsl(192 91% 36%)` — cyan-600 (`#0891b2`)
+- Text: `hsl(222 47% 11%)` — near-black dark blue
+- Border: `hsl(220 13% 83%)` — light gray
+- Magic: `hsl(263 70% 50%)` — violet
+
+### Dark Theme (.dark class on html)
+- Background: `hsl(222 47% 11%)` — midnight navy (`#0f172a`)
+- Card: `hsl(217 33% 17%)` — slate-800 (`#1e293b`)
+- Primary: `hsl(188 85% 53%)` — cyan-400 (`#22d3ee`)
+- Text: `hsl(210 40% 95%)` — near-white
+- Border: `hsl(215 28% 30%)` — slate-700
+- Magic: `hsl(229 88% 75%)` — indigo-400
+
+### Shared
+- Font: Inter (300–700) — all headings, labels, and body use `font-sans`
 - HP bars: green/yellow/red (unchanged)
+- Theme toggle slider: top-right on login; top navbar on dashboard and session
 - Hearts/HP: red (unchanged)
 
 ## Stack

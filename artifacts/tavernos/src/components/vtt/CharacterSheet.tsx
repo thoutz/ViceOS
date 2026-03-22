@@ -72,8 +72,8 @@ function BioSection({ title, text }: { title: string; text: string }) {
   const t = text.trim();
   if (!t) return null;
   return (
-    <section className="border border-border/30 rounded-lg overflow-hidden bg-white/5">
-      <h4 className="text-[10px] font-sans font-bold uppercase tracking-widest text-primary/80 px-3 py-2 bg-white/5 border-b border-border/20 flex items-center gap-1.5">
+    <section className="border border-border/30 rounded-lg overflow-hidden bg-foreground/5">
+      <h4 className="text-[10px] font-sans font-bold uppercase tracking-widest text-primary/80 px-3 py-2 bg-foreground/5 border-b border-border/20 flex items-center gap-1.5">
         <ScrollText className="w-3 h-3 opacity-80" aria-hidden />
         {title}
       </h4>
@@ -206,7 +206,7 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
 
       {/* Combat row */}
       <div className="grid grid-cols-3 gap-2 px-3 py-2 border-b border-border/30">
-        <div className="flex items-center gap-2 p-2 border border-border/40 rounded bg-white/5">
+        <div className="flex items-center gap-2 p-2 border border-border/40 rounded bg-foreground/5">
           <Shield className="w-5 h-5 text-primary flex-shrink-0" />
           <div>
             <div className="text-xl font-bold font-sans leading-none text-foreground">{viewed.ac}</div>
@@ -215,7 +215,7 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
         </div>
         <button
           onClick={() => onRoll(`1d20${fmtMod(viewed.initiativeBonus ?? mod(stats.dex || 10))}`, 'Initiative')}
-          className="flex items-center gap-2 p-2 border border-border/40 rounded bg-white/5 hover:bg-primary/15 transition-colors"
+          className="flex items-center gap-2 p-2 border border-border/40 rounded bg-foreground/5 hover:bg-primary/15 transition-colors"
         >
           <Zap className="w-5 h-5 text-accent flex-shrink-0" />
           <div>
@@ -223,7 +223,7 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
             <div className="text-[9px] font-sans uppercase opacity-70">Init</div>
           </div>
         </button>
-        <div className="flex items-center gap-2 p-2 border border-border/40 rounded bg-white/5">
+        <div className="flex items-center gap-2 p-2 border border-border/40 rounded bg-foreground/5">
           <Crosshair className="w-5 h-5 text-magic flex-shrink-0" />
           <div>
             <div className="text-xl font-bold font-sans leading-none text-foreground">{viewed.speed || 30}</div>
@@ -294,7 +294,7 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
             {/* Saving Throws */}
             <div className="border border-border/30 rounded overflow-hidden">
               <button
-                className="w-full flex items-center justify-between px-3 py-2 bg-white/5 text-xs font-sans font-bold uppercase tracking-widest hover:bg-white/10 transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2 bg-foreground/5 text-xs font-sans font-bold uppercase tracking-widest hover:bg-foreground/10 transition-colors"
                 onClick={() => setExpandSaves(!expandSaves)}
               >
                 <span className="flex items-center gap-1 text-muted-foreground"><BookOpen className="w-3.5 h-3.5" /> Saving Throws</span>
@@ -359,7 +359,7 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
                 </h4>
                 <div className="space-y-1.5">
                   {features.map((f, i) => (
-                    <div key={i} className="p-2 bg-white/5 border border-border/20 rounded">
+                    <div key={i} className="p-2 bg-foreground/5 border border-border/20 rounded">
                       <div className="text-xs font-bold font-sans text-primary">{f.name}</div>
                       {f.source && <div className="text-[9px] text-muted-foreground font-sans">{f.source}</div>}
                       {f.desc && <div className="text-xs font-sans mt-0.5 leading-relaxed text-foreground/80">{f.desc}</div>}
@@ -447,7 +447,7 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
               ) : (
                 <div className="grid grid-cols-3 gap-1.5">
                   {Object.entries(spellSlots).map(([level, slot]) => (
-                    <div key={level} className="text-center border border-border/40 rounded p-1.5 bg-white/5">
+                    <div key={level} className="text-center border border-border/40 rounded p-1.5 bg-foreground/5">
                       <div className="text-[9px] font-sans uppercase text-muted-foreground">Level {level}</div>
                       <div className="font-bold font-sans text-primary">{slot.total - slot.used} / {slot.total}</div>
                     </div>
@@ -489,7 +489,7 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
             ) : (
               <div className="space-y-1">
                 {inventory.map((item, i) => (
-                  <div key={i} className="flex items-start gap-2 p-2 bg-white/5 border border-border/20 rounded">
+                  <div key={i} className="flex items-start gap-2 p-2 bg-foreground/5 border border-border/20 rounded">
                     <div className="flex-1">
                       <div className="text-xs font-bold font-sans text-foreground">{item.name}</div>
                       {item.notes && <div className="text-[10px] text-muted-foreground">{item.notes}</div>}

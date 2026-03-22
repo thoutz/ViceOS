@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { useLogin } from '@workspace/api-client-react';
 import { VttButton } from '@/components/VttButton';
 import { VttInput } from '@/components/VttInput';
+import { ThemeSlider } from '@/components/ThemeSlider';
 import { Dices } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -27,6 +28,9 @@ export default function Login() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-background">
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeSlider />
+      </div>
       {/* Background Image */}
       <div 
         className="absolute inset-0 z-0 opacity-30 bg-cover bg-center"
@@ -41,7 +45,7 @@ export default function Login() {
         className="relative z-10 glass-panel p-10 max-w-md w-full rounded-xl"
       >
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 rounded-full bg-card border border-primary/50 shadow-[0_0_20px_rgba(255,77,240,0.35)] mb-4">
+          <div className="inline-flex items-center justify-center p-3 rounded-full bg-card border border-primary/50 shadow-sm mb-4">
             <Dices className="w-10 h-10 text-primary" />
           </div>
           <h1 className="text-5xl font-sans font-bold text-primary gold-text-glow mb-2">TavernOS</h1>
