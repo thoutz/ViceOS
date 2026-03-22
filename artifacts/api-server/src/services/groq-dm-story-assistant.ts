@@ -4,7 +4,7 @@ export const GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/co
 /** Default model for DM story assistance (see Groq model list in console). */
 export const GROQ_DM_STORY_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
 
-const DM_STORY_SYSTEM = `You are a tabletop RPG assistant for a Dungeon Master using TavernOS (D&D 5e style).
+const DM_STORY_SYSTEM = `You are a tabletop RPG assistant for a Dungeon Master using ViceOS (D&D 5e style).
 Help with scene narration, NPC dialogue and mannerisms, consequences of player actions, pacing, and brainstorming.
 When campaign/session context is provided, stay consistent with it and do not contradict established facts.
 Do not dump raw JSON; write clear prose the DM can read aloud or adapt at the table.

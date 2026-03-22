@@ -2,17 +2,36 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { ChatMessage } from '@workspace/api-client-react';
 import { BookOpen, Sparkles, X } from 'lucide-react';
 
-const storageKey = (sessionId: string) => `tavernos_story_overlay_dismissed_${sessionId}`;
+const storageKey = (sessionId: string) => `viceos_story_overlay_dismissed_${sessionId}`;
+const legacyStorageKey = (sessionId: string) => `tavernos_story_overlay_dismissed_${sessionId}`;
 
-function loadDismissed(sessionId: string): Set<string> {
+function parseDismissedRaw(raw: string | null): Set<string> {
+  if (!raw) return new Set();
   try {
-    const raw = sessionStorage.getItem(storageKey(sessionId));
-    if (!raw) return new Set();
     const arr = JSON.parse(raw) as string[];
     return new Set(Array.isArray(arr) ? arr : []);
   } catch {
     return new Set();
   }
+}
+
+function loadDismissed(sessionId: string): Set<string> {
+  const next = parseDismissedRaw(
+    typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(storageKey(sessionId)) : null,
+  );
+  const legacy = parseDismissedRaw(
+    typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(legacyStorageKey(sessionId)) : null,
+  );
+  const merged = new Set([...next, ...legacy]);
+  if (legacy.size > 0 && typeof sessionStorage !== 'undefined') {
+    try {
+      sessionStorage.setItem(storageKey(sessionId), JSON.stringify([...merged]));
+      sessionStorage.removeItem(legacyStorageKey(sessionId));
+    } catch {
+      /* ignore */
+    }
+  }
+  return merged;
 }
 
 function saveDismissed(sessionId: string, ids: Set<string>) {

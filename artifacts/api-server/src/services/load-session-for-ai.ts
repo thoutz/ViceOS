@@ -204,7 +204,7 @@ export async function loadSessionForAI(
     messageHistory: session.messageHistory,
   };
 
-  let compiled = `# TavernOS — AI session context\n\n`;
+  let compiled = `# ViceOS — AI session context\n\n`;
   compiled += `## Campaign: ${campaign.name}\n`;
   if (campaign.gameSystem) compiled += `- System: ${campaign.gameSystem}\n`;
   if (campaign.setting) compiled += `- Setting: ${campaign.setting}\n`;

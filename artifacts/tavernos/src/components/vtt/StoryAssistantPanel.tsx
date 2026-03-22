@@ -15,7 +15,7 @@ import {
   type DmStoryAssistantRequestConversationHistoryItem,
   type DmStoryAssistantRequestResponseStyle,
 } from '@workspace/api-client-react';
-import { Sparkles, Send, Trash2, MessageSquarePlus } from 'lucide-react';
+import { Sparkles, Send, Trash2, MessageSquarePlus, ChevronDown, ChevronUp } from 'lucide-react';
 
 type LocalMsg = {
   id: string;
@@ -60,6 +60,8 @@ export function StoryAssistantPanel({
   const [includeStoryContext, setIncludeStoryContext] = useState(true);
   const [responseStyle, setResponseStyle] = useState<DmStoryAssistantRequestResponseStyle>('single');
   const [sendError, setSendError] = useState<string | null>(null);
+  /** Collapsed by default so Command Center shows DM tools without scrolling */
+  const [sectionExpanded, setSectionExpanded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const storyAssistantMutation = usePostDmStoryAssistant();
 
@@ -119,19 +121,31 @@ export function StoryAssistantPanel({
   };
 
   return (
-    <div className="shrink-0 border-b border-border/50 flex flex-col h-[min(52vh,420px)] min-h-[240px] bg-[#1a1a1c] text-[#cccccc]">
+    <div
+      className={`shrink-0 border-b border-border/50 flex flex-col bg-[#1a1a1c] text-[#cccccc] ${
+        sectionExpanded ? 'h-[min(52vh,420px)] min-h-[240px]' : ''
+      }`}
+    >
       <div className="px-3 py-2 border-b border-[#2d2d30] flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <button
+          type="button"
+          onClick={() => setSectionExpanded((e) => !e)}
+          className="flex flex-1 min-w-0 items-center gap-2 rounded px-1 -mx-1 py-0.5 text-left hover:bg-[#252526]/60 transition-colors"
+          aria-expanded={sectionExpanded}
+        >
           <Sparkles className="w-4 h-4 text-violet-400 shrink-0" aria-hidden />
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-[#e0e0e0] truncate">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[#e0e0e0] truncate flex-1">
             Story assistant
           </span>
-        </div>
+          <span className="shrink-0 text-[#888]" aria-hidden>
+            {sectionExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </span>
+        </button>
         <button
           type="button"
           onClick={clearChat}
           disabled={messages.length === 0}
-          className="flex items-center gap-1 text-[10px] text-[#888] hover:text-[#ccc] disabled:opacity-30 px-2 py-1 rounded border border-transparent hover:border-[#3c3c3c]"
+          className="flex items-center gap-1 text-[10px] text-[#888] hover:text-[#ccc] disabled:opacity-30 px-2 py-1 rounded border border-transparent hover:border-[#3c3c3c] shrink-0"
           title="Clear planning chat"
         >
           <Trash2 className="w-3 h-3" />
@@ -139,6 +153,8 @@ export function StoryAssistantPanel({
         </button>
       </div>
 
+      {sectionExpanded && (
+        <>
       <div className="px-3 py-2 space-y-2 border-b border-[#2d2d30]">
         <label className="flex items-center gap-2 text-[10px] text-[#aaa] cursor-pointer select-none">
           <input
@@ -263,6 +279,8 @@ export function StoryAssistantPanel({
           )}
         </button>
       </div>
+        </>
+      )}
     </div>
   );
 }

@@ -170,7 +170,7 @@ export function SessionVideoControlBar({
         {visibleControls.chat && (
           <ChatToggle className="vtt-lk-utility-btn">
             {showIcon && <ChatIcon />}
-            {showText && 'Chat'}
+            {showText && 'Story'}
           </ChatToggle>
         )}
         <button

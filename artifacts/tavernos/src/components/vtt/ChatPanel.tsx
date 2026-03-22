@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { ChatMessage, Character, GameSession } from '@workspace/api-client-react';
 import { DiceRoll } from 'rpg-dice-roller';
 import {
@@ -41,6 +41,9 @@ interface Open5eMonster {
 }
 
 type MessageType = 'chat' | 'dice' | 'system' | 'whisper' | 'story' | 'story_prompt';
+
+/** Left column message stream filters (communications panel only) */
+export type StoryFilterMode = 'all' | 'mine' | 'story';
 
 const MAX_NPC_PORTRAIT_BYTES = 750_000;
 
@@ -97,9 +100,10 @@ export function ChatPanel({
   const [input, setInput] = useState('');
   const [whisperTo, setWhisperTo] = useState<string>('all');
   const [storyForDm, setStoryForDm] = useState(false);
-  /** Video expanded by default; chat collapsed so the left column favors the call. */
+  /** Video expanded by default; story panel collapsed so the left column favors the call. */
   const [videoExpanded, setVideoExpanded] = useState(true);
   const [chatExpanded, setChatExpanded] = useState(false);
+  const [storyFilter, setStoryFilter] = useState<StoryFilterMode>('all');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -109,9 +113,20 @@ export function ChatPanel({
   /** Table talk only — dice posts appear on the Rolls tab, not here */
   const chatStreamMessages = messages.filter((m) => m.type !== 'dice');
 
+  const displayedMessages = useMemo(() => {
+    if (storyFilter === 'mine') {
+      if (!currentUserId) return chatStreamMessages;
+      return chatStreamMessages.filter((m) => m.senderId === currentUserId);
+    }
+    if (storyFilter === 'story') {
+      return chatStreamMessages.filter((m) => m.type === 'story' || m.type === 'story_prompt');
+    }
+    return chatStreamMessages;
+  }, [chatStreamMessages, storyFilter, currentUserId]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatStreamMessages.length]);
+  }, [displayedMessages.length]);
 
   const performRoll = (expr: string, label: string) => {
     try {
@@ -213,12 +228,23 @@ export function ChatPanel({
         )}
       </div>
 
-      {/* Table chat — collapsible (default collapsed) */}
+      {/* Story stream — collapsible (default collapsed) */}
       {chatExpanded ? (
         <div className="flex flex-1 flex-col min-h-0">
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-background flex-shrink-0">
+          <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-border bg-background flex-shrink-0">
             <MessageSquare className="w-4 h-4 text-primary shrink-0" />
-            <span className="text-xs font-label font-bold text-primary uppercase tracking-wider">Chat</span>
+            <span className="text-xs font-label font-bold text-primary uppercase tracking-wider">Story</span>
+            <select
+              value={storyFilter}
+              onChange={(e) => setStoryFilter(e.target.value as StoryFilterMode)}
+              className="text-[10px] bg-background border border-border/50 rounded px-1.5 py-1 font-sans text-muted-foreground max-w-[10rem]"
+              title="Filter messages"
+              aria-label="Filter story messages"
+            >
+              <option value="all">All messages</option>
+              <option value="mine">My messages only</option>
+              <option value="story">Story only</option>
+            </select>
             <span className="text-[10px] font-label text-muted-foreground ml-auto hidden sm:inline">
               Dice log → right panel
             </span>
@@ -227,30 +253,35 @@ export function ChatPanel({
               onClick={() => setChatExpanded(false)}
               aria-expanded
               className="shrink-0 p-1 rounded hover:bg-foreground/10 text-muted-foreground hover:text-foreground"
-              title="Collapse chat"
+              title="Collapse story"
             >
               <ChevronUp className="w-4 h-4" />
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
-            {chatStreamMessages.length === 0 && (
+            {chatStreamMessages.length === 0 ? (
               <div className="text-center text-muted-foreground text-xs italic pt-8">
                 No messages yet. Say hello!
               </div>
+            ) : displayedMessages.length === 0 ? (
+              <div className="text-center text-muted-foreground text-xs italic pt-8 px-2">
+                No messages match this filter. Try &quot;All messages&quot; or another filter.
+              </div>
+            ) : (
+              displayedMessages.map((msg, idx) => (
+                <MessageBubble
+                  key={msg.id || idx}
+                  msg={msg}
+                  isDm={isDm}
+                  onDeleteStoryMessage={onDeleteStoryMessage}
+                  isDeletingStory={deletingStoryMessageId === msg.id}
+                  currentUserId={currentUserId}
+                  onPatchMessage={onPatchMessage}
+                  patchMessagePending={patchMessagePending}
+                />
+              ))
             )}
-            {chatStreamMessages.map((msg, idx) => (
-              <MessageBubble
-                key={msg.id || idx}
-                msg={msg}
-                isDm={isDm}
-                onDeleteStoryMessage={onDeleteStoryMessage}
-                isDeletingStory={deletingStoryMessageId === msg.id}
-                currentUserId={currentUserId}
-                onPatchMessage={onPatchMessage}
-                patchMessagePending={patchMessagePending}
-              />
-            ))}
             <div ref={bottomRef} />
           </div>
 
@@ -318,21 +349,35 @@ export function ChatPanel({
           </div>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => setChatExpanded(true)}
-          aria-expanded={false}
-          className="flex w-full shrink-0 items-center gap-2 px-3 py-2.5 border-t border-border bg-background hover:bg-foreground/5 text-left transition-colors"
-        >
-          <MessageSquare className="w-4 h-4 text-primary shrink-0" />
-          <span className="text-xs font-label font-bold text-primary uppercase tracking-wider">Chat</span>
-          {chatStreamMessages.length > 0 && (
-            <span className="text-[10px] font-sans text-muted-foreground">({chatStreamMessages.length})</span>
-          )}
-          <span className="ml-auto shrink-0 text-muted-foreground" aria-hidden>
-            <ChevronDown className="w-4 h-4" />
-          </span>
-        </button>
+        <div className="flex shrink-0 items-stretch gap-1 border-t border-border bg-background">
+          <button
+            type="button"
+            onClick={() => setChatExpanded(true)}
+            aria-expanded={false}
+            className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5 hover:bg-foreground/5 text-left transition-colors"
+          >
+            <MessageSquare className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-xs font-label font-bold text-primary uppercase tracking-wider">Story</span>
+            {displayedMessages.length > 0 && (
+              <span className="text-[10px] font-sans text-muted-foreground">({displayedMessages.length})</span>
+            )}
+            <span className="ml-auto shrink-0 text-muted-foreground" aria-hidden>
+              <ChevronDown className="w-4 h-4" />
+            </span>
+          </button>
+          <select
+            value={storyFilter}
+            onChange={(e) => setStoryFilter(e.target.value as StoryFilterMode)}
+            onClick={(e) => e.stopPropagation()}
+            className="self-center mr-2 text-[10px] bg-background border border-border/50 rounded px-1.5 py-1 font-sans text-muted-foreground max-w-[9rem]"
+            title="Filter messages (expand to read)"
+            aria-label="Filter story messages"
+          >
+            <option value="all">All</option>
+            <option value="mine">Mine</option>
+            <option value="story">Story</option>
+          </select>
+        </div>
       )}
     </div>
   );

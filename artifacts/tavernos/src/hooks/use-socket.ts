@@ -57,7 +57,10 @@ export function useVttSocket(campaignId: string, sessionId: string) {
   useEffect(() => {
     if (!sessionId || !campaignId) return;
 
-    const tabId = sessionStorage.getItem("tavernos_tab_id") ?? undefined;
+    const tabId =
+      sessionStorage.getItem("viceos_tab_id") ??
+      sessionStorage.getItem("tavernos_tab_id") ??
+      undefined;
 
     const socket = io(window.location.origin, {
       path: "/socket.io",

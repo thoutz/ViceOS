@@ -19,10 +19,13 @@ const queryClient = new QueryClient();
 // This allows multiple browser tabs to each have a distinct logged-in user
 // identity even though they share the same session cookie.
 function getOrCreateTabId(): string {
-  const key = "tavernos_tab_id";
-  let id = sessionStorage.getItem(key);
+  const key = "viceos_tab_id";
+  const legacyKey = "tavernos_tab_id";
+  let id = sessionStorage.getItem(key) ?? sessionStorage.getItem(legacyKey);
   if (!id) {
     id = `tab_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    sessionStorage.setItem(key, id);
+  } else if (!sessionStorage.getItem(key) && sessionStorage.getItem(legacyKey)) {
     sessionStorage.setItem(key, id);
   }
   return id;

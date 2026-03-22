@@ -145,7 +145,7 @@ export default function Dashboard() {
   }, []);
 
   const shareOrCopyInvite = useCallback(async (campaignName: string, code: string) => {
-    const text = `Join my campaign "${campaignName}" on TavernOS. Invite code: ${code}`;
+    const text = `Join my campaign "${campaignName}" on ViceOS. Invite code: ${code}`;
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
         await navigator.share({ title: `Invite: ${campaignName}`, text });
@@ -199,7 +199,7 @@ export default function Dashboard() {
   if (userLoading)
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-primary font-sans text-2xl animate-pulse">
-        Loading Chronicles...
+        Loading…
       </div>
     );
 
@@ -250,7 +250,7 @@ export default function Dashboard() {
       <header className="bg-card border-b border-border py-4 px-8 flex justify-between items-center sticky top-0 z-20 shadow-md">
         <div className="flex items-center gap-3">
           <Book className="w-8 h-8 text-primary" />
-          <h1 className="text-3xl font-sans text-primary gold-text-glow">TavernOS</h1>
+          <h1 className="text-3xl font-sans text-primary gold-text-glow">ViceOS</h1>
         </div>
         <div className="flex items-center gap-4">
           <VttButton variant="outline" size="sm" onClick={() => setLocation('/create-character')}>

@@ -228,7 +228,7 @@ router.post(
 
     const userId = getEffectiveUserId(req)!;
     const displayName = getEffectiveUsername(req) || "Player";
-    const roomName = `tavernos-${sessionId}`;
+    const roomName = `viceos-${sessionId}`;
 
     const token = new AccessToken(apiKey, apiSecret, {
       identity: userId,

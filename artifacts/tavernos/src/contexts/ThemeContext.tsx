@@ -14,11 +14,13 @@ const ThemeContext = createContext<ThemeContextValue>({
   toggle: () => {},
 });
 
-const STORAGE_KEY = 'tavernos_theme';
+const STORAGE_KEY = 'viceos_theme';
+const LEGACY_THEME_KEY = 'tavernos_theme';
 
 function getInitialTheme(): Theme {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved =
+      localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_THEME_KEY);
     if (saved === 'dark' || saved === 'light') return saved;
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
   } catch {
@@ -34,6 +36,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState(t);
     try {
       localStorage.setItem(STORAGE_KEY, t);
+      try {
+        localStorage.removeItem(LEGACY_THEME_KEY);
+      } catch {
+        /* ignore */
+      }
     } catch {
       /* ignore */
     }

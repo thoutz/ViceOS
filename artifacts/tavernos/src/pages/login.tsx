@@ -48,7 +48,7 @@ export default function Login() {
           <div className="inline-flex items-center justify-center p-3 rounded-full bg-card border border-primary/50 shadow-sm mb-4">
             <Dices className="w-10 h-10 text-primary" />
           </div>
-          <h1 className="text-5xl font-sans font-bold text-primary gold-text-glow mb-2">TavernOS</h1>
+          <h1 className="text-5xl font-sans font-bold text-primary gold-text-glow mb-2">ViceOS</h1>
           <p className="text-muted-foreground font-sans tracking-widest uppercase text-sm">Virtual Tabletop</p>
         </div>
 

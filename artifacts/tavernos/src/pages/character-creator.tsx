@@ -29,6 +29,10 @@ import {
 } from "./character-creator-data";
 
 function draftKey(campaignId: string | undefined) {
+  return `viceos_character_draft_v1_${campaignId ?? "pool"}`;
+}
+
+function legacyDraftKey(campaignId: string | undefined) {
   return `tavernos_character_draft_v1_${campaignId ?? "pool"}`;
 }
 
@@ -57,10 +61,18 @@ export default function CharacterCreator() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(draftKey(campaignId));
+      const key = draftKey(campaignId);
+      const raw =
+        localStorage.getItem(key) ?? localStorage.getItem(legacyDraftKey(campaignId));
       if (raw) {
         const parsed = JSON.parse(raw) as CharacterFormState;
         setForm({ ...defaultCharacterForm(), ...parsed });
+        try {
+          localStorage.setItem(key, raw);
+          localStorage.removeItem(legacyDraftKey(campaignId));
+        } catch {
+          /* ignore */
+        }
       }
     } catch {
       /* ignore */

@@ -30,7 +30,23 @@ import { StoryMapOverlay } from '@/components/vtt/StoryMapOverlay';
 import { StoryAssistantPanel } from '@/components/vtt/StoryAssistantPanel';
 import { RollsPanel } from '@/components/vtt/RollsPanel';
 import { DiceRoll } from 'rpg-dice-roller';
-import { LogOut, X, Wifi, WifiOff, Dices, StickyNote, Shield, Swords, MessageSquare, User, ScrollText, Copy, RefreshCw } from 'lucide-react';
+import {
+  LogOut,
+  X,
+  Wifi,
+  WifiOff,
+  Dices,
+  StickyNote,
+  Shield,
+  Swords,
+  MessageSquare,
+  User,
+  ScrollText,
+  Copy,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 
 /**
  * Story assistant (DM Command Center): Groq OpenAI-compatible API on the server.
@@ -168,6 +184,8 @@ export default function Session() {
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [rightSidebarTab, setRightSidebarTab] = useState<'character' | 'rolls'>('character');
   const [dmDrawerOpen, setDmDrawerOpen] = useState(false);
+  /** DM drawer: AI session context block — collapsed by default to leave room for story assistant + tools */
+  const [dmAiContextExpanded, setDmAiContextExpanded] = useState(false);
   const [aiCopied, setAiCopied] = useState(false);
   const [placementCombatant, setPlacementCombatant] = useState<InitiativeCombatant | null>(null);
 
@@ -360,7 +378,7 @@ export default function Session() {
           <button
             onClick={() => setLeftPanelOpen(!leftPanelOpen)}
             className="p-1 hover:bg-foreground/10 rounded"
-            title="Party chat & video"
+            title="Party story & video"
           >
             <MessageSquare className="w-5 h-5 text-primary" />
           </button>
@@ -426,7 +444,7 @@ export default function Session() {
 
       {/* MAIN WORKSPACE */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* LEFT PANEL: Party chat + video + dice */}
+        {/* LEFT PANEL: Party story + video + dice */}
         <div
           className={`absolute lg:relative z-20 h-full transition-all duration-300 ease-in-out border-r border-border shadow-2xl lg:shadow-none bg-background flex-shrink-0 flex flex-col min-h-0 min-w-0 ${
             leftPanelOpen ? 'translate-x-0 w-[min(100vw,400px)] lg:w-[400px]' : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-none lg:overflow-hidden'
@@ -590,15 +608,27 @@ export default function Session() {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            {/* AI session context (DM) — paste into external LLM tools */}
-            <div className="shrink-0 border-b border-border/50 px-4 py-3 space-y-2 bg-card/50">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
+            {/* AI session context (DM) — paste into external LLM tools; collapsed by default */}
+            <div className="shrink-0 border-b border-border/50 bg-card/50">
+              <div className="flex items-center justify-between gap-2 px-4 py-2.5">
+                <button
+                  type="button"
+                  onClick={() => setDmAiContextExpanded((v) => !v)}
+                  aria-expanded={dmAiContextExpanded}
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left hover:bg-foreground/5 rounded-md -ml-1 pl-1 py-0.5 transition-colors"
+                >
                   <ScrollText className="w-4 h-4 text-primary shrink-0" />
                   <span className="font-sans text-xs font-bold text-primary uppercase tracking-wide truncate">
                     AI session context
                   </span>
-                </div>
+                  <span className="ml-auto shrink-0 text-muted-foreground" aria-hidden>
+                    {dmAiContextExpanded ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </span>
+                </button>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     type="button"
@@ -629,15 +659,19 @@ export default function Session() {
                   </button>
                 </div>
               </div>
-              <p className="text-[10px] text-muted-foreground font-sans leading-snug">
-                Campaign summary, party, memory JSON, and recent chat as one text block. Paste into your
-                favorite AI assistant.
-              </p>
-              {aiContextError && (
-                <p className="text-[10px] text-destructive font-sans">Could not load AI context.</p>
-              )}
-              {aiCopied && (
-                <p className="text-[10px] text-emerald-500 font-sans">Copied to clipboard.</p>
+              {dmAiContextExpanded && (
+                <div className="space-y-2 px-4 pb-3 pt-0">
+                  <p className="text-[10px] text-muted-foreground font-sans leading-snug">
+                    Campaign summary, party, memory JSON, and recent chat as one text block. Paste into your
+                    favorite AI assistant.
+                  </p>
+                  {aiContextError && (
+                    <p className="text-[10px] text-destructive font-sans">Could not load AI context.</p>
+                  )}
+                  {aiCopied && (
+                    <p className="text-[10px] text-emerald-500 font-sans">Copied to clipboard.</p>
+                  )}
+                </div>
               )}
             </div>
             <StoryAssistantPanel
