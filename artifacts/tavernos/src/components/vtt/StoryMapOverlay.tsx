@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { ChatMessage } from '@workspace/api-client-react';
 import { BookOpen, Sparkles, X } from 'lucide-react';
+import { StoryRichText, type StoryHighlightContext } from './story-syntax-highlight';
 
 const storageKey = (sessionId: string) => `viceos_story_overlay_dismissed_${sessionId}`;
 const legacyStorageKey = (sessionId: string) => `tavernos_story_overlay_dismissed_${sessionId}`;
@@ -45,13 +46,15 @@ function saveDismissed(sessionId: string, ids: Set<string>) {
 interface StoryMapOverlayProps {
   sessionId: string;
   messages: ChatMessage[];
+  /** Same as Story panel — PCs, NPCs, initiative combatants + pattern highlights */
+  storyHighlightContext?: StoryHighlightContext | null;
 }
 
 /**
  * Full-width overlay within the map column: shows the latest non-dismissed story message
  * for all users; dismiss is per-browser only.
  */
-export function StoryMapOverlay({ sessionId, messages }: StoryMapOverlayProps) {
+export function StoryMapOverlay({ sessionId, messages, storyHighlightContext }: StoryMapOverlayProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(() => loadDismissed(sessionId));
 
   useEffect(() => {
@@ -109,7 +112,7 @@ export function StoryMapOverlay({ sessionId, messages }: StoryMapOverlayProps) {
         </div>
         <div className="px-4 py-3 overflow-y-auto flex-1 min-h-0">
           <p className="text-sm font-sans text-foreground leading-relaxed whitespace-pre-wrap">
-            {pendingStory.content}
+            <StoryRichText text={pendingStory.content} context={storyHighlightContext} />
           </p>
         </div>
         <div className="px-4 py-2.5 border-t border-border/40 bg-black/20 shrink-0 flex justify-end">

@@ -21,6 +21,7 @@ import {
 import { SessionVideoCall } from './SessionVideoCall';
 import { VttButton } from '../VttButton';
 import { MessageBubble } from './message-bubble';
+import { buildStoryHighlightContext } from './story-syntax-highlight';
 import type { InitiativeCombatant } from './InitiativeBar';
 
 interface Open5eMonster {
@@ -123,6 +124,11 @@ export function ChatPanel({
     }
     return chatStreamMessages;
   }, [chatStreamMessages, storyFilter, currentUserId]);
+
+  const storyHighlightContext = useMemo(
+    () => buildStoryHighlightContext(allCharacters, activeSession.initiativeOrder),
+    [allCharacters, activeSession.initiativeOrder],
+  );
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -279,6 +285,7 @@ export function ChatPanel({
                   currentUserId={currentUserId}
                   onPatchMessage={onPatchMessage}
                   patchMessagePending={patchMessagePending}
+                  storyHighlightContext={storyHighlightContext}
                 />
               ))
             )}

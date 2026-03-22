@@ -8,7 +8,7 @@
 - [ ] **roll-ui** — Clamp rolled base 3–18 on change; fix min/max; add +/- buttons with disabled bounds in `character-creator.tsx`
 - [ ] **can-proceed** — Validate step 2 roll method: all bases in [3, 18] before advancing
 - [ ] **api-optional** — Optional: reject create if any ability outside [1, 20] for level 1 in `player-characters` route
-- [ ] **doc-msp** — Add `msp-quote-docs` note for ability cap behavior after implementation
+- [ ] **doc-viceos** — Add `viceos-docs` note for ability cap behavior after implementation
 
 ## Rules (Player’s Handbook)
 
@@ -54,7 +54,7 @@
 
 ### 5. Docs (after implementation)
 
-- Short entry in `msp-quote-docs/` describing PHB caps and where they’re enforced.
+- Short entry in `viceos-docs/` describing PHB caps and where they’re enforced.
 
 ## Out of scope (unless you want it next)
 

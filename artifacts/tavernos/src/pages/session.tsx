@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { ThemeSlider } from '@/components/ThemeSlider';
 import { useParams, useLocation } from 'wouter';
 import {
@@ -27,6 +27,7 @@ import { CharacterSheet } from '@/components/vtt/CharacterSheet';
 import { InitiativeBar, type InitiativeCombatant } from '@/components/vtt/InitiativeBar';
 import { ChatPanel } from '@/components/vtt/ChatPanel';
 import { StoryMapOverlay } from '@/components/vtt/StoryMapOverlay';
+import { buildStoryHighlightContext } from '@/components/vtt/story-syntax-highlight';
 import { StoryAssistantPanel } from '@/components/vtt/StoryAssistantPanel';
 import { RollsPanel } from '@/components/vtt/RollsPanel';
 import { DiceRoll } from 'rpg-dice-roller';
@@ -173,6 +174,12 @@ export default function Session() {
   });
 
   const myCharacter = characters?.find((c) => c.userId === user?.id) ?? null;
+
+  const storyHighlightContext = useMemo(
+    () => buildStoryHighlightContext(characters ?? [], activeSession?.initiativeOrder),
+    [characters, activeSession?.initiativeOrder],
+  );
+
   // Prefer the session's pinned activeMapId; fall back to the first available map
   const activeMap = (maps && activeSession?.activeMapId
     ? (maps.find(m => m.id === activeSession.activeMapId) ?? maps[0])
@@ -504,7 +511,11 @@ export default function Session() {
             placementDraft={placementCombatant}
             onPlacementDraftConsumed={() => setPlacementCombatant(null)}
           />
-          <StoryMapOverlay sessionId={activeSession.id} messages={messages || []} />
+          <StoryMapOverlay
+            sessionId={activeSession.id}
+            messages={messages || []}
+            storyHighlightContext={storyHighlightContext}
+          />
         </div>
 
         {/* RIGHT PANEL: Character sheet + Rolls */}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChatMessage } from '@workspace/api-client-react';
 import { format } from 'date-fns';
 import { X, Pencil, Pin, Check } from 'lucide-react';
+import { StoryRichText, type StoryHighlightContext } from './story-syntax-highlight';
 
 export function MessageBubble({
   msg,
@@ -11,6 +12,7 @@ export function MessageBubble({
   currentUserId,
   onPatchMessage,
   patchMessagePending,
+  storyHighlightContext,
 }: {
   msg: ChatMessage;
   isDm?: boolean;
@@ -19,6 +21,8 @@ export function MessageBubble({
   currentUserId?: string;
   onPatchMessage?: (messageId: string, data: { content?: string; pinnedForStoryAi?: boolean }) => void;
   patchMessagePending?: boolean;
+  /** Campaign + initiative–aware coloring for story / story_prompt bodies */
+  storyHighlightContext?: StoryHighlightContext | null;
 }) {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(msg.content);
@@ -110,7 +114,9 @@ export function MessageBubble({
             </div>
           </div>
         ) : (
-          <div className="text-sm text-foreground/95 font-sans leading-relaxed whitespace-pre-wrap">{msg.content}</div>
+          <div className="text-sm text-foreground/95 font-sans leading-relaxed whitespace-pre-wrap">
+            <StoryRichText text={msg.content} context={storyHighlightContext} />
+          </div>
         )}
         <div className="mt-2 flex flex-wrap gap-1.5">
           {canEditContent && !editing && (
@@ -177,7 +183,9 @@ export function MessageBubble({
             {format(new Date(msg.createdAt), 'HH:mm')}
           </span>
         </div>
-        <div className="text-sm text-foreground font-sans leading-relaxed whitespace-pre-wrap">{msg.content}</div>
+        <div className="text-sm text-foreground font-sans leading-relaxed whitespace-pre-wrap">
+          <StoryRichText text={msg.content} context={storyHighlightContext} />
+        </div>
         {isDm && onPatchMessage && (
           <div className="mt-2">
             <button

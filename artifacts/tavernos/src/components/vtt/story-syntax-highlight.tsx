@@ -109,7 +109,7 @@ function findNameAt(text: string, pos: number, rows: NameRow[]): NameRow | null 
 
 /** Common hostile / neutral creatures when not already matched as a named character */
 const CREATURE_RE =
-  /\b(goblins?|hobgoblins?|bugbears?|orcs?|half-?orcs?|kobolds?|lizardfolk|dragonborn|dragons?|wyverns?|griffons?|hippogriffs?|zombies?|skeletons?|ghouls?|ghasts?|wights?|specters?|ghosts?|wraiths?|vampires?|liches?|beholders?|mind flayers?|illithids?|giants?|trolls?|ogres?|ettins?|cyclops|demons?|devils?|fiends?|imps?|quasits?|succubi|incubi|elementals?|mephits?|mimics?|gelatinous cubes?|slimes?|oozes?|black puddings?|rust monsters?|roper|cloakers?|bulettes?|ankhegs?|gricks?|chimeras?|manticores?|hydras?|basilisks?|medusas?|harpy|harpies|centaurs?|satyrs?|dryads?|pixies?|sprites?|satyrs?|banshees?|will-o['’-]?wisps?|shamblers?|treants?|awakened trees?|awakened shrubs?|scouts?|guards?|bandits?|thugs?|cultists?|acolytes?|priests?|mages?|assassins?|knights?|veterans?|gladiators?|spies?|nobles?|commoners?)\b/i;
+  /\b(goblins?|hobgoblins?|bugbears?|orcs?|half-?orcs?|kobolds?|lizardfolk|dragonborn|dragons?|wyverns?|griffons?|hippogriffs?|zombies?|skeletons?|ghouls?|ghasts?|wights?|specters?|ghosts?|wraiths?|vampires?|liches?|beholders?|mind flayers?|illithids?|giants?|trolls?|ogres?|ettins?|cyclops|demons?|devils?|fiends?|imps?|quasits?|succubi|incubi|elementals?|mephits?|mimics?|gelatinous cubes?|slimes?|oozes?|black puddings?|rust monsters?|roper|cloakers?|bulettes?|ankhegs?|gricks?|chimeras?|manticores?|hydras?|basilisks?|medusas?|harpy|harpies|centaurs?|satyrs?|dryads?|pixies?|sprites?|banshees?|will-o['’-]?wisps?|shamblers?|treants?|awakened trees?|awakened shrubs?|scouts?|guards?|bandits?|thugs?|cultists?|acolytes?|priests?|mages?|assassins?|knights?|veterans?|gladiators?|spies?|nobles?|commoners?)\b/i;
 
 const GOLD_RE =
   /^(\d[\d,]*\s*(gp|sp|cp|pp|electrum|gold pieces?|silver pieces?|copper pieces?|platinum pieces?|gold|silver|copper|platinum))\b/i;
@@ -245,6 +245,12 @@ const DEFAULT_CTX: StoryHighlightContext = {
   combatantNames: [],
 };
 
+function contextKey(ctx: StoryHighlightContext): string {
+  return [ctx.pcNames.join('\u0001'), ctx.friendlyNpcNames.join('\u0001'), ctx.combatantNames.join('\u0001')].join(
+    '\u0002',
+  );
+}
+
 export function StoryRichText({
   text,
   context,
@@ -256,7 +262,8 @@ export function StoryRichText({
   className?: string;
 }) {
   const ctx = context ?? DEFAULT_CTX;
-  const segments = useMemo(() => parseStoryToSegments(text, ctx), [text, ctx]);
+  const ck = contextKey(ctx);
+  const segments = useMemo(() => parseStoryToSegments(text, ctx), [text, ck]);
   return (
     <span className={className}>
       {segments.map((s, idx) =>
