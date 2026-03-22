@@ -5,9 +5,18 @@
  * TavernOS API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { DmStoryAssistantRequestConversationHistoryItem } from "./dmStoryAssistantRequestConversationHistoryItem";
+import type { DmStoryAssistantRequestResponseStyle } from "./dmStoryAssistantRequestResponseStyle";
 
 export interface DmStoryAssistantRequest {
   message: string;
   /** When true, server attaches compiled session/campaign context from loadSessionForAI. */
   includeSessionContext?: boolean;
+  /**
+   * Prior user/assistant turns for multi-turn planning (Ask mode). Max 24 items server-side.
+   * @maxItems 24
+   */
+  conversationHistory?: DmStoryAssistantRequestConversationHistoryItem[];
+  /** When variants, model returns three options labeled Variant A/B/C. */
+  responseStyle?: DmStoryAssistantRequestResponseStyle;
 }

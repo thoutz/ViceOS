@@ -15,4 +15,5 @@ export const ChatMessageType = {
   system: "system",
   whisper: "whisper",
   story: "story",
+  story_prompt: "story_prompt",
 } as const;

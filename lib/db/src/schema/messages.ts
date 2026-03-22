@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, jsonb, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { gameSessionsTable } from "./sessions";
@@ -13,6 +13,8 @@ export const messagesTable = pgTable("messages", {
   content: text("content").notNull(),
   type: text("type").notNull().default("chat"),
   diceData: jsonb("dice_data"),
+  /** DM-only: include this line in story-assistant compiled context (any message type). */
+  pinnedForStoryAi: boolean("pinned_for_story_ai").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

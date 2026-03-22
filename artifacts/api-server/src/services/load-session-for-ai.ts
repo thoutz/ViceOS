@@ -5,7 +5,7 @@ import {
   charactersTable,
   messagesTable,
 } from "@workspace/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, asc, ne } from "drizzle-orm";
 
 export type PartyMemberBrief = {
   id: string;
@@ -122,7 +122,7 @@ export async function loadSessionForAI(
     backstory: c.backstory,
   }));
 
-  const msgRows = await db
+  const storyPromptRows = await db
     .select({
       senderName: messagesTable.senderName,
       content: messagesTable.content,
@@ -130,18 +130,44 @@ export async function loadSessionForAI(
       createdAt: messagesTable.createdAt,
     })
     .from(messagesTable)
-    .where(eq(messagesTable.sessionId, sessionId))
-    .orderBy(desc(messagesTable.createdAt))
+    .where(and(eq(messagesTable.sessionId, sessionId), eq(messagesTable.type, "story_prompt")))
+    .orderBy(asc(messagesTable.createdAt))
     .limit(100);
 
-  const recentMessages: RecentMessageBrief[] = [...msgRows]
-    .reverse()
-    .map((m) => ({
-      senderName: m.senderName,
-      content: m.content,
-      type: m.type,
-      createdAt: m.createdAt instanceof Date ? m.createdAt.toISOString() : String(m.createdAt),
-    }));
+  const pinnedOtherRows = await db
+    .select({
+      senderName: messagesTable.senderName,
+      content: messagesTable.content,
+      type: messagesTable.type,
+      createdAt: messagesTable.createdAt,
+    })
+    .from(messagesTable)
+    .where(
+      and(
+        eq(messagesTable.sessionId, sessionId),
+        eq(messagesTable.pinnedForStoryAi, true),
+        ne(messagesTable.type, "story_prompt"),
+      ),
+    )
+    .orderBy(asc(messagesTable.createdAt))
+    .limit(50);
+
+  const toBrief = (m: {
+    senderName: string;
+    content: string;
+    type: string;
+    createdAt: Date | string;
+  }): RecentMessageBrief => ({
+    senderName: m.senderName,
+    content: m.content,
+    type: m.type,
+    createdAt: m.createdAt instanceof Date ? m.createdAt.toISOString() : String(m.createdAt),
+  });
+
+  const recentMessages: RecentMessageBrief[] = [
+    ...storyPromptRows.map(toBrief),
+    ...pinnedOtherRows.map(toBrief),
+  ];
 
   const campaignBlock = {
     id: campaign.id,
@@ -207,10 +233,18 @@ export async function loadSessionForAI(
   compiled += formatJsonBlock("Open threads", session.openThreads);
   compiled += formatJsonBlock("Message history (DM notes)", session.messageHistory);
 
-  if (recentMessages.length > 0) {
-    compiled += `\n## Recent table chat (last ${recentMessages.length} messages)\n`;
-    for (const m of recentMessages) {
-      compiled += `- [${m.type}] ${m.senderName}: ${truncate(m.content, 500)}\n`;
+  if (storyPromptRows.length > 0) {
+    compiled += `\n## Story slider — player contributions (for your story assistant)\n`;
+    compiled += `(Only messages sent with "Story for DM" are listed here.)\n`;
+    for (const m of storyPromptRows) {
+      compiled += `- ${m.senderName}: ${truncate(m.content, 1500)}\n`;
+    }
+  }
+
+  if (pinnedOtherRows.length > 0) {
+    compiled += `\n## Pinned for story assistant (DM-selected chat lines)\n`;
+    for (const m of pinnedOtherRows) {
+      compiled += `- [${m.type}] ${m.senderName}: ${truncate(m.content, 1500)}\n`;
     }
   }
 

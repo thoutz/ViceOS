@@ -842,6 +842,52 @@ paths:
                 $ref: "#/components/schemas/ChatMessage"
 
   /campaigns/{campaignId}/sessions/{sessionId}/messages/{messageId}:
+    patch:
+      operationId: patchMessage
+      tags: [messages]
+      summary: Update message (edit story contribution, or DM pin for story assistant)
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchMessageRequest"
+      responses:
+        "200":
+          description: Message updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatMessage"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Message not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       operationId: deleteMessage
       tags: [messages]
@@ -1190,6 +1236,10 @@ components:
           type: string
         avatarUrl:
           type: string
+        sheetBackgroundUrl:
+          type: string
+          nullable: true
+          description: Optional hero-studio background image (URL or data URL).
         gameSystem:
           type: string
         isActive:
@@ -1407,6 +1457,8 @@ components:
           type: string
         background:
           type: string
+        alignment:
+          type: string
         level:
           type: integer
         hp:
@@ -1419,6 +1471,25 @@ components:
           type: integer
         speed:
           type: integer
+        personality:
+          type: string
+        backstory:
+          type: string
+        ideals:
+          type: string
+        bonds:
+          type: string
+        flaws:
+          type: string
+        appearance:
+          type: string
+        notes:
+          type: string
+        avatarUrl:
+          type: string
+        sheetBackgroundUrl:
+          type: string
+          nullable: true
         stats:
           $ref: "#/components/schemas/AbilityScores"
         sheetData:
@@ -1700,6 +1771,24 @@ components:
           type: boolean
           default: true
           description: When true, server attaches compiled session/campaign context from loadSessionForAI.
+        conversationHistory:
+          type: array
+          description: Prior user/assistant turns for multi-turn planning (Ask mode). Max 24 items server-side.
+          maxItems: 24
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+                enum: [user, assistant]
+              content:
+                type: string
+            required: [role, content]
+        responseStyle:
+          type: string
+          enum: [single, variants]
+          default: single
+          description: When variants, model returns three options labeled Variant A/B/C.
       required:
         - message
 
@@ -1856,10 +1945,13 @@ components:
           type: string
         type:
           type: string
-          enum: [chat, dice, system, whisper, story]
+          enum: [chat, dice, system, whisper, story, story_prompt]
         diceData:
           type: object
           additionalProperties: true
+        pinnedForStoryAi:
+          type: boolean
+          description: DM may set; includes this line in story-assistant AI context when true.
         createdAt:
           type: string
           format: date-time
@@ -1872,6 +1964,16 @@ components:
         - type
         - createdAt
 
+    PatchMessageRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          description: New text (sender may edit own story_prompt; DM may edit any).
+        pinnedForStoryAi:
+          type: boolean
+          description: DM only — pin/unpin for story assistant context.
+
     PostMessageRequest:
       type: object
       properties:
@@ -1879,7 +1981,7 @@ components:
           type: string
         type:
           type: string
-          enum: [chat, dice, system, whisper, story]
+          enum: [chat, dice, system, whisper, story, story_prompt]
           default: chat
         recipientId:
           type: string

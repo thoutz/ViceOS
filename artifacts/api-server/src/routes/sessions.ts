@@ -71,7 +71,12 @@ router.post(
 
     const campaignId = param(req.params.campaignId);
     const sessionId = param(req.params.sessionId);
-    const body = req.body as { message?: string; includeSessionContext?: boolean };
+    const body = req.body as {
+      message?: string;
+      includeSessionContext?: boolean;
+      conversationHistory?: Array<{ role?: string; content?: string }>;
+      responseStyle?: string;
+    };
     const message = typeof body.message === "string" ? body.message : "";
     if (!message.trim()) {
       res.status(400).json({ error: "message is required" });
@@ -81,6 +86,26 @@ router.post(
       res.status(400).json({ error: "message is too long (max 12000 characters)" });
       return;
     }
+
+    const rawHistory = Array.isArray(body.conversationHistory) ? body.conversationHistory : [];
+    if (rawHistory.length > 24) {
+      res.status(400).json({ error: "conversationHistory may have at most 24 items" });
+      return;
+    }
+    const conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = [];
+    for (const turn of rawHistory) {
+      const role = turn.role === "assistant" ? "assistant" : turn.role === "user" ? "user" : null;
+      const content = typeof turn.content === "string" ? turn.content.trim() : "";
+      if (!role || !content) continue;
+      if (content.length > 12000) {
+        res.status(400).json({ error: "each conversationHistory content must be at most 12000 characters" });
+        return;
+      }
+      conversationHistory.push({ role, content });
+    }
+
+    const responseStyle =
+      body.responseStyle === "variants" ? "variants" : ("single" as const);
 
     const includeSessionContext = body.includeSessionContext !== false;
 
@@ -99,6 +124,8 @@ router.post(
         apiKey,
         userMessage: message.trim(),
         sessionContextText,
+        conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
+        responseStyle,
       });
       res.json(result);
     } catch (err) {

@@ -40,6 +40,8 @@ export interface Character {
   appearance?: string;
   notes?: string;
   avatarUrl?: string;
+  /** Optional hero-studio background image (URL or data URL). */
+  sheetBackgroundUrl?: string | null;
   gameSystem?: string;
   isActive?: boolean;
   stats: AbilityScores;

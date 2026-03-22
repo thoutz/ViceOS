@@ -42,6 +42,7 @@ import type {
   LiveKitTokenResponse,
   LoginRequest,
   MessageResponse,
+  PatchMessageRequest,
   PendingInvite,
   PlayerCharacter,
   PostMessageRequest,
@@ -3298,6 +3299,127 @@ export const usePostMessage = <
   TContext
 > => {
   return useMutation(getPostMessageMutationOptions(options));
+};
+
+/**
+ * @summary Update message (edit story contribution, or DM pin for story assistant)
+ */
+export const getPatchMessageUrl = (
+  campaignId: string,
+  sessionId: string,
+  messageId: string,
+) => {
+  return `/api/campaigns/${campaignId}/sessions/${sessionId}/messages/${messageId}`;
+};
+
+export const patchMessage = async (
+  campaignId: string,
+  sessionId: string,
+  messageId: string,
+  patchMessageRequest: PatchMessageRequest,
+  options?: RequestInit,
+): Promise<ChatMessage> => {
+  return customFetch<ChatMessage>(
+    getPatchMessageUrl(campaignId, sessionId, messageId),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(patchMessageRequest),
+    },
+  );
+};
+
+export const getPatchMessageMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof patchMessage>>,
+    TError,
+    {
+      campaignId: string;
+      sessionId: string;
+      messageId: string;
+      data: BodyType<PatchMessageRequest>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof patchMessage>>,
+  TError,
+  {
+    campaignId: string;
+    sessionId: string;
+    messageId: string;
+    data: BodyType<PatchMessageRequest>;
+  },
+  TContext
+> => {
+  const mutationKey = ["patchMessage"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof patchMessage>>,
+    {
+      campaignId: string;
+      sessionId: string;
+      messageId: string;
+      data: BodyType<PatchMessageRequest>;
+    }
+  > = (props) => {
+    const { campaignId, sessionId, messageId, data } = props ?? {};
+
+    return patchMessage(campaignId, sessionId, messageId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PatchMessageMutationResult = NonNullable<
+  Awaited<ReturnType<typeof patchMessage>>
+>;
+export type PatchMessageMutationBody = BodyType<PatchMessageRequest>;
+export type PatchMessageMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Update message (edit story contribution, or DM pin for story assistant)
+ */
+export const usePatchMessage = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof patchMessage>>,
+    TError,
+    {
+      campaignId: string;
+      sessionId: string;
+      messageId: string;
+      data: BodyType<PatchMessageRequest>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof patchMessage>>,
+  TError,
+  {
+    campaignId: string;
+    sessionId: string;
+    messageId: string;
+    data: BodyType<PatchMessageRequest>;
+  },
+  TContext
+> => {
+  return useMutation(getPatchMessageMutationOptions(options));
 };
 
 /**

@@ -9,6 +9,7 @@ import { eq, and } from "drizzle-orm";
 import { requireAuth, getEffectiveUserId } from "../middlewares/auth";
 import { param } from "../types";
 import { bindFirstVacantPlayerMembership } from "../lib/bind-player-character";
+import { mergeCharacterImageUrlFields, omitUndefinedKeys } from "../lib/character-image-url-fields";
 
 const router: IRouter = Router();
 
@@ -213,6 +214,7 @@ router.put("/characters/:id", requireAuth, async (req, res) => {
   const allowed = [
     "name",
     "race",
+    "subrace",
     "class",
     "subclass",
     "level",
@@ -237,6 +239,9 @@ router.put("/characters/:id", requireAuth, async (req, res) => {
     "appearance",
     "notes",
     "avatar_url",
+    "avatarUrl",
+    "sheet_background_url",
+    "sheetBackgroundUrl",
     "stats",
     "sheetData",
     "tokenColor",
@@ -246,10 +251,12 @@ router.put("/characters/:id", requireAuth, async (req, res) => {
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {
     if (req.body[key] === undefined) continue;
-    if (key === "avatar_url") {
+    if (key === "avatar_url" || key === "avatarUrl") {
       updates.avatarUrl = req.body[key];
     } else if (key === "game_system") {
       updates.gameSystem = req.body[key];
+    } else if (key === "sheet_background_url" || key === "sheetBackgroundUrl") {
+      updates.sheetBackgroundUrl = req.body[key];
     } else {
       updates[key] = req.body[key];
     }
@@ -276,13 +283,24 @@ router.put("/characters/:id", requireAuth, async (req, res) => {
     updates.charisma = merged.cha;
   }
 
-  const [updated] = await db
-    .update(charactersTable)
-    .set({ ...(updates as Record<string, unknown>), updatedAt: new Date() })
-    .where(and(eq(charactersTable.id, id), eq(charactersTable.userId, userId)))
-    .returning();
+  mergeCharacterImageUrlFields(req.body as Record<string, unknown>, updates);
 
-  res.json(updated);
+  const cleaned = omitUndefinedKeys({ ...updates, updatedAt: new Date() });
+
+  try {
+    const [updated] = await db
+      .update(charactersTable)
+      .set(cleaned)
+      .where(and(eq(charactersTable.id, id), eq(charactersTable.userId, userId)))
+      .returning();
+
+    res.json(updated);
+  } catch (err) {
+    console.error("[PUT /api/characters/:id]", err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "Could not update character",
+    });
+  }
 });
 
 /** DELETE /api/characters/:id — soft delete (owner only) */

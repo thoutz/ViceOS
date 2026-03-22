@@ -5,6 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { requireAuth, requireCampaignMember, getEffectiveUserId } from "../middlewares/auth";
 import { param } from "../types";
 import { bindFirstVacantPlayerMembership } from "../lib/bind-player-character";
+import { mergeCharacterImageUrlFields, omitUndefinedKeys } from "../lib/character-image-url-fields";
 
 const router: IRouter = Router();
 
@@ -100,7 +101,35 @@ router.put("/campaigns/:campaignId/characters/:characterId", requireAuth, requir
     return;
   }
 
-  const allowed = ['name', 'race', 'subrace', 'class', 'subclass', 'background', 'level', 'hp', 'maxHp', 'tempHp', 'ac', 'speed', 'initiativeBonus', 'stats', 'sheetData', 'tokenColor', 'isNpc'];
+  const allowed = [
+    "name",
+    "race",
+    "subrace",
+    "class",
+    "subclass",
+    "background",
+    "alignment",
+    "level",
+    "hp",
+    "maxHp",
+    "tempHp",
+    "ac",
+    "speed",
+    "initiativeBonus",
+    "stats",
+    "sheetData",
+    "tokenColor",
+    "isNpc",
+    "personality",
+    "backstory",
+    "ideals",
+    "bonds",
+    "flaws",
+    "appearance",
+    "notes",
+    "avatarUrl",
+    "sheetBackgroundUrl",
+  ] as const;
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) updates[key] = req.body[key];
@@ -111,13 +140,24 @@ router.put("/campaigns/:campaignId/characters/:characterId", requireAuth, requir
     updates.initiativeBonus = Math.floor((s.dex - 10) / 2);
   }
 
-  const [character] = await db
-    .update(charactersTable)
-    .set(updates)
-    .where(and(eq(charactersTable.id, characterId), eq(charactersTable.campaignId, campaignId)))
-    .returning();
+  mergeCharacterImageUrlFields(req.body as Record<string, unknown>, updates);
 
-  res.json(character);
+  const cleaned = omitUndefinedKeys({ ...updates, updatedAt: new Date() });
+
+  try {
+    const [character] = await db
+      .update(charactersTable)
+      .set(cleaned)
+      .where(and(eq(charactersTable.id, characterId), eq(charactersTable.campaignId, campaignId)))
+      .returning();
+
+    res.json(character);
+  } catch (err) {
+    console.error("[PUT /campaigns/:campaignId/characters/:characterId]", err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "Could not update character",
+    });
+  }
 });
 
 router.delete("/campaigns/:campaignId/characters/:characterId", requireAuth, requireCampaignMember, async (req, res) => {

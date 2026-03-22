@@ -70,6 +70,10 @@ export const ListPlayerCharactersResponseItem = zod.object({
   appearance: zod.string().optional(),
   notes: zod.string().optional(),
   avatarUrl: zod.string().optional(),
+  sheetBackgroundUrl: zod
+    .string()
+    .nullish()
+    .describe("Optional hero-studio background image (URL or data URL)."),
   gameSystem: zod.string().optional(),
   isActive: zod.boolean().optional(),
   stats: zod.object({
@@ -179,6 +183,10 @@ export const GetPlayerCharacterResponse = zod.object({
   appearance: zod.string().optional(),
   notes: zod.string().optional(),
   avatarUrl: zod.string().optional(),
+  sheetBackgroundUrl: zod
+    .string()
+    .nullish()
+    .describe("Optional hero-studio background image (URL or data URL)."),
   gameSystem: zod.string().optional(),
   isActive: zod.boolean().optional(),
   stats: zod.object({
@@ -240,6 +248,10 @@ export const UpdatePlayerCharacterResponse = zod.object({
   appearance: zod.string().optional(),
   notes: zod.string().optional(),
   avatarUrl: zod.string().optional(),
+  sheetBackgroundUrl: zod
+    .string()
+    .nullish()
+    .describe("Optional hero-studio background image (URL or data URL)."),
   gameSystem: zod.string().optional(),
   isActive: zod.boolean().optional(),
   stats: zod.object({
@@ -589,6 +601,10 @@ export const ListCharactersResponseItem = zod.object({
   appearance: zod.string().optional(),
   notes: zod.string().optional(),
   avatarUrl: zod.string().optional(),
+  sheetBackgroundUrl: zod
+    .string()
+    .nullish()
+    .describe("Optional hero-studio background image (URL or data URL)."),
   gameSystem: zod.string().optional(),
   isActive: zod.boolean().optional(),
   stats: zod.object({
@@ -683,6 +699,10 @@ export const GetCharacterResponse = zod.object({
   appearance: zod.string().optional(),
   notes: zod.string().optional(),
   avatarUrl: zod.string().optional(),
+  sheetBackgroundUrl: zod
+    .string()
+    .nullish()
+    .describe("Optional hero-studio background image (URL or data URL)."),
   gameSystem: zod.string().optional(),
   isActive: zod.boolean().optional(),
   stats: zod.object({
@@ -715,12 +735,22 @@ export const UpdateCharacterBody = zod.object({
   class: zod.string().optional(),
   subclass: zod.string().optional(),
   background: zod.string().optional(),
+  alignment: zod.string().optional(),
   level: zod.number().optional(),
   hp: zod.number().optional(),
   maxHp: zod.number().optional(),
   tempHp: zod.number().optional(),
   ac: zod.number().optional(),
   speed: zod.number().optional(),
+  personality: zod.string().optional(),
+  backstory: zod.string().optional(),
+  ideals: zod.string().optional(),
+  bonds: zod.string().optional(),
+  flaws: zod.string().optional(),
+  appearance: zod.string().optional(),
+  notes: zod.string().optional(),
+  avatarUrl: zod.string().optional(),
+  sheetBackgroundUrl: zod.string().nullish(),
   stats: zod
     .object({
       str: zod.number(),
@@ -767,6 +797,10 @@ export const UpdateCharacterResponse = zod.object({
   appearance: zod.string().optional(),
   notes: zod.string().optional(),
   avatarUrl: zod.string().optional(),
+  sheetBackgroundUrl: zod
+    .string()
+    .nullish()
+    .describe("Optional hero-studio background image (URL or data URL)."),
   gameSystem: zod.string().optional(),
   isActive: zod.boolean().optional(),
   stats: zod.object({
@@ -1067,6 +1101,9 @@ export const PostDmStoryAssistantParams = zod.object({
 });
 
 export const postDmStoryAssistantBodyIncludeSessionContextDefault = true;
+export const postDmStoryAssistantBodyConversationHistoryMax = 24;
+
+export const postDmStoryAssistantBodyResponseStyleDefault = `single`;
 
 export const PostDmStoryAssistantBody = zod.object({
   message: zod.string(),
@@ -1075,6 +1112,24 @@ export const PostDmStoryAssistantBody = zod.object({
     .default(postDmStoryAssistantBodyIncludeSessionContextDefault)
     .describe(
       "When true, server attaches compiled session\/campaign context from loadSessionForAI.",
+    ),
+  conversationHistory: zod
+    .array(
+      zod.object({
+        role: zod.enum(["user", "assistant"]),
+        content: zod.string(),
+      }),
+    )
+    .max(postDmStoryAssistantBodyConversationHistoryMax)
+    .optional()
+    .describe(
+      "Prior user\/assistant turns for multi-turn planning (Ask mode). Max 24 items server-side.",
+    ),
+  responseStyle: zod
+    .enum(["single", "variants"])
+    .default(postDmStoryAssistantBodyResponseStyleDefault)
+    .describe(
+      "When variants, model returns three options labeled Variant A\/B\/C.",
     ),
 });
 
@@ -1412,8 +1467,21 @@ export const ListMessagesResponseItem = zod.object({
   senderName: zod.string(),
   recipientId: zod.string().optional(),
   content: zod.string(),
-  type: zod.enum(["chat", "dice", "system", "whisper", "story"]),
+  type: zod.enum([
+    "chat",
+    "dice",
+    "system",
+    "whisper",
+    "story",
+    "story_prompt",
+  ]),
   diceData: zod.record(zod.string(), zod.unknown()).optional(),
+  pinnedForStoryAi: zod
+    .boolean()
+    .optional()
+    .describe(
+      "DM may set; includes this line in story-assistant AI context when true.",
+    ),
   createdAt: zod.date(),
 });
 export const ListMessagesResponse = zod.array(ListMessagesResponseItem);
@@ -1431,10 +1499,55 @@ export const postMessageBodyTypeDefault = `chat`;
 export const PostMessageBody = zod.object({
   content: zod.string(),
   type: zod
-    .enum(["chat", "dice", "system", "whisper", "story"])
+    .enum(["chat", "dice", "system", "whisper", "story", "story_prompt"])
     .default(postMessageBodyTypeDefault),
   recipientId: zod.string().optional(),
   diceData: zod.record(zod.string(), zod.unknown()).optional(),
+});
+
+/**
+ * @summary Update message (edit story contribution, or DM pin for story assistant)
+ */
+export const PatchMessageParams = zod.object({
+  campaignId: zod.coerce.string(),
+  sessionId: zod.coerce.string(),
+  messageId: zod.coerce.string().uuid(),
+});
+
+export const PatchMessageBody = zod.object({
+  content: zod
+    .string()
+    .optional()
+    .describe("New text (sender may edit own story_prompt; DM may edit any)."),
+  pinnedForStoryAi: zod
+    .boolean()
+    .optional()
+    .describe("DM only — pin\/unpin for story assistant context."),
+});
+
+export const PatchMessageResponse = zod.object({
+  id: zod.string(),
+  sessionId: zod.string(),
+  senderId: zod.string(),
+  senderName: zod.string(),
+  recipientId: zod.string().optional(),
+  content: zod.string(),
+  type: zod.enum([
+    "chat",
+    "dice",
+    "system",
+    "whisper",
+    "story",
+    "story_prompt",
+  ]),
+  diceData: zod.record(zod.string(), zod.unknown()).optional(),
+  pinnedForStoryAi: zod
+    .boolean()
+    .optional()
+    .describe(
+      "DM may set; includes this line in story-assistant AI context when true.",
+    ),
+  createdAt: zod.date(),
 });
 
 /**

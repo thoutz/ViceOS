@@ -1,7 +1,23 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChatMessage, Character, GameSession } from '@workspace/api-client-react';
 import { DiceRoll } from 'rpg-dice-roller';
-import { Send, Dices, Users, MessageSquare, Swords, Heart, ShieldAlert, Eye, EyeOff, Search, Loader2, ImagePlus } from 'lucide-react';
+import {
+  Send,
+  Dices,
+  Users,
+  MessageSquare,
+  Swords,
+  Heart,
+  ShieldAlert,
+  Eye,
+  EyeOff,
+  Search,
+  Loader2,
+  ImagePlus,
+  BookMarked,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { SessionVideoCall } from './SessionVideoCall';
 import { VttButton } from '../VttButton';
 import { MessageBubble } from './message-bubble';
@@ -24,7 +40,7 @@ interface Open5eMonster {
   document__slug: string;
 }
 
-type MessageType = 'chat' | 'dice' | 'system' | 'whisper' | 'story';
+type MessageType = 'chat' | 'dice' | 'system' | 'whisper' | 'story' | 'story_prompt';
 
 const MAX_NPC_PORTRAIT_BYTES = 750_000;
 
@@ -50,6 +66,12 @@ interface ChatPanelProps {
   /** DM-only: remove a story message from table chat (server enforces). */
   onDeleteStoryMessage?: (messageId: string) => void;
   deletingStoryMessageId?: string;
+  currentUserId?: string;
+  onPatchMessage?: (
+    messageId: string,
+    data: { content?: string; pinnedForStoryAi?: boolean },
+  ) => void;
+  patchMessagePending?: boolean;
 }
 
 const QUICK_ROLLS = [
@@ -68,10 +90,21 @@ export function ChatPanel({
   panelVariant = 'communications',
   onDeleteStoryMessage,
   deletingStoryMessageId,
+  currentUserId,
+  onPatchMessage,
+  patchMessagePending,
 }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const [whisperTo, setWhisperTo] = useState<string>('all');
+  const [storyForDm, setStoryForDm] = useState(false);
+  /** Video expanded by default; chat collapsed so the left column favors the call. */
+  const [videoExpanded, setVideoExpanded] = useState(true);
+  const [chatExpanded, setChatExpanded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (whisperTo !== 'all') setStoryForDm(false);
+  }, [whisperTo]);
 
   /** Table talk only — dice posts appear on the Rolls tab, not here */
   const chatStreamMessages = messages.filter((m) => m.type !== 'dice');
@@ -107,10 +140,13 @@ export function ChatPanel({
       // 'dm' means "send to DM" — server auto-resolves DM userId when recipientId is undefined
       const recipientId = (whisperTo !== 'all' && whisperTo !== 'dm') ? whisperTo : undefined;
       onSendMessage(content, 'whisper', undefined, recipientId);
+    } else if (whisperTo !== 'all') {
+      const recipientId = whisperTo !== 'dm' ? whisperTo : undefined;
+      onSendMessage(text, 'whisper', undefined, recipientId);
+    } else if (storyForDm) {
+      onSendMessage(text, 'story_prompt');
     } else {
-      const type = (whisperTo !== 'all') ? 'whisper' : 'chat';
-      const recipientId = (whisperTo !== 'all' && whisperTo !== 'dm') ? whisperTo : undefined;
-      onSendMessage(text, type, undefined, recipientId);
+      onSendMessage(text, 'chat');
     }
     setInput('');
   };
@@ -133,80 +169,171 @@ export function ChatPanel({
     );
   }
 
+  const videoFillsColumn = videoExpanded && !chatExpanded;
+  const bothPanelsOpen = videoExpanded && chatExpanded;
+
   return (
     <div className="h-full flex flex-col bg-card min-h-0">
-      {/* Video + table talk: one column */}
-      <div className="flex-shrink-0 border-b border-border/60 bg-background/40">
-        <div className="flex items-center justify-between px-2 py-1.5">
-          <span className="text-[10px] font-label font-bold uppercase tracking-widest text-primary/90">Session video</span>
-          <span className="text-[9px] font-label text-muted-foreground hidden sm:inline">Same room for everyone</span>
-        </div>
-        <div className="px-2 pb-2 h-[min(240px,34vh)] flex flex-col shrink-0">
-          <SessionVideoCall
-            campaignId={campaignId}
-            sessionId={activeSession.id}
-            className="min-h-0 flex-1 h-full"
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-background flex-shrink-0">
-        <MessageSquare className="w-4 h-4 text-primary shrink-0" />
-        <span className="text-xs font-label font-bold text-primary uppercase tracking-wider">Chat</span>
-        <span className="text-[10px] font-label text-muted-foreground ml-auto hidden sm:inline">Dice log → right panel</span>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
-        {chatStreamMessages.length === 0 && (
-          <div className="text-center text-muted-foreground text-xs italic pt-8">
-            No messages yet. Say hello!
+      {/* Session video — collapsible */}
+      <div
+        className={`flex flex-col min-h-0 border-b border-border/60 bg-background/40 transition-[flex] ${
+          videoFillsColumn ? 'flex-1 min-h-[120px]' : 'flex-shrink-0'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => setVideoExpanded((v) => !v)}
+          aria-expanded={videoExpanded}
+          className="flex w-full items-center gap-2 px-2 py-1.5 text-left hover:bg-foreground/5 transition-colors"
+        >
+          <span className="text-[10px] font-label font-bold uppercase tracking-widest text-primary/90">
+            Session video
+          </span>
+          <span className="text-[9px] font-label text-muted-foreground hidden sm:inline truncate">
+            Same room for everyone
+          </span>
+          <span className="ml-auto shrink-0 text-muted-foreground" aria-hidden>
+            {videoExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </span>
+        </button>
+        {videoExpanded && (
+          <div
+            className={
+              bothPanelsOpen
+                ? 'px-2 pb-2 h-[min(220px,34vh)] flex flex-col shrink-0'
+                : 'px-2 pb-2 flex-1 min-h-0 flex flex-col'
+            }
+          >
+            <SessionVideoCall
+              campaignId={campaignId}
+              sessionId={activeSession.id}
+              className="min-h-0 flex-1 h-full"
+            />
           </div>
         )}
-        {chatStreamMessages.map((msg, idx) => (
-          <MessageBubble
-            key={msg.id || idx}
-            msg={msg}
-            isDm={isDm}
-            onDeleteStoryMessage={onDeleteStoryMessage}
-            isDeletingStory={deletingStoryMessageId === msg.id}
-          />
-        ))}
-        <div ref={bottomRef} />
       </div>
 
-      <div className="p-2.5 bg-background border-t border-border flex-shrink-0">
-        <div className="flex items-center gap-2 mb-2">
-          <select
-            value={whisperTo}
-            onChange={e => setWhisperTo(e.target.value)}
-            className="flex-1 bg-background border border-border/50 rounded px-2 py-1 text-xs font-sans text-muted-foreground"
-          >
-            <option value="all">To: Everyone</option>
-            {isDm ? (
-              allCharacters.map(c => (
-                <option key={c.id} value={c.userId || c.id}>🤫 Whisper → {c.name}</option>
-              ))
-            ) : (
-              <option value="dm">🤫 Whisper → DM</option>
+      {/* Table chat — collapsible (default collapsed) */}
+      {chatExpanded ? (
+        <div className="flex flex-1 flex-col min-h-0">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-background flex-shrink-0">
+            <MessageSquare className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-xs font-label font-bold text-primary uppercase tracking-wider">Chat</span>
+            <span className="text-[10px] font-label text-muted-foreground ml-auto hidden sm:inline">
+              Dice log → right panel
+            </span>
+            <button
+              type="button"
+              onClick={() => setChatExpanded(false)}
+              aria-expanded
+              className="shrink-0 p-1 rounded hover:bg-foreground/10 text-muted-foreground hover:text-foreground"
+              title="Collapse chat"
+            >
+              <ChevronUp className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
+            {chatStreamMessages.length === 0 && (
+              <div className="text-center text-muted-foreground text-xs italic pt-8">
+                No messages yet. Say hello!
+              </div>
             )}
-          </select>
+            {chatStreamMessages.map((msg, idx) => (
+              <MessageBubble
+                key={msg.id || idx}
+                msg={msg}
+                isDm={isDm}
+                onDeleteStoryMessage={onDeleteStoryMessage}
+                isDeletingStory={deletingStoryMessageId === msg.id}
+                currentUserId={currentUserId}
+                onPatchMessage={onPatchMessage}
+                patchMessagePending={patchMessagePending}
+              />
+            ))}
+            <div ref={bottomRef} />
+          </div>
+
+          <div className="p-2.5 bg-background border-t border-border flex-shrink-0">
+            <div className="flex items-center gap-2 mb-2">
+              <select
+                value={whisperTo}
+                onChange={(e) => setWhisperTo(e.target.value)}
+                className="flex-1 bg-background border border-border/50 rounded px-2 py-1 text-xs font-sans text-muted-foreground"
+              >
+                <option value="all">To: Everyone</option>
+                {isDm ? (
+                  allCharacters.map((c) => (
+                    <option key={c.id} value={c.userId || c.id}>
+                      🤫 Whisper → {c.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="dm">🤫 Whisper → DM</option>
+                )}
+              </select>
+            </div>
+            {!isDm && (
+              <label
+                className={`flex items-center gap-2 mb-2 px-0.5 cursor-pointer select-none ${
+                  whisperTo !== 'all' ? 'opacity-40 pointer-events-none' : ''
+                }`}
+                title="Sends to table chat as a story contribution — included in the DM's story assistant when session context is on."
+              >
+                <input
+                  type="checkbox"
+                  className="rounded border-border"
+                  checked={storyForDm}
+                  onChange={(e) => setStoryForDm(e.target.checked)}
+                  disabled={whisperTo !== 'all'}
+                />
+                <BookMarked className="w-3.5 h-3.5 text-violet-400 shrink-0" aria-hidden />
+                <span className="text-[10px] font-sans font-semibold text-violet-300/90">Story for DM</span>
+                <span className="text-[9px] text-muted-foreground font-sans">(feeds story assistant)</span>
+              </label>
+            )}
+            <form onSubmit={handleSend} className="flex gap-2">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={
+                  input.startsWith('/r')
+                    ? 'e.g. /r 2d6+3 (shown in Rolls →)'
+                    : storyForDm
+                      ? 'Idea for the story, lore, or beats…'
+                      : 'Message… /r to roll · /w to whisper'
+                }
+                className="flex-1 bg-card border border-border rounded px-3 py-2 text-sm font-sans focus:outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
+              />
+              <button
+                type="submit"
+                className={`w-9 h-9 flex items-center justify-center rounded border transition-colors ${input.startsWith('/r') ? 'bg-magic/20 border-magic text-magic hover:bg-magic/30' : 'bg-primary/20 border-primary/50 text-primary hover:bg-primary/30'}`}
+              >
+                {input.startsWith('/r') ? <Dices className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+              </button>
+            </form>
+            <div className="mt-1 text-[10px] text-muted-foreground font-label">
+              /r posts to the Rolls tab · /w [msg] to whisper
+            </div>
+          </div>
         </div>
-        <form onSubmit={handleSend} className="flex gap-2">
-          <input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder={input.startsWith('/r') ? 'e.g. /r 2d6+3 (shown in Rolls →)' : 'Message… /r to roll · /w to whisper'}
-            className="flex-1 bg-card border border-border rounded px-3 py-2 text-sm font-sans focus:outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
-          />
-          <button
-            type="submit"
-            className={`w-9 h-9 flex items-center justify-center rounded border transition-colors ${input.startsWith('/r') ? 'bg-magic/20 border-magic text-magic hover:bg-magic/30' : 'bg-primary/20 border-primary/50 text-primary hover:bg-primary/30'}`}
-          >
-            {input.startsWith('/r') ? <Dices className="w-4 h-4" /> : <Send className="w-4 h-4" />}
-          </button>
-        </form>
-        <div className="mt-1 text-[10px] text-muted-foreground font-label">/r posts to the Rolls tab · /w [msg] to whisper</div>
-      </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setChatExpanded(true)}
+          aria-expanded={false}
+          className="flex w-full shrink-0 items-center gap-2 px-3 py-2.5 border-t border-border bg-background hover:bg-foreground/5 text-left transition-colors"
+        >
+          <MessageSquare className="w-4 h-4 text-primary shrink-0" />
+          <span className="text-xs font-label font-bold text-primary uppercase tracking-wider">Chat</span>
+          {chatStreamMessages.length > 0 && (
+            <span className="text-[10px] font-sans text-muted-foreground">({chatStreamMessages.length})</span>
+          )}
+          <span className="ml-auto shrink-0 text-muted-foreground" aria-hidden>
+            <ChevronDown className="w-4 h-4" />
+          </span>
+        </button>
+      )}
     </div>
   );
 }
@@ -217,7 +344,7 @@ function DmToolsPanel({
   allCharacters: Character[];
   activeSession: GameSession;
   onOrderUpdate: (order: InitiativeCombatant[]) => void;
-  onSendMessage: (content: string, type: MessageType, diceData?: { total: number; output: string; expr: string }) => void;
+  onSendMessage: (content: string, type: MessageType, diceData?: { total: number; output: string; expr: string }, recipientId?: string) => void;
   performRoll: (expr: string, label: string) => void;
   onCreateMap?: (name: string, imageData?: string) => void;
   onSwitchMap?: (mapId: string) => void;

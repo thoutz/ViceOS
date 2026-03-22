@@ -157,6 +157,8 @@ export interface Character {
   appearance?: string;
   notes?: string;
   avatarUrl?: string;
+  /** Optional hero-studio background image (URL or data URL). */
+  sheetBackgroundUrl?: string | null;
   gameSystem?: string;
   isActive?: boolean;
   stats: AbilityScores;
@@ -261,12 +263,22 @@ export interface UpdateCharacterRequest {
   class?: string;
   subclass?: string;
   background?: string;
+  alignment?: string;
   level?: number;
   hp?: number;
   maxHp?: number;
   tempHp?: number;
   ac?: number;
   speed?: number;
+  personality?: string;
+  backstory?: string;
+  ideals?: string;
+  bonds?: string;
+  flaws?: string;
+  appearance?: string;
+  notes?: string;
+  avatarUrl?: string;
+  sheetBackgroundUrl?: string | null;
   stats?: AbilityScores;
   sheetData?: UpdateCharacterRequestSheetData;
   tokenColor?: string;
@@ -414,10 +426,41 @@ export interface SessionAiContext {
   compiledNarrativeContext: string;
 }
 
+export type DmStoryAssistantRequestConversationHistoryItemRole =
+  (typeof DmStoryAssistantRequestConversationHistoryItemRole)[keyof typeof DmStoryAssistantRequestConversationHistoryItemRole];
+
+export const DmStoryAssistantRequestConversationHistoryItemRole = {
+  user: "user",
+  assistant: "assistant",
+} as const;
+
+export type DmStoryAssistantRequestConversationHistoryItem = {
+  role: DmStoryAssistantRequestConversationHistoryItemRole;
+  content: string;
+};
+
+/**
+ * When variants, model returns three options labeled Variant A/B/C.
+ */
+export type DmStoryAssistantRequestResponseStyle =
+  (typeof DmStoryAssistantRequestResponseStyle)[keyof typeof DmStoryAssistantRequestResponseStyle];
+
+export const DmStoryAssistantRequestResponseStyle = {
+  single: "single",
+  variants: "variants",
+} as const;
+
 export interface DmStoryAssistantRequest {
   message: string;
   /** When true, server attaches compiled session/campaign context from loadSessionForAI. */
   includeSessionContext?: boolean;
+  /**
+   * Prior user/assistant turns for multi-turn planning (Ask mode). Max 24 items server-side.
+   * @maxItems 24
+   */
+  conversationHistory?: DmStoryAssistantRequestConversationHistoryItem[];
+  /** When variants, model returns three options labeled Variant A/B/C. */
+  responseStyle?: DmStoryAssistantRequestResponseStyle;
 }
 
 export interface DmStoryAssistantResponse {
@@ -499,6 +542,7 @@ export const ChatMessageType = {
   system: "system",
   whisper: "whisper",
   story: "story",
+  story_prompt: "story_prompt",
 } as const;
 
 export type ChatMessageDiceData = { [key: string]: unknown };
@@ -512,7 +556,16 @@ export interface ChatMessage {
   content: string;
   type: ChatMessageType;
   diceData?: ChatMessageDiceData;
+  /** DM may set; includes this line in story-assistant AI context when true. */
+  pinnedForStoryAi?: boolean;
   createdAt: string;
+}
+
+export interface PatchMessageRequest {
+  /** New text (sender may edit own story_prompt; DM may edit any). */
+  content?: string;
+  /** DM only — pin/unpin for story assistant context. */
+  pinnedForStoryAi?: boolean;
 }
 
 export type PostMessageRequestType =
@@ -524,6 +577,7 @@ export const PostMessageRequestType = {
   system: "system",
   whisper: "whisper",
   story: "story",
+  story_prompt: "story_prompt",
 } as const;
 
 export type PostMessageRequestDiceData = { [key: string]: unknown };

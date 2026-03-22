@@ -11,6 +11,7 @@ import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import CharacterCreator from "@/pages/character-creator";
 import Session from "@/pages/session";
+import HeroStudio from "@/pages/hero-studio";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/create-character" component={CharacterCreator} />
       <Route path="/campaign/:campaignId/create-character" component={CharacterCreator} />
       <Route path="/session/:campaignId/:sessionId" component={Session} />
+      <Route path="/hero/:characterId" component={HeroStudio} />
       <Route component={NotFound} />
     </Switch>
   );

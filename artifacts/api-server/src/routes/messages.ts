@@ -116,6 +116,81 @@ router.post(
   }
 );
 
+router.patch(
+  "/campaigns/:campaignId/sessions/:sessionId/messages/:messageId",
+  requireAuth,
+  requireCampaignMember,
+  async (req, res) => {
+    const userId = getEffectiveUserId(req)!;
+    const campaignId = param(req.params.campaignId);
+    const sessionId = param(req.params.sessionId);
+    const messageId = param(req.params.messageId);
+    const member = req.campaignMember;
+
+    const [session] = await db
+      .select()
+      .from(gameSessionsTable)
+      .where(and(eq(gameSessionsTable.id, sessionId), eq(gameSessionsTable.campaignId, campaignId)));
+
+    if (!session) {
+      res.status(404).json({ error: "Session not found" });
+      return;
+    }
+
+    const [row] = await db
+      .select()
+      .from(messagesTable)
+      .where(and(eq(messagesTable.id, messageId), eq(messagesTable.sessionId, sessionId)));
+
+    if (!row) {
+      res.status(404).json({ error: "Message not found" });
+      return;
+    }
+
+    const body = req.body as { content?: string; pinnedForStoryAi?: boolean };
+    const hasContent = typeof body.content === "string";
+    const hasPin = typeof body.pinnedForStoryAi === "boolean";
+
+    if (!hasContent && !hasPin) {
+      res.status(400).json({ error: "content or pinnedForStoryAi is required" });
+      return;
+    }
+
+    const isDm = member?.role === "dm";
+
+    if (hasContent) {
+      const trimmed = body.content!.trim();
+      if (!trimmed) {
+        res.status(400).json({ error: "content cannot be empty" });
+        return;
+      }
+      if (!isDm) {
+        if (row.senderId !== userId || row.type !== "story_prompt") {
+          res.status(403).json({ error: "You can only edit your own story contributions" });
+          return;
+        }
+      }
+    }
+
+    if (hasPin && !isDm) {
+      res.status(403).json({ error: "Only the DM can pin messages for the story assistant" });
+      return;
+    }
+
+    const [updated] = await db
+      .update(messagesTable)
+      .set({
+        ...(hasContent ? { content: body.content!.trim() } : {}),
+        ...(hasPin ? { pinnedForStoryAi: body.pinnedForStoryAi! } : {}),
+      })
+      .where(eq(messagesTable.id, messageId))
+      .returning();
+
+    emitToSessionRoom(sessionId, "chat_message_updated", { message: updated });
+    res.json(updated);
+  },
+);
+
 router.delete(
   "/campaigns/:campaignId/sessions/:sessionId/messages/:messageId",
   requireAuth,

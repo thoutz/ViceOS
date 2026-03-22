@@ -15,8 +15,8 @@ import {
   useUpdateSession,
   useGetSessionAiContext,
   getGetSessionAiContextQueryKey,
-  usePostDmStoryAssistant,
   useDeleteMessage,
+  usePatchMessage,
   Character,
   GameSession,
   type Token,
@@ -27,9 +27,16 @@ import { CharacterSheet } from '@/components/vtt/CharacterSheet';
 import { InitiativeBar, type InitiativeCombatant } from '@/components/vtt/InitiativeBar';
 import { ChatPanel } from '@/components/vtt/ChatPanel';
 import { StoryMapOverlay } from '@/components/vtt/StoryMapOverlay';
+import { StoryAssistantPanel } from '@/components/vtt/StoryAssistantPanel';
 import { RollsPanel } from '@/components/vtt/RollsPanel';
 import { DiceRoll } from 'rpg-dice-roller';
-import { LogOut, X, Wifi, WifiOff, Dices, StickyNote, Shield, Swords, MessageSquare, User, ScrollText, Copy, RefreshCw, Sparkles } from 'lucide-react';
+import { LogOut, X, Wifi, WifiOff, Dices, StickyNote, Shield, Swords, MessageSquare, User, ScrollText, Copy, RefreshCw } from 'lucide-react';
+
+/**
+ * Story assistant (DM Command Center): Groq OpenAI-compatible API on the server.
+ * Default model: meta-llama/llama-4-scout-17b-16e-instruct — see
+ * `artifacts/api-server/src/services/groq-dm-story-assistant.ts`. Requires `GROQ_API_KEY` on the API server.
+ */
 
 const CONDITIONS = [
   'Blinded','Charmed','Deafened','Exhaustion','Frightened',
@@ -132,6 +139,7 @@ export default function Session() {
   );
   const postMessage = usePostMessage();
   const deleteMessage = useDeleteMessage();
+  const patchMessage = usePatchMessage();
   const updateChar = useUpdateCharacter();
 
   const isDm = campaign?.role === 'dm';
@@ -161,13 +169,7 @@ export default function Session() {
   const [rightSidebarTab, setRightSidebarTab] = useState<'character' | 'rolls'>('character');
   const [dmDrawerOpen, setDmDrawerOpen] = useState(false);
   const [aiCopied, setAiCopied] = useState(false);
-  const [storyPrompt, setStoryPrompt] = useState('');
-  const [storyReply, setStoryReply] = useState<string | null>(null);
-  const [storyError, setStoryError] = useState<string | null>(null);
-  const [includeStoryContext, setIncludeStoryContext] = useState(true);
   const [placementCombatant, setPlacementCombatant] = useState<InitiativeCombatant | null>(null);
-
-  const storyAssistantMutation = usePostDmStoryAssistant();
 
   const [hotbarDiceExpr, setHotbarDiceExpr] = useState('');
   const [hotbarLastRoll, setHotbarLastRoll] = useState<{ total: number; output: string } | null>(null);
@@ -186,7 +188,7 @@ export default function Session() {
 
   const handleSendMessage = (
     content: string,
-    type: 'chat' | 'dice' | 'system' | 'whisper' | 'story',
+    type: 'chat' | 'dice' | 'system' | 'whisper' | 'story' | 'story_prompt',
     diceData?: { total: number; output: string; expr?: string },
     recipientId?: string
   ) => {
@@ -455,6 +457,17 @@ export default function Session() {
                 deletingStoryMessageId={
                   deleteMessage.isPending ? deleteMessage.variables?.messageId : undefined
                 }
+                currentUserId={user?.id}
+                onPatchMessage={(messageId, data) => {
+                  if (!campaignId || !activeSession?.id) return;
+                  patchMessage.mutate({
+                    campaignId,
+                    sessionId: activeSession.id,
+                    messageId,
+                    data,
+                  });
+                }}
+                patchMessagePending={patchMessage.isPending}
               />
             </>
           )}
@@ -523,6 +536,16 @@ export default function Session() {
                     onRoll={handleRoll}
                     onUpdateHp={handleHpChange}
                     campaignId={campaignId || ''}
+                    currentUserId={user?.id}
+                    onSaveCharacter={async (characterId, data) => {
+                      if (!campaignId) return;
+                      await updateChar.mutateAsync({
+                        campaignId,
+                        characterId,
+                        data,
+                      });
+                      await refetchCharacters();
+                    }}
                   />
                 ) : (
                   <RollsPanel
@@ -617,96 +640,25 @@ export default function Session() {
                 <p className="text-[10px] text-emerald-500 font-sans">Copied to clipboard.</p>
               )}
             </div>
-            {/* Groq DM story assistant */}
-            <div className="shrink-0 border-b border-border/50 px-4 py-3 space-y-2 bg-card/40 flex flex-col max-h-[min(42vh,320px)]">
-              <div className="flex items-center gap-2 min-w-0">
-                <Sparkles className="w-4 h-4 text-magic shrink-0" />
-                <span className="font-sans text-xs font-bold text-magic uppercase tracking-wide truncate">
-                  Story assistant (Groq)
-                </span>
-              </div>
-              <p className="text-[10px] text-muted-foreground font-sans leading-snug">
-                Model: <span className="text-foreground/90 font-mono">llama-4-scout-17b-16e-instruct</span> ·
-                Requires <code className="text-[9px]">GROQ_API_KEY</code> on the API server.
-              </p>
-              <label className="flex items-center gap-2 text-[10px] font-sans text-muted-foreground cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="rounded border-border"
-                  checked={includeStoryContext}
-                  onChange={(e) => setIncludeStoryContext(e.target.checked)}
-                />
-                Include compiled session & campaign context
-              </label>
-              <textarea
-                value={storyPrompt}
-                onChange={(e) => setStoryPrompt(e.target.value)}
-                placeholder="Ask for narration, NPC lines, consequences, or brainstorming…"
-                rows={3}
-                className="w-full bg-background border border-border rounded px-2 py-1.5 text-xs font-sans text-foreground focus:outline-none focus:border-primary resize-none"
-              />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!campaignId || !activeSession?.id || !storyPrompt.trim()) return;
-                    setStoryError(null);
-                    storyAssistantMutation.mutate(
-                      {
-                        campaignId,
-                        sessionId: activeSession.id,
-                        data: {
-                          message: storyPrompt.trim(),
-                          includeSessionContext: includeStoryContext,
-                        },
-                      },
-                      {
-                        onSuccess: (data) => {
-                          setStoryReply(data.reply);
-                          setStoryError(null);
-                          const reply = data.reply?.trim();
-                          if (!reply) return;
-                          postMessage.mutate(
-                            {
-                              campaignId,
-                              sessionId: activeSession.id,
-                              data: { content: reply, type: 'story' },
-                            },
-                            {
-                              onSuccess: (msg) => {
-                                emit('chat_message', { message: msg });
-                              },
-                            }
-                          );
-                        },
-                        onError: (err: unknown) => {
-                          setStoryReply(null);
-                          setStoryError(
-                            err instanceof Error ? err.message : 'Story assistant request failed.'
-                          );
-                        },
-                      }
-                    );
-                  }}
-                  disabled={
-                    storyAssistantMutation.isPending ||
-                    !storyPrompt.trim() ||
-                    !activeSession?.id
+            <StoryAssistantPanel
+              campaignId={campaignId || ''}
+              sessionId={activeSession.id}
+              onPostStoryToTable={(content) => {
+                if (!campaignId || !activeSession?.id) return;
+                postMessage.mutate(
+                  {
+                    campaignId,
+                    sessionId: activeSession.id,
+                    data: { content, type: 'story' },
+                  },
+                  {
+                    onSuccess: (msg) => {
+                      emit('chat_message', { message: msg });
+                    },
                   }
-                  className="flex-1 h-8 rounded border border-magic/50 bg-magic/10 text-magic text-xs font-sans font-bold hover:bg-magic/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  {storyAssistantMutation.isPending ? 'Thinking…' : 'Send to assistant'}
-                </button>
-              </div>
-              {storyError && (
-                <p className="text-[10px] text-destructive font-sans leading-snug">{storyError}</p>
-              )}
-              {storyReply && (
-                <div className="text-[10px] font-sans text-foreground/95 leading-relaxed overflow-y-auto max-h-40 pr-1 border border-border/40 rounded bg-background/80 p-2 whitespace-pre-wrap">
-                  {storyReply}
-                </div>
-              )}
-            </div>
+                );
+              }}
+            />
             {/* Drawer Content — DM tools only (ChatPanel dmTools variant) */}
             <div className="flex-1 overflow-y-auto min-h-0">
               <ChatPanel

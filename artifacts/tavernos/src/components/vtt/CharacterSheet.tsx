@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Character } from '@workspace/api-client-react';
+import { useLocation } from 'wouter';
+import { Character, type UpdateCharacterRequest } from '@workspace/api-client-react';
 import { Shield, Heart, Zap, Crosshair, BookOpen, Star, ChevronDown, ChevronUp, Swords, User, ScrollText } from 'lucide-react';
 import { VttButton } from '../VttButton';
 
@@ -10,6 +11,9 @@ interface CharacterSheetProps {
   onRoll: (expr: string, label: string) => void;
   onUpdateHp: (change: number) => void;
   campaignId: string;
+  /** When set and this user owns the viewed sheet, they can edit and save via the campaign API. */
+  currentUserId?: string | null;
+  onSaveCharacter?: (characterId: string, data: UpdateCharacterRequest) => Promise<void>;
 }
 
 function mod(score: number): number {
@@ -94,15 +98,76 @@ function HpBar({ current, max }: { current: number; max: number }) {
   );
 }
 
-export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdateHp, campaignId }: CharacterSheetProps) {
+function characterToUpdateDraft(c: Character): UpdateCharacterRequest {
+  const stats = c.stats || { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
+  return {
+    name: c.name,
+    race: c.race ?? '',
+    subrace: c.subrace ?? '',
+    class: c.class ?? '',
+    subclass: c.subclass ?? '',
+    background: c.background ?? '',
+    alignment: c.alignment ?? '',
+    level: c.level,
+    hp: c.hp,
+    maxHp: c.maxHp,
+    tempHp: c.tempHp ?? 0,
+    ac: c.ac,
+    speed: c.speed,
+    stats: { ...stats },
+    personality: c.personality ?? '',
+    backstory: c.backstory ?? '',
+    ideals: c.ideals ?? '',
+    bonds: c.bonds ?? '',
+    flaws: c.flaws ?? '',
+    appearance: c.appearance ?? '',
+    notes: c.notes ?? '',
+  };
+}
+
+export function CharacterSheet({
+  character,
+  isDm,
+  allCharacters,
+  onRoll,
+  onUpdateHp,
+  campaignId: _campaignId,
+  currentUserId,
+  onSaveCharacter,
+}: CharacterSheetProps) {
+  const [, setLocation] = useLocation();
   const [tab, setTab] = useState<TabId>('core');
   const [dmViewChar, setDmViewChar] = useState<string | null>(null);
   const [hpDelta, setHpDelta] = useState('');
   const [expandSaves, setExpandSaves] = useState(false);
+  const [sheetEditing, setSheetEditing] = useState(false);
+  const [sheetDraft, setSheetDraft] = useState<UpdateCharacterRequest | null>(null);
+  const [sheetSaving, setSheetSaving] = useState(false);
 
   const viewed = isDm && dmViewChar
     ? allCharacters.find(c => c.id === dmViewChar) ?? character
     : character;
+
+  const isOwner = Boolean(currentUserId && viewed?.userId === currentUserId);
+  const canSheetEdit = Boolean(isOwner && onSaveCharacter && viewed);
+
+  const startSheetEdit = () => {
+    if (!viewed) return;
+    setSheetDraft(characterToUpdateDraft(viewed));
+    setSheetEditing(true);
+  };
+
+  const saveSheet = async () => {
+    if (!viewed || !sheetDraft || !onSaveCharacter) return;
+    setSheetSaving(true);
+    try {
+      await onSaveCharacter(viewed.id, sheetDraft);
+      setSheetEditing(false);
+      setSheetDraft(null);
+    } finally {
+      setSheetSaving(false);
+    }
+  };
 
   if (!viewed) {
     return (
@@ -178,14 +243,87 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
 
       {/* Header */}
       <div className="p-4 border-b-2 border-border bg-background/30">
-        <h2 className="text-2xl font-sans font-bold text-primary leading-none mb-0.5 truncate">{viewed.name}</h2>
-        <div className="text-xs font-sans font-semibold text-muted-foreground tracking-widest">
-          Level {viewed.level} {[viewed.subrace || viewed.race, viewed.subclass || viewed.class, viewed.background].filter(Boolean).join(' · ')}
-        </div>
-        <div className="mt-1 flex gap-4 text-xs font-sans">
-          <span>Prof <strong className="text-primary">+{prof}</strong></span>
-          <span>Speed <strong>{viewed.speed || 30} ft</strong></span>
-          {viewed.isNpc && <span className="text-destructive font-bold">NPC</span>}
+        <div className="flex gap-3 items-start">
+          {viewed.avatarUrl ? (
+            <img
+              src={viewed.avatarUrl}
+              alt=""
+              className="w-14 h-14 rounded-lg object-cover border border-border shrink-0"
+            />
+          ) : null}
+          <div className="min-w-0 flex-1">
+            <h2 className="text-2xl font-sans font-bold text-primary leading-none mb-0.5 truncate">{viewed.name}</h2>
+            <div className="text-xs font-sans font-semibold text-muted-foreground tracking-widest">
+              Level {viewed.level}{' '}
+              {[viewed.subrace || viewed.race, viewed.subclass || viewed.class, viewed.background]
+                .filter(Boolean)
+                .join(' · ')}
+            </div>
+            <div className="mt-1 flex gap-4 text-xs font-sans">
+              <span>
+                Prof <strong className="text-primary">+{prof}</strong>
+              </span>
+              <span>
+                Speed <strong>{viewed.speed || 30} ft</strong>
+              </span>
+              {viewed.isNpc && <span className="text-destructive font-bold">NPC</span>}
+            </div>
+          </div>
+          {isOwner && viewed ? (
+            <div className="flex flex-col gap-1 shrink-0">
+              {!sheetEditing ? (
+                <>
+                  {canSheetEdit && (
+                    <VttButton
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="text-[10px] px-2 py-1 h-auto"
+                      onClick={startSheetEdit}
+                    >
+                      Quick edit
+                    </VttButton>
+                  )}
+                  <VttButton
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="text-[10px] px-2 py-1 h-auto"
+                    onClick={() => setLocation(`/hero/${viewed.id}`)}
+                  >
+                    Full studio
+                  </VttButton>
+                </>
+              ) : (
+                canSheetEdit && (
+                  <>
+                    <VttButton
+                      type="button"
+                      size="sm"
+                      className="text-[10px] px-2 py-1 h-auto"
+                      disabled={sheetSaving}
+                      onClick={() => void saveSheet()}
+                    >
+                      {sheetSaving ? '…' : 'Save'}
+                    </VttButton>
+                    <VttButton
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="text-[10px] px-2 py-1 h-auto"
+                      disabled={sheetSaving}
+                      onClick={() => {
+                        setSheetEditing(false);
+                        setSheetDraft(null);
+                      }}
+                    >
+                      Cancel
+                    </VttButton>
+                  </>
+                )
+              )}
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -271,22 +409,28 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
         </div>
       </div>
 
-      {/* Sub-tabs */}
-      <div className="flex border-b border-border/30 bg-background/20 text-[9px] sm:text-[10px] font-sans font-bold">
-        {TAB_ORDER.map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={`flex-1 min-w-0 py-2 uppercase tracking-wider sm:tracking-widest transition-colors border-b-2 ${tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+      {sheetEditing && sheetDraft ? (
+        <div className="flex-1 overflow-y-auto min-h-0 border-t border-border/30">
+          <SheetQuickEditForm draft={sheetDraft} setDraft={setSheetDraft} />
+        </div>
+      ) : (
+        <>
+          {/* Sub-tabs */}
+          <div className="flex border-b border-border/30 bg-background/20 text-[9px] sm:text-[10px] font-sans font-bold">
+            {TAB_ORDER.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTab(t)}
+                className={`flex-1 min-w-0 py-2 uppercase tracking-wider sm:tracking-widest transition-colors border-b-2 ${tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
 
-      {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto">
+          {/* Tab Content */}
+          <div className="flex-1 overflow-y-auto">
 
         {/* CORE Tab */}
         {tab === 'core' && (
@@ -507,7 +651,128 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
             )}
           </div>
         )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+const quickInputCls =
+  'w-full text-xs border border-border/50 rounded px-2 py-1 bg-background/50 text-foreground font-sans';
+
+function SheetQuickEditForm({
+  draft,
+  setDraft,
+}: {
+  draft: UpdateCharacterRequest;
+  setDraft: React.Dispatch<React.SetStateAction<UpdateCharacterRequest | null>>;
+}) {
+  const stats = draft.stats || { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
+  const set = <K extends keyof UpdateCharacterRequest>(key: K, value: UpdateCharacterRequest[K]) => {
+    setDraft((d) => (d ? { ...d, [key]: value } : d));
+  };
+  const setStat = (k: keyof typeof stats, v: number) => {
+    setDraft((d) => {
+      if (!d) return d;
+      const next = { ...(d.stats || stats), [k]: Number.isFinite(v) ? v : 10 };
+      return { ...d, stats: next };
+    });
+  };
+  return (
+    <div className="p-3 space-y-3">
+      <p className="text-[10px] text-muted-foreground font-sans leading-snug">
+        Changes apply at the table when you save. Portrait, backdrop, and larger edits live in{' '}
+        <span className="text-primary">Full studio</span>.
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="text-[9px] font-sans font-bold uppercase text-muted-foreground col-span-2">Name</label>
+        <input className={`${quickInputCls} col-span-2`} value={draft.name ?? ''} onChange={(e) => set('name', e.target.value)} />
+        <label className="text-[9px] font-sans font-bold uppercase text-muted-foreground">Level</label>
+        <label className="text-[9px] font-sans font-bold uppercase text-muted-foreground">Alignment</label>
+        <input
+          type="number"
+          min={1}
+          max={20}
+          className={quickInputCls}
+          value={draft.level ?? 1}
+          onChange={(e) => set('level', parseInt(e.target.value, 10) || 1)}
+        />
+        <input className={quickInputCls} value={draft.alignment ?? ''} onChange={(e) => set('alignment', e.target.value)} />
+        <label className="text-[9px] font-sans font-bold uppercase text-muted-foreground">Race</label>
+        <label className="text-[9px] font-sans font-bold uppercase text-muted-foreground">Subrace</label>
+        <input className={quickInputCls} value={draft.race ?? ''} onChange={(e) => set('race', e.target.value)} />
+        <input className={quickInputCls} value={draft.subrace ?? ''} onChange={(e) => set('subrace', e.target.value)} />
+        <label className="text-[9px] font-sans font-bold uppercase text-muted-foreground">Class</label>
+        <label className="text-[9px] font-sans font-bold uppercase text-muted-foreground">Subclass</label>
+        <input className={quickInputCls} value={draft.class ?? ''} onChange={(e) => set('class', e.target.value)} />
+        <input className={quickInputCls} value={draft.subclass ?? ''} onChange={(e) => set('subclass', e.target.value)} />
+        <label className="text-[9px] font-sans font-bold uppercase text-muted-foreground">Background</label>
+        <label className="text-[9px] font-sans font-bold uppercase text-muted-foreground">Speed</label>
+        <input className={quickInputCls} value={draft.background ?? ''} onChange={(e) => set('background', e.target.value)} />
+        <input
+          type="number"
+          className={quickInputCls}
+          value={draft.speed ?? 30}
+          onChange={(e) => set('speed', parseInt(e.target.value, 10) || 0)}
+        />
+        <label className="text-[9px] font-sans font-bold uppercase text-muted-foreground">HP</label>
+        <label className="text-[9px] font-sans font-bold uppercase text-muted-foreground">Max HP</label>
+        <input
+          type="number"
+          className={quickInputCls}
+          value={draft.hp ?? 0}
+          onChange={(e) => set('hp', parseInt(e.target.value, 10) || 0)}
+        />
+        <input
+          type="number"
+          className={quickInputCls}
+          value={draft.maxHp ?? 0}
+          onChange={(e) => set('maxHp', parseInt(e.target.value, 10) || 0)}
+        />
+        <label className="text-[9px] font-sans font-bold uppercase text-muted-foreground">AC</label>
+        <div />
+        <input
+          type="number"
+          className={quickInputCls}
+          value={draft.ac ?? 10}
+          onChange={(e) => set('ac', parseInt(e.target.value, 10) || 0)}
+        />
       </div>
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+        {(['str', 'dex', 'con', 'int', 'wis', 'cha'] as const).map((k) => (
+          <div key={k}>
+            <span className="text-[8px] font-bold text-muted-foreground uppercase block mb-0.5">{k}</span>
+            <input
+              type="number"
+              className={quickInputCls}
+              value={stats[k]}
+              onChange={(e) => setStat(k, parseInt(e.target.value, 10) || 10)}
+            />
+          </div>
+        ))}
+      </div>
+      {(
+        [
+          ['personality', 'Personality'],
+          ['ideals', 'Ideals'],
+          ['bonds', 'Bonds'],
+          ['flaws', 'Flaws'],
+          ['appearance', 'Appearance'],
+          ['backstory', 'Backstory'],
+          ['notes', 'Notes'],
+        ] as const
+      ).map(([key, label]) => (
+        <div key={key}>
+          <label className="text-[9px] font-sans font-bold uppercase text-muted-foreground block mb-1">{label}</label>
+          <textarea
+            className={`${quickInputCls} min-h-[52px]`}
+            rows={key === 'backstory' || key === 'notes' ? 4 : 2}
+            value={(draft[key] as string) ?? ''}
+            onChange={(e) => set(key, e.target.value)}
+          />
+        </div>
+      ))}
     </div>
   );
 }

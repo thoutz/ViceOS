@@ -13,6 +13,7 @@ export {
   useDeleteCampaign,
   useCreateLivekitToken,
   useDeleteMessage,
+  usePatchMessage,
 } from "./generated/api";
 export { setBaseUrl, setAuthTokenGetter, setTabIdGetter } from "./custom-fetch";
 export type { AuthTokenGetter } from "./custom-fetch";

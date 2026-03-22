@@ -17,5 +17,7 @@ export interface ChatMessage {
   content: string;
   type: ChatMessageType;
   diceData?: ChatMessageDiceData;
+  /** DM may set; includes this line in story-assistant AI context when true. */
+  pinnedForStoryAi?: boolean;
   createdAt: Date;
 }

@@ -50,6 +50,8 @@ export const charactersTable = pgTable("characters", {
   appearance: text("appearance"),
   notes: text("notes"),
   avatarUrl: text("avatar_url"),
+  /** Full-page background image URL or data URL (hero studio / dashboard sheet). */
+  sheetBackgroundUrl: text("sheet_background_url"),
   gameSystem: text("game_system").notNull().default("D&D 5e"),
   isActive: boolean("is_active").notNull().default(true),
   tokenColor: text("token_color").default("#C9A84C"),

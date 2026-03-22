@@ -18,7 +18,19 @@ import {
 import { VttButton } from '@/components/VttButton';
 import { VttInput } from '@/components/VttInput';
 import { toast } from '@/hooks/use-toast';
-import { Book, Plus, Users, Swords, LogOut, Mail, UserPlus, Trash2, Copy, Share2 } from 'lucide-react';
+import {
+  Book,
+  Plus,
+  Users,
+  Swords,
+  LogOut,
+  Mail,
+  UserPlus,
+  Trash2,
+  Copy,
+  Share2,
+  ScrollText,
+} from 'lucide-react';
 
 /**
  * Where to send the user when opening a campaign card (onboarding vs table).
@@ -94,6 +106,12 @@ export default function Dashboard() {
     },
   });
   const campaigns = [...(campaignList?.as_dm ?? []), ...(campaignList?.as_player ?? [])];
+
+  const campaignNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of campaigns) m.set(c.id, c.name);
+    return m;
+  }, [campaigns]);
   const createMutation = useCreateCampaign();
   const deleteCampaignMutation = useDeleteCampaign({
     mutation: {
@@ -495,6 +513,56 @@ export default function Dashboard() {
           </div>
         )}
 
+        {myCharacters.some((ch) => !ch.isNpc) && (
+          <section className="mb-10" aria-label="Your heroes">
+            <h3 className="text-2xl font-sans mb-4 flex items-center gap-2">
+              <ScrollText className="w-6 h-6 text-primary" />
+              Your heroes
+            </h3>
+            <p className="text-sm text-muted-foreground font-sans mb-4 max-w-2xl">
+              Open a full character sheet to edit stats, biography, portrait, and an optional backdrop (studio page
+              only). You can also edit your sheet while in a live session from the right-hand Sheet panel.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {myCharacters
+                .filter((ch) => !ch.isNpc)
+                .map((ch) => (
+                  <div
+                    key={ch.id}
+                    className="glass-panel rounded-xl p-4 flex gap-4 items-center border border-border/40"
+                  >
+                    <div className="w-16 h-16 rounded-lg bg-card border border-border overflow-hidden shrink-0 flex items-center justify-center">
+                      {ch.avatarUrl ? (
+                        <img src={ch.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <Users className="w-8 h-8 text-muted-foreground/40" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-sans font-bold text-primary truncate">{ch.name}</p>
+                      <p className="text-xs text-muted-foreground font-sans truncate">
+                        {ch.campaignId
+                          ? campaignNameById.get(ch.campaignId) || 'Campaign'
+                          : 'Roster — not in a campaign yet'}
+                        {ch.class ? ` · ${ch.class}` : ''}
+                        {ch.level != null ? ` · Lv ${ch.level}` : ''}
+                      </p>
+                      <VttButton
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => setLocation(`/hero/${ch.id}`)}
+                      >
+                        Open sheet
+                      </VttButton>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </section>
+        )}
+
         {pendingInvites.length > 0 && (
           <section className="mb-10" aria-label="Pending campaign invitations">
             <h3 className="text-2xl font-sans mb-4 flex items-center gap-2">
@@ -616,12 +684,22 @@ export default function Dashboard() {
                         </div>
                       </div>
                     ) : playerCh ? (
-                      <p className="text-xs text-muted-foreground font-sans">
-                        Playing as{' '}
-                        <span className="text-foreground font-medium">{playerCh.name}</span>
-                        {playerCh.class ? ` · ${playerCh.class}` : ''}
-                        {playerCh.level != null ? ` · Lv ${playerCh.level}` : ''}
-                      </p>
+                      <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                        <p className="text-xs text-muted-foreground font-sans">
+                          Playing as{' '}
+                          <span className="text-foreground font-medium">{playerCh.name}</span>
+                          {playerCh.class ? ` · ${playerCh.class}` : ''}
+                          {playerCh.level != null ? ` · Lv ${playerCh.level}` : ''}
+                        </p>
+                        <VttButton
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setLocation(`/hero/${playerCh.id}`)}
+                        >
+                          Edit character sheet
+                        </VttButton>
+                      </div>
                     ) : (
                       <p className="text-xs text-muted-foreground font-sans">
                         You are a player in this party — create your hero to enter the table.
