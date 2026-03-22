@@ -350,7 +350,7 @@ export default function Session() {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#0a0a0a] overflow-hidden text-foreground">
+    <div className="h-screen w-screen flex flex-col bg-background overflow-hidden text-foreground">
       {/* TOP BAR */}
       <header className="h-12 bg-card border-b border-border/50 flex items-center justify-between px-4 z-30 shrink-0">
         <div className="flex items-center gap-3">
@@ -814,7 +814,7 @@ export default function Session() {
           {/* Last roll result */}
           {hotbarLastRoll && (
             <div className="ml-2 flex items-center gap-1.5 bg-primary/10 border border-primary/30 rounded px-2 py-1 flex-shrink-0">
-              <span className="text-primary font-bold text-base font-serif leading-none">{hotbarLastRoll.total}</span>
+              <span className="text-primary font-bold text-base font-sans leading-none">{hotbarLastRoll.total}</span>
               <span className="text-muted-foreground text-[10px] font-mono hidden md:block">{hotbarLastRoll.output}</span>
             </div>
           )}

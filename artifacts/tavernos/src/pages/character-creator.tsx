@@ -455,7 +455,7 @@ export default function CharacterCreator() {
                                   standardAssignments: { ...f.standardAssignments, [k]: v },
                                 }));
                               }}
-                              className="w-full bg-background border border-border rounded px-2 py-1.5 text-center text-lg font-serif font-bold"
+                              className="w-full bg-background border border-border rounded px-2 py-1.5 text-center text-lg font-sans font-bold text-foreground"
                             >
                               <option value="">—</option>
                               {STANDARD_ARRAY.filter(
@@ -480,13 +480,13 @@ export default function CharacterCreator() {
                                   stats: { ...f.stats, [k]: parseInt(e.target.value, 10) || 10 },
                                 }))
                               }
-                              className="w-full bg-background border border-border rounded px-2 py-1.5 text-center text-lg font-serif font-bold"
+                              className="w-full bg-background border border-border rounded px-2 py-1.5 text-center text-lg font-sans font-bold text-foreground"
                             />
                           )}
                           {raceBonus !== 0 && (
-                            <div className="text-[10px] text-primary font-label">+{raceBonus} racial</div>
+                            <div className="text-[10px] text-primary font-sans">+{raceBonus} racial</div>
                           )}
-                          <div className="text-xl font-bold font-serif text-primary">{fmtMod(mod(finalVal))}</div>
+                          <div className="text-xl font-bold font-sans text-primary">{fmtMod(mod(finalVal))}</div>
                         </div>
                       );
                     })}
@@ -506,7 +506,7 @@ export default function CharacterCreator() {
               {step === 3 && (
                 <div className="flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
                   <h2 className="font-display text-2xl text-primary">Story</h2>
-                  <p className="text-xs text-amber-200/80 font-sans border border-primary/20 bg-primary/5 rounded px-3 py-2">
+                  <p className="text-xs text-muted-foreground font-sans border border-primary/20 bg-primary/5 rounded px-3 py-2">
                     This is what Tavern AI will use to voice your character — be descriptive.
                   </p>
                   <div>

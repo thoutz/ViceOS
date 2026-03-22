@@ -26,10 +26,10 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-[#0a0a0a]">
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-background">
       {/* Background Image */}
       <div 
-        className="absolute inset-0 z-0 opacity-40 bg-cover bg-center"
+        className="absolute inset-0 z-0 opacity-30 bg-cover bg-center"
         style={{ backgroundImage: `url(${import.meta.env.BASE_URL}images/tavern-bg.png)` }}
       />
       <div className="absolute inset-0 z-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
@@ -41,10 +41,10 @@ export default function Login() {
         className="relative z-10 glass-panel p-10 max-w-md w-full rounded-xl"
       >
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 rounded-full bg-card border border-primary/50 shadow-[0_0_20px_rgba(201,168,76,0.3)] mb-4">
+          <div className="inline-flex items-center justify-center p-3 rounded-full bg-card border border-primary/50 shadow-[0_0_20px_rgba(255,77,240,0.35)] mb-4">
             <Dices className="w-10 h-10 text-primary" />
           </div>
-          <h1 className="text-5xl font-display text-primary gold-text-glow mb-2">TavernOS</h1>
+          <h1 className="text-5xl font-sans font-bold text-primary gold-text-glow mb-2">TavernOS</h1>
           <p className="text-muted-foreground font-label tracking-widest uppercase text-sm">Virtual Tabletop</p>
         </div>
 

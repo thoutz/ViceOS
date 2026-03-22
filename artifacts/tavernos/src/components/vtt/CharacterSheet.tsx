@@ -72,12 +72,12 @@ function BioSection({ title, text }: { title: string; text: string }) {
   const t = text.trim();
   if (!t) return null;
   return (
-    <section className="border border-[#7A6228]/25 rounded-lg overflow-hidden bg-white/25">
-      <h4 className="text-[10px] font-label font-bold uppercase tracking-widest text-[#5A1111]/80 px-3 py-2 bg-[#1A1208]/8 border-b border-[#7A6228]/20 flex items-center gap-1.5">
+    <section className="border border-border/30 rounded-lg overflow-hidden bg-white/5">
+      <h4 className="text-[10px] font-sans font-bold uppercase tracking-widest text-primary/80 px-3 py-2 bg-white/5 border-b border-border/20 flex items-center gap-1.5">
         <ScrollText className="w-3 h-3 opacity-80" aria-hidden />
         {title}
       </h4>
-      <div className="px-3 py-2.5 text-sm font-sans leading-relaxed whitespace-pre-wrap text-[#1A1208]">
+      <div className="px-3 py-2.5 text-sm font-sans leading-relaxed whitespace-pre-wrap text-foreground/90">
         {t}
       </div>
     </section>
@@ -108,10 +108,10 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
     return (
       <div className="h-full flex flex-col">
         {isDm && allCharacters.length > 0 && (
-          <div className="p-3 border-b border-[#7A6228]/30 bg-[#1A1208]">
-            <label className="block text-[10px] font-label font-bold text-[#7A6228] uppercase mb-1">View Character</label>
+          <div className="p-3 border-b border-border/30 bg-background/60">
+            <label className="block text-[10px] font-sans font-bold text-muted-foreground uppercase mb-1">View Character</label>
             <select
-              className="w-full bg-[#0E0B06] border border-[#7A6228]/50 rounded p-1.5 text-sm text-[#F2E8CE] font-sans"
+              className="w-full bg-card border border-border rounded p-1.5 text-sm text-foreground font-sans"
               value={dmViewChar || ''}
               onChange={e => setDmViewChar(e.target.value || null)}
             >
@@ -160,13 +160,13 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#F2E8CE] text-[#1A1208] overflow-hidden">
+    <div className="h-full flex flex-col bg-card text-foreground overflow-hidden">
       {/* DM character switcher */}
       {isDm && allCharacters.length > 1 && (
-        <div className="px-3 py-1.5 bg-[#1A1208] border-b border-[#7A6228]/30 flex items-center gap-2">
-          <User className="w-3.5 h-3.5 text-[#C9A84C] flex-shrink-0" />
+        <div className="px-3 py-1.5 bg-background/60 border-b border-border/30 flex items-center gap-2">
+          <User className="w-3.5 h-3.5 text-primary flex-shrink-0" />
           <select
-            className="flex-1 bg-transparent text-[#C9A84C] text-xs font-label font-bold uppercase border-none outline-none cursor-pointer"
+            className="flex-1 bg-transparent text-primary text-xs font-sans font-bold uppercase border-none outline-none cursor-pointer"
             value={dmViewChar || ''}
             onChange={e => setDmViewChar(e.target.value || null)}
           >
@@ -177,72 +177,72 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
       )}
 
       {/* Header */}
-      <div className="p-4 border-b-2 border-[#7A6228] bg-[#1A1208]/5">
-        <h2 className="text-2xl font-display text-[#5A1111] leading-none mb-0.5 truncate">{viewed.name}</h2>
-        <div className="text-xs font-label font-semibold text-[#5A1111]/70 tracking-widest">
+      <div className="p-4 border-b-2 border-border bg-background/30">
+        <h2 className="text-2xl font-sans font-bold text-primary leading-none mb-0.5 truncate">{viewed.name}</h2>
+        <div className="text-xs font-sans font-semibold text-muted-foreground tracking-widest">
           Level {viewed.level} {[viewed.subrace || viewed.race, viewed.subclass || viewed.class, viewed.background].filter(Boolean).join(' · ')}
         </div>
-        <div className="mt-1 flex gap-4 text-xs font-label">
-          <span>Prof <strong>+{prof}</strong></span>
+        <div className="mt-1 flex gap-4 text-xs font-sans">
+          <span>Prof <strong className="text-primary">+{prof}</strong></span>
           <span>Speed <strong>{viewed.speed || 30} ft</strong></span>
           {viewed.isNpc && <span className="text-destructive font-bold">NPC</span>}
         </div>
       </div>
 
       {/* Core stats row */}
-      <div className="grid grid-cols-6 gap-1 px-3 pt-3 pb-2 border-b border-[#7A6228]/30">
+      <div className="grid grid-cols-6 gap-1 px-3 pt-3 pb-2 border-b border-border/30">
         {ABILITY_KEYS.map(k => (
           <button
             key={k}
             onClick={() => onRoll(`1d20${fmtMod(mod(stats[k] || 10))}`, `${ABILITY_NAMES[k]} Check`)}
-            className="flex flex-col items-center justify-center py-2 border-2 border-[#7A6228] bg-[#F2E8CE] rounded hover:bg-[#E8CC7A] transition-colors active:scale-95"
+            className="flex flex-col items-center justify-center py-2 border-2 border-border/50 bg-background/40 rounded hover:bg-primary/15 hover:border-primary/60 transition-colors active:scale-95"
           >
-            <span className="text-[8px] font-label font-bold text-[#5A1111] uppercase">{ABILITY_SHORT[k]}</span>
-            <span className="text-lg font-bold font-serif leading-tight">{fmtMod(mod(stats[k] || 10))}</span>
-            <span className="text-[9px] font-bold bg-[#1A1208] text-[#F2E8CE] rounded-full w-6 h-4 flex items-center justify-center">{stats[k] || 10}</span>
+            <span className="text-[8px] font-sans font-bold text-primary/80 uppercase">{ABILITY_SHORT[k]}</span>
+            <span className="text-lg font-bold font-sans leading-tight text-foreground">{fmtMod(mod(stats[k] || 10))}</span>
+            <span className="text-[9px] font-bold bg-primary/20 text-primary rounded-full w-6 h-4 flex items-center justify-center">{stats[k] || 10}</span>
           </button>
         ))}
       </div>
 
       {/* Combat row */}
-      <div className="grid grid-cols-3 gap-2 px-3 py-2 border-b border-[#7A6228]/30">
-        <div className="flex items-center gap-2 p-2 border border-[#7A6228]/50 rounded bg-white/30">
-          <Shield className="w-5 h-5 text-[#5A1111] flex-shrink-0" />
+      <div className="grid grid-cols-3 gap-2 px-3 py-2 border-b border-border/30">
+        <div className="flex items-center gap-2 p-2 border border-border/40 rounded bg-white/5">
+          <Shield className="w-5 h-5 text-primary flex-shrink-0" />
           <div>
-            <div className="text-xl font-bold font-serif leading-none">{viewed.ac}</div>
-            <div className="text-[9px] font-label uppercase opacity-70">AC</div>
+            <div className="text-xl font-bold font-sans leading-none text-foreground">{viewed.ac}</div>
+            <div className="text-[9px] font-sans uppercase opacity-70">AC</div>
           </div>
         </div>
         <button
           onClick={() => onRoll(`1d20${fmtMod(viewed.initiativeBonus ?? mod(stats.dex || 10))}`, 'Initiative')}
-          className="flex items-center gap-2 p-2 border border-[#7A6228]/50 rounded bg-white/30 hover:bg-[#E8CC7A] transition-colors"
+          className="flex items-center gap-2 p-2 border border-border/40 rounded bg-white/5 hover:bg-primary/15 transition-colors"
         >
-          <Zap className="w-5 h-5 text-amber-600 flex-shrink-0" />
+          <Zap className="w-5 h-5 text-accent flex-shrink-0" />
           <div>
-            <div className="text-xl font-bold font-serif leading-none">{fmtMod(viewed.initiativeBonus ?? mod(stats.dex || 10))}</div>
-            <div className="text-[9px] font-label uppercase opacity-70">Init</div>
+            <div className="text-xl font-bold font-sans leading-none text-foreground">{fmtMod(viewed.initiativeBonus ?? mod(stats.dex || 10))}</div>
+            <div className="text-[9px] font-sans uppercase opacity-70">Init</div>
           </div>
         </button>
-        <div className="flex items-center gap-2 p-2 border border-[#7A6228]/50 rounded bg-white/30">
-          <Crosshair className="w-5 h-5 text-blue-700 flex-shrink-0" />
+        <div className="flex items-center gap-2 p-2 border border-border/40 rounded bg-white/5">
+          <Crosshair className="w-5 h-5 text-magic flex-shrink-0" />
           <div>
-            <div className="text-xl font-bold font-serif leading-none">{viewed.speed || 30}</div>
-            <div className="text-[9px] font-label uppercase opacity-70">Speed</div>
+            <div className="text-xl font-bold font-sans leading-none text-foreground">{viewed.speed || 30}</div>
+            <div className="text-[9px] font-sans uppercase opacity-70">Speed</div>
           </div>
         </div>
       </div>
 
       {/* HP Block */}
-      <div className="px-3 py-2 border-b border-[#7A6228]/30">
+      <div className="px-3 py-2 border-b border-border/30">
         <div className="flex items-center justify-between mb-1">
-          <span className="flex items-center gap-1 text-xs font-label font-bold">
-            <Heart className="w-4 h-4 fill-[#5A1111] text-[#5A1111]" /> Hit Points
+          <span className="flex items-center gap-1 text-xs font-sans font-bold">
+            <Heart className="w-4 h-4 fill-red-500 text-red-500" /> Hit Points
           </span>
-          <span className="font-bold font-serif">
-            <span className="text-xl text-[#5A1111]">{viewed.hp}</span>
+          <span className="font-bold font-sans">
+            <span className="text-xl text-red-400">{viewed.hp}</span>
             <span className="text-sm opacity-50"> / {viewed.maxHp}</span>
             {(viewed.tempHp ?? 0) > 0 && (
-              <span className="text-sm text-blue-600 ml-1">(+{viewed.tempHp} temp)</span>
+              <span className="text-sm text-accent ml-1">(+{viewed.tempHp} temp)</span>
             )}
           </span>
         </div>
@@ -254,17 +254,17 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
             placeholder="amt"
             value={hpDelta}
             onChange={e => setHpDelta(e.target.value)}
-            className="w-16 text-center border border-[#7A6228]/50 rounded px-1 py-1 text-sm bg-white/50 font-mono"
+            className="w-16 text-center border border-border/50 rounded px-1 py-1 text-sm bg-background/50 text-foreground font-mono"
           />
           <button
             onClick={() => applyHpDelta(-1)}
-            className="flex-1 py-1 text-xs font-label font-bold bg-red-700 text-white rounded hover:bg-red-800 transition-colors"
+            className="flex-1 py-1 text-xs font-sans font-bold bg-red-700 text-white rounded hover:bg-red-800 transition-colors"
           >
             DAMAGE
           </button>
           <button
             onClick={() => applyHpDelta(1)}
-            className="flex-1 py-1 text-xs font-label font-bold bg-green-700 text-white rounded hover:bg-green-800 transition-colors"
+            className="flex-1 py-1 text-xs font-sans font-bold bg-green-700 text-white rounded hover:bg-green-800 transition-colors"
           >
             HEAL
           </button>
@@ -272,13 +272,13 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex border-b border-[#7A6228]/30 bg-[#1A1208]/5 text-[9px] sm:text-[10px] font-label font-bold">
+      <div className="flex border-b border-border/30 bg-background/20 text-[9px] sm:text-[10px] font-sans font-bold">
         {TAB_ORDER.map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
-            className={`flex-1 min-w-0 py-2 uppercase tracking-wider sm:tracking-widest transition-colors border-b-2 ${tab === t ? 'border-[#5A1111] text-[#5A1111]' : 'border-transparent text-[#5A1111]/50 hover:text-[#5A1111]/80'}`}
+            className={`flex-1 min-w-0 py-2 uppercase tracking-wider sm:tracking-widest transition-colors border-b-2 ${tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
           >
             {t}
           </button>
@@ -292,16 +292,16 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
         {tab === 'core' && (
           <div className="p-3 space-y-3">
             {/* Saving Throws */}
-            <div className="border border-[#7A6228]/30 rounded overflow-hidden">
+            <div className="border border-border/30 rounded overflow-hidden">
               <button
-                className="w-full flex items-center justify-between px-3 py-2 bg-[#1A1208]/5 text-xs font-label font-bold uppercase tracking-widest hover:bg-[#1A1208]/10 transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2 bg-white/5 text-xs font-sans font-bold uppercase tracking-widest hover:bg-white/10 transition-colors"
                 onClick={() => setExpandSaves(!expandSaves)}
               >
-                <span className="flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" /> Saving Throws</span>
-                {expandSaves ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                <span className="flex items-center gap-1 text-muted-foreground"><BookOpen className="w-3.5 h-3.5" /> Saving Throws</span>
+                {expandSaves ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
               </button>
               {expandSaves && (
-                <div className="divide-y divide-[#7A6228]/20">
+                <div className="divide-y divide-border/15">
                   {ABILITY_KEYS.map(k => {
                     const isProficient = saveProficiencies.includes(k);
                     const m = getSaveMod(k);
@@ -309,11 +309,11 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
                       <button
                         key={k}
                         onClick={() => onRoll(`1d20${fmtMod(m)}`, `${ABILITY_NAMES[k]} Save`)}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-[#E8CC7A]/40 transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-primary/10 transition-colors text-left"
                       >
-                        <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${isProficient ? 'bg-[#5A1111] border-[#5A1111]' : 'border-[#7A6228]'}`} />
-                        <span className="flex-1 text-xs font-sans">{ABILITY_NAMES[k]}</span>
-                        <span className="font-bold font-serif text-sm">{fmtMod(m)}</span>
+                        <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${isProficient ? 'bg-primary border-primary' : 'border-border/60'}`} />
+                        <span className="flex-1 text-xs font-sans text-foreground/90">{ABILITY_NAMES[k]}</span>
+                        <span className="font-bold font-sans text-sm text-primary">{fmtMod(m)}</span>
                       </button>
                     );
                   })}
@@ -323,30 +323,30 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
 
             {/* Attack / Actions */}
             <div>
-              <h4 className="text-[10px] font-label font-bold uppercase tracking-widest text-[#5A1111]/70 mb-2 flex items-center gap-1">
+              <h4 className="text-[10px] font-sans font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1">
                 <Swords className="w-3 h-3" /> Quick Attacks
               </h4>
               <div className="space-y-1">
                 <button
-                  className="w-full flex justify-between items-center p-2 hover:bg-black/5 rounded border border-transparent hover:border-[#7A6228]/30 text-sm transition-colors"
+                  className="w-full flex justify-between items-center p-2 hover:bg-primary/10 rounded border border-transparent hover:border-border/30 text-sm transition-colors"
                   onClick={() => onRoll(`1d20${fmtMod(mod(stats.str || 10) + prof)}`, 'Melee Attack')}
                 >
-                  <span className="font-semibold flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5" /> Melee Attack</span>
-                  <span className="font-bold font-serif">{fmtMod(mod(stats.str || 10) + prof)}</span>
+                  <span className="font-semibold flex items-center gap-1.5 text-foreground/90"><Crosshair className="w-3.5 h-3.5" /> Melee Attack</span>
+                  <span className="font-bold font-sans text-primary">{fmtMod(mod(stats.str || 10) + prof)}</span>
                 </button>
                 <button
-                  className="w-full flex justify-between items-center p-2 hover:bg-black/5 rounded border border-transparent hover:border-[#7A6228]/30 text-sm transition-colors"
+                  className="w-full flex justify-between items-center p-2 hover:bg-primary/10 rounded border border-transparent hover:border-border/30 text-sm transition-colors"
                   onClick={() => onRoll(`1d20${fmtMod(mod(stats.dex || 10) + prof)}`, 'Ranged Attack')}
                 >
-                  <span className="font-semibold flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5" /> Ranged Attack</span>
-                  <span className="font-bold font-serif">{fmtMod(mod(stats.dex || 10) + prof)}</span>
+                  <span className="font-semibold flex items-center gap-1.5 text-foreground/90"><Crosshair className="w-3.5 h-3.5" /> Ranged Attack</span>
+                  <span className="font-bold font-sans text-primary">{fmtMod(mod(stats.dex || 10) + prof)}</span>
                 </button>
                 <button
-                  className="w-full flex justify-between items-center p-2 hover:bg-black/5 rounded border border-transparent hover:border-[#7A6228]/30 text-sm transition-colors"
+                  className="w-full flex justify-between items-center p-2 hover:bg-primary/10 rounded border border-transparent hover:border-border/30 text-sm transition-colors"
                   onClick={() => onRoll(`1d20+${mod(stats.str || 10) + prof}`, 'Athletics')}
                 >
-                  <span className="font-semibold">Athletics</span>
-                  <span className="font-bold font-serif">{fmtMod(mod(stats.str || 10) + prof)}</span>
+                  <span className="font-semibold text-foreground/90">Athletics</span>
+                  <span className="font-bold font-sans text-primary">{fmtMod(mod(stats.str || 10) + prof)}</span>
                 </button>
               </div>
             </div>
@@ -354,15 +354,15 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
             {/* Features */}
             {features.length > 0 && (
               <div>
-                <h4 className="text-[10px] font-label font-bold uppercase tracking-widest text-[#5A1111]/70 mb-2 flex items-center gap-1">
+                <h4 className="text-[10px] font-sans font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1">
                   <Star className="w-3 h-3" /> Features & Traits
                 </h4>
                 <div className="space-y-1.5">
                   {features.map((f, i) => (
-                    <div key={i} className="p-2 bg-white/30 border border-[#7A6228]/20 rounded">
-                      <div className="text-xs font-bold font-label text-[#5A1111]">{f.name}</div>
-                      {f.source && <div className="text-[9px] text-[#5A1111]/60 font-label">{f.source}</div>}
-                      {f.desc && <div className="text-xs font-sans mt-0.5 leading-relaxed text-[#1A1208]/80">{f.desc}</div>}
+                    <div key={i} className="p-2 bg-white/5 border border-border/20 rounded">
+                      <div className="text-xs font-bold font-sans text-primary">{f.name}</div>
+                      {f.source && <div className="text-[9px] text-muted-foreground font-sans">{f.source}</div>}
+                      {f.desc && <div className="text-xs font-sans mt-0.5 leading-relaxed text-foreground/80">{f.desc}</div>}
                     </div>
                   ))}
                 </div>
@@ -397,8 +397,8 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
               if (filled.length === 0) {
                 return (
                   <div className="text-center py-8 px-2">
-                    <ScrollText className="w-10 h-10 mx-auto text-[#5A1111]/25 mb-2" aria-hidden />
-                    <p className="text-xs text-[#5A1111]/60 font-sans leading-relaxed">
+                    <ScrollText className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" aria-hidden />
+                    <p className="text-xs text-muted-foreground font-sans leading-relaxed">
                       No biography or notes on this sheet yet. Text you enter in the character creator
                       (personality, backstory, ideals, bonds, flaws, appearance, notes) appears here.
                     </p>
@@ -412,7 +412,7 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
 
         {/* SKILLS Tab */}
         {tab === 'skills' && (
-          <div className="divide-y divide-[#7A6228]/15">
+          <div className="divide-y divide-border/15">
             {SKILLS.map(skill => {
               const m = getSkillMod(skill);
               const isExpert = skillExpertise.includes(skill.key);
@@ -421,16 +421,16 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
                 <button
                   key={skill.key}
                   onClick={() => onRoll(`1d20${fmtMod(m)}`, skill.name)}
-                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[#E8CC7A]/40 transition-colors text-left"
+                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary/10 transition-colors text-left"
                 >
-                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${isExpert ? 'bg-[#C9A84C] border-[#C9A84C]' : isProf ? 'bg-[#5A1111] border-[#5A1111]' : 'border-[#7A6228]'}`} />
-                  <span className="flex-1 text-xs font-sans">{skill.name}</span>
-                  <span className="text-[9px] text-[#5A1111]/50 font-label">{ABILITY_SHORT[skill.ability]}</span>
-                  <span className="font-bold font-serif text-sm w-8 text-right">{fmtMod(m)}</span>
+                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${isExpert ? 'bg-accent border-accent' : isProf ? 'bg-primary border-primary' : 'border-border/60'}`} />
+                  <span className="flex-1 text-xs font-sans text-foreground/90">{skill.name}</span>
+                  <span className="text-[9px] text-muted-foreground font-sans">{ABILITY_SHORT[skill.ability]}</span>
+                  <span className="font-bold font-sans text-sm w-8 text-right text-primary">{fmtMod(m)}</span>
                 </button>
               );
             })}
-            <div className="p-3 text-[10px] text-[#5A1111]/50 font-label">
+            <div className="p-3 text-[10px] text-muted-foreground font-sans">
               ● Proficient &nbsp; ◆ Expert (×2 Prof)
             </div>
           </div>
@@ -441,15 +441,15 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
           <div className="p-3 space-y-3">
             {/* Spell Slots */}
             <div>
-              <h4 className="text-[10px] font-label font-bold uppercase tracking-widest text-[#5A1111]/70 mb-2">Spell Slots</h4>
+              <h4 className="text-[10px] font-sans font-bold uppercase tracking-widest text-muted-foreground mb-2">Spell Slots</h4>
               {Object.keys(spellSlots).length === 0 ? (
-                <div className="text-xs text-[#5A1111]/50 italic">No spell slots recorded.</div>
+                <div className="text-xs text-muted-foreground italic">No spell slots recorded.</div>
               ) : (
                 <div className="grid grid-cols-3 gap-1.5">
                   {Object.entries(spellSlots).map(([level, slot]) => (
-                    <div key={level} className="text-center border border-[#7A6228]/50 rounded p-1.5 bg-white/30">
-                      <div className="text-[9px] font-label uppercase">Level {level}</div>
-                      <div className="font-bold font-serif">{slot.total - slot.used} / {slot.total}</div>
+                    <div key={level} className="text-center border border-border/40 rounded p-1.5 bg-white/5">
+                      <div className="text-[9px] font-sans uppercase text-muted-foreground">Level {level}</div>
+                      <div className="font-bold font-sans text-primary">{slot.total - slot.used} / {slot.total}</div>
                     </div>
                   ))}
                 </div>
@@ -457,20 +457,20 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
             </div>
             {/* Spell list */}
             <div>
-              <h4 className="text-[10px] font-label font-bold uppercase tracking-widest text-[#5A1111]/70 mb-2">Spells Known</h4>
+              <h4 className="text-[10px] font-sans font-bold uppercase tracking-widest text-muted-foreground mb-2">Spells Known</h4>
               {spells.length === 0 ? (
-                <div className="text-xs text-[#5A1111]/50 italic">No spells recorded.</div>
+                <div className="text-xs text-muted-foreground italic">No spells recorded.</div>
               ) : (
                 <div className="space-y-1">
                   {[...new Set(spells.map(s => s.level))].sort().map(level => (
                     <div key={level}>
-                      <div className="text-[9px] font-label font-bold uppercase text-[#5A1111]/60 mb-0.5">
+                      <div className="text-[9px] font-sans font-bold uppercase text-muted-foreground mb-0.5">
                         {level === 0 ? 'Cantrips' : `Level ${level}`}
                       </div>
                       {spells.filter(s => s.level === level).map((s, i) => (
-                        <div key={i} className="flex items-center gap-2 px-2 py-1 hover:bg-[#E8CC7A]/30 rounded text-xs">
-                          <div className={`w-2 h-2 rounded-full ${s.prepared ? 'bg-[#C9A84C]' : 'border border-[#7A6228]'}`} />
-                          <span>{s.name}</span>
+                        <div key={i} className="flex items-center gap-2 px-2 py-1 hover:bg-primary/10 rounded text-xs">
+                          <div className={`w-2 h-2 rounded-full ${s.prepared ? 'bg-accent' : 'border border-border/60'}`} />
+                          <span className="text-foreground/90">{s.name}</span>
                         </div>
                       ))}
                     </div>
@@ -485,22 +485,22 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
         {tab === 'inventory' && (
           <div className="p-3 space-y-2">
             {inventory.length === 0 ? (
-              <div className="text-xs text-[#5A1111]/50 italic">No items in inventory.</div>
+              <div className="text-xs text-muted-foreground italic">No items in inventory.</div>
             ) : (
               <div className="space-y-1">
                 {inventory.map((item, i) => (
-                  <div key={i} className="flex items-start gap-2 p-2 bg-white/30 border border-[#7A6228]/20 rounded">
+                  <div key={i} className="flex items-start gap-2 p-2 bg-white/5 border border-border/20 rounded">
                     <div className="flex-1">
-                      <div className="text-xs font-bold font-label">{item.name}</div>
-                      {item.notes && <div className="text-[10px] text-[#5A1111]/60">{item.notes}</div>}
+                      <div className="text-xs font-bold font-sans text-foreground">{item.name}</div>
+                      {item.notes && <div className="text-[10px] text-muted-foreground">{item.notes}</div>}
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="text-xs font-bold">×{item.qty}</div>
-                      {item.weight !== undefined && <div className="text-[9px] text-[#5A1111]/50">{item.weight}lb</div>}
+                      <div className="text-xs font-bold text-primary">×{item.qty}</div>
+                      {item.weight !== undefined && <div className="text-[9px] text-muted-foreground">{item.weight}lb</div>}
                     </div>
                   </div>
                 ))}
-                <div className="text-[10px] text-[#5A1111]/50 font-label pt-1">
+                <div className="text-[10px] text-muted-foreground font-sans pt-1">
                   Total weight: {inventory.reduce((sum, i) => sum + (i.weight || 0) * i.qty, 0)} lb
                 </div>
               </div>

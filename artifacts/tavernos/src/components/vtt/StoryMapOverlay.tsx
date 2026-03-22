@@ -66,7 +66,7 @@ export function StoryMapOverlay({ sessionId, messages }: StoryMapOverlayProps) {
       aria-live="polite"
     >
       <div
-        className="pointer-events-auto w-full max-w-2xl max-h-[min(48vh,420px)] flex flex-col rounded-xl border-2 border-primary/40 bg-gradient-to-b from-[#1A1208]/98 to-[#0E0B06]/98 shadow-[0_12px_48px_rgba(0,0,0,0.65)] backdrop-blur-sm overflow-hidden"
+        className="pointer-events-auto w-full max-w-2xl max-h-[min(48vh,420px)] flex flex-col rounded-xl border-2 border-primary/40 bg-gradient-to-b from-card/98 to-background/98 shadow-[0_12px_48px_rgba(0,0,0,0.65)] backdrop-blur-sm overflow-hidden"
         role="dialog"
         aria-label="Story from assistant"
       >
@@ -89,7 +89,7 @@ export function StoryMapOverlay({ sessionId, messages }: StoryMapOverlayProps) {
           </button>
         </div>
         <div className="px-4 py-3 overflow-y-auto flex-1 min-h-0">
-          <p className="text-sm font-sans text-[#F2E8CE] leading-relaxed whitespace-pre-wrap">
+          <p className="text-sm font-sans text-foreground leading-relaxed whitespace-pre-wrap">
             {pendingStory.content}
           </p>
         </div>

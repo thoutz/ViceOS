@@ -15,15 +15,20 @@ TavernOS is a full-featured browser-based virtual tabletop (VTT) platform for D&
 - **Dice Roller**: rpg-dice-roller integration with expression parsing
 - **Chat Panel**: Real-time chat messages with dice roll results
 - **Socket.IO**: Real-time sync events (token_move, hp_update, chat_message, fog_update, etc.)
-- **Dark Fantasy Theme**: Cinzel/Crimson Pro fonts, gold/parchment color palette
+- **Miami Vice Theme**: Inter font, midnight navy + hot-pink + mint + purple palette
 
 ## Design System
 
-- Background: `#0E0B06` (very dark brown-black)
-- Gold: `#C9A84C`, Gold light: `#E8CC7A`, Gold dim: `#7A6228`
-- Parchment: `#F2E8CE`, Card bg: `#1A1208`
-- Ember: `#E07B39`, Magic: `#5B3FA6`
-- Fonts: Cinzel Decorative (headings), Cinzel (labels), Crimson Pro (body)
+- Background: `#08091f` (midnight navy)
+- Card bg: `#0d1240` (dark navy)
+- Primary: `#ff4df0` (hot pink)
+- Accent: `#70ffdf` (mint)
+- Magic/border: `#9d4dff` (purple)
+- Interactive: `#045ded` (blue)
+- Muted text: `#b0bff5` (periwinkle)
+- Font: Inter (300–700) — all headings, labels, and body use Inter
+- HP bars: green/yellow/red (unchanged)
+- Hearts/HP: red (unchanged)
 
 ## Stack
 

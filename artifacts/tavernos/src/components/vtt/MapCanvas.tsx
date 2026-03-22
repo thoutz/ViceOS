@@ -149,7 +149,7 @@ export function MapCanvas({
 
   // Token placement
   const [newTokenName, setNewTokenName] = useState('');
-  const [newTokenColor, setNewTokenColor] = useState('#C9A84C');
+  const [newTokenColor, setNewTokenColor] = useState('#ff4df0');
   const [newTokenHp, setNewTokenHp] = useState('');
   const [newTokenSize, setNewTokenSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [newTokenImageData, setNewTokenImageData] = useState<string | null>(null);
@@ -664,7 +664,7 @@ export function MapCanvas({
   };
 
   return (
-    <div ref={containerRef} className="w-full h-full bg-[#0a0a0a] overflow-hidden relative select-none">
+    <div ref={containerRef} className="w-full h-full bg-background overflow-hidden relative select-none">
       <Stage
         width={canvasW}
         height={canvasH}
@@ -780,7 +780,7 @@ export function MapCanvas({
       {/* Tool Palette */}
       <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-card/90 border border-border rounded-lg px-2 py-1.5 shadow-xl backdrop-blur-sm">
         <ToolButton icon={<MousePointer2 />} label="Select" active={activeTool === 'select'} onClick={() => setActiveTool('select')} />
-        {isDm && <ToolButton icon={<UserPlus />} label="Place Token" active={activeTool === 'place_token'} onClick={() => setActiveTool('place_token')} className="text-amber-400" />}
+        {isDm && <ToolButton icon={<UserPlus />} label="Place Token" active={activeTool === 'place_token'} onClick={() => setActiveTool('place_token')} className="text-accent" />}
         {isDm && (
           <ToolButton
             icon={<CloudFog />}
@@ -927,9 +927,9 @@ export function MapCanvas({
 
       {/* Token Placement Panel (DM only, when place_token tool active) */}
       {isDm && activeTool === 'place_token' && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-card/95 border border-amber-500/50 rounded-lg px-4 py-3 shadow-xl backdrop-blur-sm flex items-center gap-3 flex-wrap max-w-[min(96vw,720px)]">
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-card/95 border border-primary/40 rounded-lg px-4 py-3 shadow-xl backdrop-blur-sm flex items-center gap-3 flex-wrap max-w-[min(96vw,720px)]">
           <input ref={tokenImageInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) readTokenImageFile(f); e.target.value = ''; }} />
-          <span className="text-[10px] font-label font-bold text-amber-400 uppercase">Place Token</span>
+          <span className="text-[10px] font-sans font-bold text-accent uppercase">Place Token</span>
           {placementDraft && (
             <span className="text-[10px] font-label text-primary border border-primary/40 rounded px-2 py-1 max-w-[200px] truncate" title={placementDraft.name}>
               Placing: {placementDraft.name} · {(placementDraft.tokenSize ?? 'medium').toString()}
@@ -941,7 +941,7 @@ export function MapCanvas({
                 value={newTokenName}
                 onChange={e => setNewTokenName(e.target.value)}
                 placeholder="Token name..."
-                className="bg-background border border-border rounded px-2 py-1 text-xs font-sans w-32 focus:outline-none focus:border-amber-500/50"
+                className="bg-background border border-border rounded px-2 py-1 text-xs font-sans w-32 focus:outline-none focus:border-primary/50"
               />
               <label className="flex items-center gap-1 text-[10px] font-label text-muted-foreground">
                 Color
@@ -970,7 +970,7 @@ export function MapCanvas({
                 placeholder="HP (opt)"
                 type="number"
                 min={1}
-                className="bg-background border border-border rounded px-2 py-1 text-xs font-sans w-20 focus:outline-none focus:border-amber-500/50"
+                className="bg-background border border-border rounded px-2 py-1 text-xs font-sans w-20 focus:outline-none focus:border-primary/50"
               />
               <div className="flex items-center gap-1 border border-border/60 rounded px-1 py-0.5">
                 <span className="text-[9px] text-muted-foreground pr-0.5">Size</span>
@@ -1099,7 +1099,7 @@ function TokenFaceContent({
     <>
       {!showImage && (
         <>
-          <Circle x={cx} y={cy} radius={radius} fill={token.color || '#C9A84C'} listening={false} />
+          <Circle x={cx} y={cy} radius={radius} fill={token.color || '#9d4dff'} listening={false} />
           <Text
             x={0}
             y={0}
@@ -1194,7 +1194,7 @@ function TokenShape({
             x={cx}
             y={cy}
             radius={radius}
-            fill={token.color || '#C9A84C'}
+            fill={token.color || '#9d4dff'}
             listening={false}
           />
           <Text
@@ -1204,7 +1204,7 @@ function TokenShape({
             height={groupPx}
             text={token.name.substring(0, 2).toUpperCase()}
             fontSize={Math.max(10, groupPx / 3)}
-            fontFamily="Cinzel"
+            fontFamily="Inter"
             fontStyle="bold"
             fill={isSelected ? '#FFF' : 'rgba(255,255,255,0.9)'}
             align="center"
@@ -1221,7 +1221,7 @@ function TokenShape({
         fill="transparent"
         stroke={isSelected ? '#FFFFFF' : 'rgba(0,0,0,0.8)'}
         strokeWidth={isSelected ? 3 : 1.5}
-        shadowColor={isSelected ? '#C9A84C' : 'transparent'}
+        shadowColor={isSelected ? '#ff4df0' : 'transparent'}
         shadowBlur={isSelected ? 12 : 0}
         shadowOpacity={0.8}
         listening={false}

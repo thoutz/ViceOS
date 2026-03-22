@@ -553,7 +553,7 @@ export default function Dashboard() {
               return (
               <div
                 key={c.id}
-                className="group glass-panel rounded-xl overflow-hidden hover:border-primary/80 transition-all cursor-pointer hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(201,168,76,0.15)] flex flex-col"
+                className="group glass-panel rounded-xl overflow-hidden hover:border-primary/80 transition-all cursor-pointer hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(255,77,240,0.20)] flex flex-col"
                 onClick={() => setLocation(campaignCardDestination(c, rosterCharId))}
               >
                 <div className="h-32 bg-card border-b border-border/50 relative overflow-hidden">
