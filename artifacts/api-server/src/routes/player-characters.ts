@@ -8,6 +8,7 @@ import {
 import { eq, and } from "drizzle-orm";
 import { requireAuth, getEffectiveUserId } from "../middlewares/auth";
 import { param } from "../types";
+import { bindFirstVacantPlayerMembership } from "../lib/bind-player-character";
 
 const router: IRouter = Router();
 
@@ -190,6 +191,10 @@ router.post("/characters", requireAuth, async (req, res) => {
       isNpc: false,
     })
     .returning();
+
+  if (resolvedCampaignId) {
+    await bindFirstVacantPlayerMembership(resolvedCampaignId, userId, created.id);
+  }
 
   res.status(201).json(created);
 });

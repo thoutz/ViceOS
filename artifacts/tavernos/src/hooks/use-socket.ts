@@ -95,6 +95,12 @@ export function useVttSocket(campaignId: string, sessionId: string) {
       });
     });
 
+    socket.on("chat_message_deleted", () => {
+      void queryClient.invalidateQueries({
+        queryKey: [`/api/campaigns/${campaignId}/sessions/${sessionId}/messages`],
+      });
+    });
+
     socket.on("turn_changed", (data: { currentTurnIndex: number; roundNumber: number }) => {
       queryClient.setQueryData(
         [`/api/campaigns/${campaignId}/sessions`],

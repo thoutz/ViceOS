@@ -14,4 +14,5 @@ export const PostMessageRequestType = {
   dice: "dice",
   system: "system",
   whisper: "whisper",
+  story: "story",
 } as const;

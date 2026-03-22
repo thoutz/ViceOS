@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useParams } from "wouter";
-import { useGetCampaign, useCreatePlayerCharacter } from "@workspace/api-client-react";
+import { useGetCampaign, useCreatePlayerCharacter, useListPlayerCharacters } from "@workspace/api-client-react";
 import { DiceRoll } from "rpg-dice-roller";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ChevronLeft, Dices, Check, Save } from "lucide-react";
@@ -37,7 +37,20 @@ export default function CharacterCreator() {
   const campaignId = params.campaignId;
   const [, setLocation] = useLocation();
   const { data: campaign, isLoading } = useGetCampaign(campaignId ?? "");
+  const { data: myCharacters = [] } = useListPlayerCharacters();
   const createMutation = useCreatePlayerCharacter();
+
+  /** Already have a hero for this campaign — skip creator (e.g. returning player or bookmarked URL). */
+  useEffect(() => {
+    if (!campaignId || !campaign || campaign.role === "dm") return;
+    const roster = myCharacters
+      .filter((ch) => ch.campaignId === campaignId && ch.isActive !== false)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    const first = roster[0];
+    if (first) {
+      setLocation(`/session/${campaignId}/latest`);
+    }
+  }, [campaignId, campaign, myCharacters, setLocation]);
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<CharacterFormState>(() => defaultCharacterForm());

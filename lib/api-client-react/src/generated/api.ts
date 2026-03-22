@@ -1569,6 +1569,91 @@ export function useGetCampaign<
 }
 
 /**
+ * Permanently removes the campaign and related sessions, maps, characters in this campaign, invites, and members. Only the campaign owner (DM) may call this.
+ * @summary Delete a campaign (DM only)
+ */
+export const getDeleteCampaignUrl = (campaignId: string) => {
+  return `/api/campaigns/${campaignId}`;
+};
+
+export const deleteCampaign = async (
+  campaignId: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteCampaignUrl(campaignId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteCampaignMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCampaign>>,
+    TError,
+    { campaignId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteCampaign>>,
+  TError,
+  { campaignId: string },
+  TContext
+> => {
+  const mutationKey = ["deleteCampaign"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteCampaign>>,
+    { campaignId: string }
+  > = (props) => {
+    const { campaignId } = props ?? {};
+
+    return deleteCampaign(campaignId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteCampaignMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteCampaign>>
+>;
+
+export type DeleteCampaignMutationError = ErrorType<void>;
+
+/**
+ * @summary Delete a campaign (DM only)
+ */
+export const useDeleteCampaign = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCampaign>>,
+    TError,
+    { campaignId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteCampaign>>,
+  TError,
+  { campaignId: string },
+  TContext
+> => {
+  return useMutation(getDeleteCampaignMutationOptions(options));
+};
+
+/**
  * @summary List characters in campaign
  */
 export const getListCharactersUrl = (campaignId: string) => {
@@ -3213,4 +3298,97 @@ export const usePostMessage = <
   TContext
 > => {
   return useMutation(getPostMessageMutationOptions(options));
+};
+
+/**
+ * @summary Delete a chat message (DM only; story messages only)
+ */
+export const getDeleteMessageUrl = (
+  campaignId: string,
+  sessionId: string,
+  messageId: string,
+) => {
+  return `/api/campaigns/${campaignId}/sessions/${sessionId}/messages/${messageId}`;
+};
+
+export const deleteMessage = async (
+  campaignId: string,
+  sessionId: string,
+  messageId: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(
+    getDeleteMessageUrl(campaignId, sessionId, messageId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getDeleteMessageMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMessage>>,
+    TError,
+    { campaignId: string; sessionId: string; messageId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteMessage>>,
+  TError,
+  { campaignId: string; sessionId: string; messageId: string },
+  TContext
+> => {
+  const mutationKey = ["deleteMessage"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteMessage>>,
+    { campaignId: string; sessionId: string; messageId: string }
+  > = (props) => {
+    const { campaignId, sessionId, messageId } = props ?? {};
+
+    return deleteMessage(campaignId, sessionId, messageId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteMessageMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteMessage>>
+>;
+
+export type DeleteMessageMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Delete a chat message (DM only; story messages only)
+ */
+export const useDeleteMessage = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMessage>>,
+    TError,
+    { campaignId: string; sessionId: string; messageId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteMessage>>,
+  TError,
+  { campaignId: string; sessionId: string; messageId: string },
+  TContext
+> => {
+  return useMutation(getDeleteMessageMutationOptions(options));
 };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Character } from '@workspace/api-client-react';
-import { Shield, Heart, Zap, Crosshair, BookOpen, Star, ChevronDown, ChevronUp, Swords, User } from 'lucide-react';
+import { Shield, Heart, Zap, Crosshair, BookOpen, Star, ChevronDown, ChevronUp, Swords, User, ScrollText } from 'lucide-react';
 import { VttButton } from '../VttButton';
 
 interface CharacterSheetProps {
@@ -64,7 +64,25 @@ function profBonus(level: number): number {
   return PROF_BY_LEVEL[Math.max(1, Math.min(20, level))] ?? 2;
 }
 
-type TabId = 'core' | 'skills' | 'spells' | 'inventory';
+type TabId = 'core' | 'bio' | 'skills' | 'spells' | 'inventory';
+
+const TAB_ORDER: TabId[] = ['core', 'bio', 'skills', 'spells', 'inventory'];
+
+function BioSection({ title, text }: { title: string; text: string }) {
+  const t = text.trim();
+  if (!t) return null;
+  return (
+    <section className="border border-[#7A6228]/25 rounded-lg overflow-hidden bg-white/25">
+      <h4 className="text-[10px] font-label font-bold uppercase tracking-widest text-[#5A1111]/80 px-3 py-2 bg-[#1A1208]/8 border-b border-[#7A6228]/20 flex items-center gap-1.5">
+        <ScrollText className="w-3 h-3 opacity-80" aria-hidden />
+        {title}
+      </h4>
+      <div className="px-3 py-2.5 text-sm font-sans leading-relaxed whitespace-pre-wrap text-[#1A1208]">
+        {t}
+      </div>
+    </section>
+  );
+}
 
 function HpBar({ current, max }: { current: number; max: number }) {
   const pct = max > 0 ? Math.max(0, Math.min(1, current / max)) : 0;
@@ -254,12 +272,13 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex border-b border-[#7A6228]/30 bg-[#1A1208]/5 text-[10px] font-label font-bold">
-        {(['core', 'skills', 'spells', 'inventory'] as TabId[]).map(t => (
+      <div className="flex border-b border-[#7A6228]/30 bg-[#1A1208]/5 text-[9px] sm:text-[10px] font-label font-bold">
+        {TAB_ORDER.map((t) => (
           <button
             key={t}
+            type="button"
             onClick={() => setTab(t)}
-            className={`flex-1 py-2 uppercase tracking-widest transition-colors border-b-2 ${tab === t ? 'border-[#5A1111] text-[#5A1111]' : 'border-transparent text-[#5A1111]/50 hover:text-[#5A1111]/80'}`}
+            className={`flex-1 min-w-0 py-2 uppercase tracking-wider sm:tracking-widest transition-colors border-b-2 ${tab === t ? 'border-[#5A1111] text-[#5A1111]' : 'border-transparent text-[#5A1111]/50 hover:text-[#5A1111]/80'}`}
           >
             {t}
           </button>
@@ -349,6 +368,45 @@ export function CharacterSheet({ character, isDm, allCharacters, onRoll, onUpdat
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* BIO — creator fields: backstory, personality, ideals, etc. */}
+        {tab === 'bio' && (
+          <div className="p-3 space-y-3">
+            {(() => {
+              const alignment =
+                viewed.alignment?.trim() ||
+                (typeof sheetData.alignment === 'string' ? sheetData.alignment.trim() : '') ||
+                '';
+              const personality =
+                viewed.personality?.trim() ||
+                (typeof sheetData.personalityTrait === 'string' ? sheetData.personalityTrait.trim() : '') ||
+                '';
+              const rows: { title: string; text: string }[] = [
+                { title: 'Alignment', text: alignment },
+                { title: 'Personality & mannerisms', text: personality },
+                { title: 'Backstory', text: viewed.backstory?.trim() || '' },
+                { title: 'Ideals', text: viewed.ideals?.trim() || '' },
+                { title: 'Bonds', text: viewed.bonds?.trim() || '' },
+                { title: 'Flaws', text: viewed.flaws?.trim() || '' },
+                { title: 'Appearance', text: viewed.appearance?.trim() || '' },
+                { title: 'Notes', text: viewed.notes?.trim() || '' },
+              ];
+              const filled = rows.filter((r) => r.text);
+              if (filled.length === 0) {
+                return (
+                  <div className="text-center py-8 px-2">
+                    <ScrollText className="w-10 h-10 mx-auto text-[#5A1111]/25 mb-2" aria-hidden />
+                    <p className="text-xs text-[#5A1111]/60 font-sans leading-relaxed">
+                      No biography or notes on this sheet yet. Text you enter in the character creator
+                      (personality, backstory, ideals, bonds, flaws, appearance, notes) appears here.
+                    </p>
+                  </div>
+                );
+              }
+              return filled.map((r) => <BioSection key={r.title} title={r.title} text={r.text} />);
+            })()}
           </div>
         )}
 

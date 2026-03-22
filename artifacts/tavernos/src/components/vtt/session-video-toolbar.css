@@ -1,0 +1,148 @@
+/**
+ * Scoped styles for LiveKit session video — grouped toolbar (media / utility / hang up).
+ * Parent must add class `vtt-session-video` on the room wrapper.
+ */
+
+.vtt-session-video .vtt-lk-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.65rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(12, 12, 14, 0.96) 0%, rgba(8, 8, 10, 0.98) 100%);
+}
+
+.vtt-session-video .vtt-lk-toolbar__media {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 14px;
+  background: #161618;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.vtt-session-video .vtt-lk-toolbar__media .lk-button-group {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 11px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.vtt-session-video .vtt-lk-toolbar__media .lk-button-group > .lk-button:first-child {
+  min-width: 2.5rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0;
+  border: 0;
+  font-size: 0;
+  line-height: 0;
+}
+
+.vtt-session-video .vtt-lk-toolbar__media .lk-button-group-menu > .lk-button {
+  min-width: 1.75rem;
+  padding: 0.35rem 0.4rem;
+  border: 0;
+  border-radius: 0;
+}
+
+/* Mic / camera: red = off/muted, green = on */
+.vtt-session-video .vtt-lk-toolbar__media .lk-button-group:has([data-lk-source='microphone'][data-lk-enabled='false']) .lk-button {
+  color: #ff5252;
+  background: rgba(198, 40, 40, 0.22);
+}
+
+.vtt-session-video .vtt-lk-toolbar__media .lk-button-group:has([data-lk-source='microphone'][data-lk-enabled='true']) .lk-button {
+  color: #69f0ae;
+  background: rgba(46, 125, 50, 0.2);
+}
+
+.vtt-session-video .vtt-lk-toolbar__media .lk-button-group:has([data-lk-source='camera'][data-lk-enabled='false']) .lk-button {
+  color: #ff5252;
+  background: rgba(198, 40, 40, 0.22);
+}
+
+.vtt-session-video .vtt-lk-toolbar__media .lk-button-group:has([data-lk-source='camera'][data-lk-enabled='true']) .lk-button {
+  color: #69f0ae;
+  background: rgba(46, 125, 50, 0.2);
+}
+
+.vtt-session-video .vtt-lk-toolbar__media .lk-button-group .lk-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.vtt-session-video .vtt-lk-toolbar__utility {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 14px;
+  background: #161618;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.vtt-session-video .vtt-lk-toolbar__utility .vtt-lk-utility-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0.4rem;
+  border: 0;
+  border-radius: 10px;
+  color: #f5f5f5;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.vtt-session-video .vtt-lk-toolbar__utility .vtt-lk-utility-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.vtt-session-video .vtt-lk-toolbar__utility .vtt-lk-utility-btn[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* Screen share active */
+.vtt-session-video .vtt-lk-toolbar__utility .lk-button[data-lk-source='screen_share'][data-lk-enabled='true'] {
+  color: #90caf9;
+  background: rgba(33, 150, 243, 0.2);
+}
+
+.vtt-session-video .vtt-lk-toolbar__leave .vtt-lk-hangup-btn.lk-disconnect-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.75rem;
+  min-height: 2.65rem;
+  padding: 0.45rem 1.1rem;
+  border-radius: 12px !important;
+  border: none !important;
+  font-weight: 600;
+  color: #fff !important;
+  background: #e53935 !important;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.vtt-session-video .vtt-lk-toolbar__leave .vtt-lk-hangup-btn.lk-disconnect-button:hover:not(:disabled) {
+  background: #f44336 !important;
+  filter: brightness(1.03);
+}
+
+.vtt-session-video .vtt-lk-toolbar__leave .vtt-lk-hangup-btn.lk-disconnect-button:active:not(:disabled) {
+  background: #c62828 !important;
+}
+
+/* StartMediaButton: tuck under bar when visible */
+.vtt-session-video .vtt-lk-start-media.lk-button {
+  flex: 1 1 100%;
+  margin-top: 0.25rem;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e0e0e0;
+}

@@ -56,8 +56,11 @@ export default defineConfig({
     dedupe: ["react", "react-dom"],
   },
   optimizeDeps: {
-    // Pre-bundle the workspace client so dev matches production and `export *` re-exports stay stable.
-    include: ["@workspace/api-client-react"],
+    // This package is workspace-linked (`workspace:*`). Pre-bundling it into
+    // `node_modules/.vite/deps/` often goes **stale** after OpenAPI codegen or
+    // `index.ts` re-export changes → "does not provide an export named …".
+    // Excluding it lets Vite always transform the live workspace sources in dev.
+    exclude: ["@workspace/api-client-react"],
   },
   root: path.resolve(import.meta.dirname),
   build: {
@@ -89,5 +92,18 @@ export default defineConfig({
     port,
     host: "0.0.0.0",
     allowedHosts: true,
+    // Match dev: without this, `vite preview` serves static files only and
+    // `POST /api/...` returns 404 (same class of failure as static-only Replit deploys).
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
+      "/socket.io": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        ws: true,
+      },
+    },
   },
 });

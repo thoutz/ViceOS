@@ -4,7 +4,7 @@ import { DiceRoll } from 'rpg-dice-roller';
 import { Dices } from 'lucide-react';
 import { MessageBubble } from './message-bubble';
 
-type MessageType = 'chat' | 'dice' | 'system' | 'whisper';
+type MessageType = 'chat' | 'dice' | 'system' | 'whisper' | 'story';
 
 interface RollsPanelProps {
   messages: ChatMessage[];

@@ -4,6 +4,7 @@ import { charactersTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireCampaignMember, getEffectiveUserId } from "../middlewares/auth";
 import { param } from "../types";
+import { bindFirstVacantPlayerMembership } from "../lib/bind-player-character";
 
 const router: IRouter = Router();
 
@@ -55,6 +56,11 @@ router.post("/campaigns/:campaignId/characters", requireAuth, requireCampaignMem
       isNpc: isNpc || false,
     })
     .returning();
+
+  const npc = isNpc || false;
+  if (!npc && character.userId === userId) {
+    await bindFirstVacantPlayerMembership(campaignId, userId, character.id);
+  }
 
   res.status(201).json(character);
 });

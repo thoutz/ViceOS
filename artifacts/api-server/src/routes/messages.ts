@@ -2,7 +2,8 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { messagesTable, usersTable, gameSessionsTable } from "@workspace/db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { requireAuth, requireCampaignMember, getEffectiveUserId } from "../middlewares/auth";
+import { requireAuth, requireCampaignMember, requireDm, getEffectiveUserId } from "../middlewares/auth";
+import { emitToSessionRoom } from "../socket-registry";
 import { param } from "../types";
 
 const router: IRouter = Router();
@@ -74,10 +75,16 @@ router.post(
       return;
     }
 
+    const messageType = typeof type === "string" ? type : "chat";
+    if (messageType === "story" && req.campaignMember?.role !== "dm") {
+      res.status(403).json({ error: "Only the DM can post story messages" });
+      return;
+    }
+
     // Whispers are allowed from anyone — players can whisper to the DM and vice versa
     // If a player sends a whisper without a recipientId, it goes to DM (server resolves DM userId)
     let resolvedRecipientId: string | null = recipientId || null;
-    if (type === "whisper" && !resolvedRecipientId) {
+    if (messageType === "whisper" && !resolvedRecipientId) {
       // Find the DM of this campaign
       const { campaignMembersTable } = await import("@workspace/db/schema");
       const [dmMember] = await db
@@ -100,12 +107,53 @@ router.post(
         senderName,
         recipientId: resolvedRecipientId,
         content: content.trim(),
-        type: type || "chat",
+        type: messageType,
         diceData: diceData || null,
       })
       .returning();
 
     res.status(201).json(message);
+  }
+);
+
+router.delete(
+  "/campaigns/:campaignId/sessions/:sessionId/messages/:messageId",
+  requireAuth,
+  requireCampaignMember,
+  requireDm,
+  async (req, res) => {
+    const campaignId = param(req.params.campaignId);
+    const sessionId = param(req.params.sessionId);
+    const messageId = param(req.params.messageId);
+
+    const [session] = await db
+      .select()
+      .from(gameSessionsTable)
+      .where(and(eq(gameSessionsTable.id, sessionId), eq(gameSessionsTable.campaignId, campaignId)));
+
+    if (!session) {
+      res.status(404).json({ error: "Session not found" });
+      return;
+    }
+
+    const [row] = await db
+      .select()
+      .from(messagesTable)
+      .where(and(eq(messagesTable.id, messageId), eq(messagesTable.sessionId, sessionId)));
+
+    if (!row) {
+      res.status(404).json({ error: "Message not found" });
+      return;
+    }
+
+    if (row.type !== "story") {
+      res.status(403).json({ error: "Only story assistant posts can be removed this way" });
+      return;
+    }
+
+    await db.delete(messagesTable).where(eq(messagesTable.id, messageId));
+    emitToSessionRoom(sessionId, "chat_message_deleted", { messageId });
+    res.status(204).end();
   }
 );
 

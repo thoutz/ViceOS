@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
 import {
   useGetMe,
@@ -9,19 +9,29 @@ import {
   useAcceptCampaignInvite,
   useDeclineCampaignInvite,
   useListPlayerCharacters,
+  useDeleteCampaign,
   type CampaignWithRole,
   type PendingInvite,
+  type PlayerCharacter,
 } from '@workspace/api-client-react';
 import { VttButton } from '@/components/VttButton';
 import { VttInput } from '@/components/VttInput';
-import { Book, Plus, Users, Swords, LogOut, Mail, UserPlus } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { Book, Plus, Users, Swords, LogOut, Mail, UserPlus, Trash2, Copy, Share2 } from 'lucide-react';
 
-/** Where to send the user when opening a campaign card (onboarding vs table). */
-function campaignCardDestination(c: CampaignWithRole): string {
+/**
+ * Where to send the user when opening a campaign card (onboarding vs table).
+ * Uses membership character id from the API; falls back to the first roster character for that campaign
+ * (covers stale clients or edge cases).
+ */
+function campaignCardDestination(
+  c: CampaignWithRole,
+  rosterFallbackCharacterId?: string | null,
+): string {
   if (c.role === 'dm') {
     return `/session/${c.id}/latest`;
   }
-  if (c.playerMembershipCharacterId) {
+  if (c.playerMembershipCharacterId || rosterFallbackCharacterId) {
     return `/session/${c.id}/latest`;
   }
   return `/campaign/${c.id}/create-character`;
@@ -40,8 +50,24 @@ export default function Dashboard() {
     [myCharacters],
   );
 
+  /** First character per campaign (oldest created) for card copy + ENTER fallback. */
+  const rosterByCampaign = useMemo(() => {
+    const sorted = [...myCharacters].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+    const m = new Map<string, PlayerCharacter>();
+    for (const ch of sorted) {
+      if (!ch.campaignId) continue;
+      if (!m.has(ch.campaignId)) m.set(ch.campaignId, ch);
+    }
+    return m;
+  }, [myCharacters]);
+
   const [inviteModal, setInviteModal] = useState<PendingInvite | null>(null);
   const [inviteUseExistingId, setInviteUseExistingId] = useState<string>('');
+  const [deleteTarget, setDeleteTarget] = useState<CampaignWithRole | null>(null);
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
+  const [deleteTypeConfirm, setDeleteTypeConfirm] = useState('');
 
   const acceptInviteMutation = useAcceptCampaignInvite({
     mutation: {
@@ -68,6 +94,16 @@ export default function Dashboard() {
   });
   const campaigns = [...(campaignList?.as_dm ?? []), ...(campaignList?.as_player ?? [])];
   const createMutation = useCreateCampaign();
+  const deleteCampaignMutation = useDeleteCampaign({
+    mutation: {
+      onSuccess: () => {
+        setDeleteTarget(null);
+        setDeleteStep(1);
+        setDeleteTypeConfirm('');
+        void refetchCampaigns();
+      },
+    },
+  });
 
   const [isCreating, setIsCreating] = useState(false);
   const [newCampaignName, setNewCampaignName] = useState('');
@@ -75,6 +111,51 @@ export default function Dashboard() {
   const [isJoining, setIsJoining] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [joinCharacterId, setJoinCharacterId] = useState('');
+
+  const copyInviteCode = useCallback(async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast({ title: 'Copied', description: 'Invite code is on your clipboard.' });
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Could not copy',
+        description: 'Select the code and copy manually (Ctrl/Cmd+C).',
+      });
+    }
+  }, []);
+
+  const shareOrCopyInvite = useCallback(async (campaignName: string, code: string) => {
+    const text = `Join my campaign "${campaignName}" on TavernOS. Invite code: ${code}`;
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: `Invite: ${campaignName}`, text });
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        try {
+          await navigator.clipboard.writeText(text);
+          toast({ title: 'Copied invite message', description: 'Paste into chat or email.' });
+        } catch {
+          toast({
+            variant: 'destructive',
+            title: 'Share failed',
+            description: 'Use the copy button for the code only.',
+          });
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(text);
+        toast({ title: 'Copied invite message', description: 'Paste into chat or email.' });
+      } catch {
+        toast({
+          variant: 'destructive',
+          title: 'Could not copy',
+          description: 'Try the copy-code button.',
+        });
+      }
+    }
+  }, []);
 
   const joinMutation = useJoinCampaign({
     mutation: {
@@ -253,6 +334,13 @@ export default function Dashboard() {
                     ))}
                   </select>
                 </div>
+                {joinMutation.isError && (
+                  <p className="text-sm text-destructive font-sans" role="alert">
+                    {joinMutation.error instanceof Error
+                      ? joinMutation.error.message
+                      : 'Could not join campaign.'}
+                  </p>
+                )}
                 <div className="flex justify-end gap-2 pt-4">
                   <VttButton type="button" variant="ghost" onClick={() => setIsJoining(false)}>
                     Cancel
@@ -262,6 +350,94 @@ export default function Dashboard() {
                   </VttButton>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {deleteTarget && deleteTarget.role === 'dm' && (
+          <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="glass-panel p-6 rounded-lg max-w-md w-full border border-destructive/30">
+              <h3 className="text-2xl font-display text-destructive mb-2">Delete campaign</h3>
+              {deleteStep === 1 ? (
+                <>
+                  <p className="text-sm text-muted-foreground font-sans mb-4">
+                    Permanently delete <strong className="text-foreground">{deleteTarget.name}</strong>?
+                    All sessions, maps, and character data for this campaign will be removed. This
+                    cannot be undone.
+                  </p>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <VttButton
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setDeleteTarget(null);
+                        setDeleteStep(1);
+                        setDeleteTypeConfirm('');
+                      }}
+                    >
+                      Cancel
+                    </VttButton>
+                    <VttButton
+                      type="button"
+                      variant="outline"
+                      className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                      onClick={() => {
+                        setDeleteStep(2);
+                        setDeleteTypeConfirm('');
+                      }}
+                    >
+                      Continue
+                    </VttButton>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground font-sans mb-3">
+                    Type <strong className="text-foreground font-mono">DELETE</strong> to confirm.
+                  </p>
+                  <VttInput
+                    autoFocus
+                    value={deleteTypeConfirm}
+                    onChange={(e) => setDeleteTypeConfirm(e.target.value)}
+                    placeholder="DELETE"
+                    className="font-mono tracking-wide"
+                    autoComplete="off"
+                    aria-label="Type DELETE to confirm"
+                  />
+                  {deleteCampaignMutation.isError && (
+                    <p className="text-xs text-destructive font-sans mt-2">
+                      Could not delete this campaign. You must be the DM.
+                    </p>
+                  )}
+                  <div className="flex justify-end gap-2 pt-4">
+                    <VttButton
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setDeleteStep(1);
+                        setDeleteTypeConfirm('');
+                      }}
+                    >
+                      Back
+                    </VttButton>
+                    <VttButton
+                      type="button"
+                      variant="outline"
+                      className="border-destructive text-destructive hover:bg-destructive/15"
+                      disabled={
+                        deleteTypeConfirm !== 'DELETE' ||
+                        deleteCampaignMutation.isPending
+                      }
+                      onClick={() => {
+                        if (deleteTypeConfirm !== 'DELETE') return;
+                        deleteCampaignMutation.mutate({ campaignId: deleteTarget.id });
+                      }}
+                    >
+                      {deleteCampaignMutation.isPending ? 'Deleting…' : 'Delete forever'}
+                    </VttButton>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -371,11 +547,14 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {campaigns?.map((c) => (
+            {campaigns?.map((c) => {
+              const playerCh = c.role === 'player' ? rosterByCampaign.get(c.id) : undefined;
+              const rosterCharId = playerCh?.id;
+              return (
               <div
                 key={c.id}
                 className="group glass-panel rounded-xl overflow-hidden hover:border-primary/80 transition-all cursor-pointer hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(201,168,76,0.15)] flex flex-col"
-                onClick={() => setLocation(campaignCardDestination(c))}
+                onClick={() => setLocation(campaignCardDestination(c, rosterCharId))}
               >
                 <div className="h-32 bg-card border-b border-border/50 relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent mix-blend-overlay" />
@@ -397,20 +576,85 @@ export default function Dashboard() {
                     {c.description || 'No description provided.'}
                   </p>
 
-                  <div className="mt-auto pt-4 border-t border-border/30 flex justify-between items-center">
-                    <span className="text-xs font-mono text-muted-foreground bg-background px-2 py-1 rounded">
-                      Code: {c.inviteCode}
-                    </span>
-                    <span className="text-sm font-label font-bold group-hover:text-primary transition-colors flex items-center">
-                      Enter{' '}
-                      <span className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity translate-x-[-10px] group-hover:translate-x-0">
-                        →
-                      </span>
-                    </span>
+                  <div className="mt-auto pt-4 border-t border-border/30 flex flex-col gap-3">
+                    {c.role === 'dm' ? (
+                      <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                        <p className="text-[10px] font-label font-bold uppercase tracking-widest text-primary/85">
+                          Player invite code
+                        </p>
+                        <div className="flex items-stretch gap-2">
+                          <code
+                            className="flex min-w-0 flex-1 items-center rounded-md border border-border bg-background/90 px-3 py-2 font-mono text-sm tracking-[0.2em] text-foreground select-all"
+                            title="Select to copy"
+                          >
+                            {c.inviteCode}
+                          </code>
+                          <VttButton
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0 px-3"
+                            title="Copy invite code"
+                            aria-label="Copy invite code"
+                            onClick={() => void copyInviteCode(c.inviteCode)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </VttButton>
+                          <VttButton
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0 px-3"
+                            title="Share invite (or copy a full message)"
+                            aria-label="Share invite"
+                            onClick={() => void shareOrCopyInvite(c.name, c.inviteCode)}
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </VttButton>
+                        </div>
+                      </div>
+                    ) : playerCh ? (
+                      <p className="text-xs text-muted-foreground font-sans">
+                        Playing as{' '}
+                        <span className="text-foreground font-medium">{playerCh.name}</span>
+                        {playerCh.class ? ` · ${playerCh.class}` : ''}
+                        {playerCh.level != null ? ` · Lv ${playerCh.level}` : ''}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground font-sans">
+                        You are a player in this party — create your hero to enter the table.
+                      </p>
+                    )}
+                    <div className="flex justify-end items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
+                        {c.role === 'dm' && (
+                          <button
+                            type="button"
+                            title="Delete campaign"
+                            className="p-1.5 rounded hover:bg-destructive/15 text-destructive border border-transparent hover:border-destructive/40 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteTarget(c);
+                              setDeleteStep(1);
+                              setDeleteTypeConfirm('');
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        <span className="text-sm font-label font-bold group-hover:text-primary transition-colors flex items-center">
+                          Enter{' '}
+                          <span className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity translate-x-[-10px] group-hover:translate-x-0">
+                            →
+                          </span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </main>

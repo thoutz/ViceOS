@@ -10,10 +10,11 @@ import {
   messagesTable,
   usersTable,
 } from "@workspace/db/schema";
-import { eq, and, inArray, isNull } from "drizzle-orm";
+import { eq, and, inArray, isNull, asc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { requireAuth, requireCampaignMember, requireDm, getEffectiveUserId } from "../middlewares/auth";
 import { param } from "../types";
+import { bindFirstVacantPlayerMembership } from "../lib/bind-player-character";
 
 const router: IRouter = Router();
 
@@ -59,6 +60,30 @@ router.get("/campaigns", requireAuth, async (req, res) => {
         membershipCharacterId: row.membershipCharacterId,
       });
     }
+  }
+
+  /** Backfill: characters created before membership binding existed have campaign_id set but character_id on membership was never set. */
+  for (const [campaignIdKey, entry] of [...playerByCampaign.entries()]) {
+    if (entry.membershipCharacterId) continue;
+    const [pc] = await db
+      .select({ id: charactersTable.id })
+      .from(charactersTable)
+      .where(
+        and(
+          eq(charactersTable.campaignId, campaignIdKey),
+          eq(charactersTable.userId, userId),
+          eq(charactersTable.isNpc, false),
+          eq(charactersTable.isActive, true),
+        ),
+      )
+      .orderBy(asc(charactersTable.createdAt))
+      .limit(1);
+    if (!pc) continue;
+    await bindFirstVacantPlayerMembership(campaignIdKey, userId, pc.id);
+    playerByCampaign.set(campaignIdKey, {
+      campaign: entry.campaign,
+      membershipCharacterId: pc.id,
+    });
   }
 
   const asPlayerPayload = [...playerByCampaign.values()].map(({ campaign, membershipCharacterId }) => ({

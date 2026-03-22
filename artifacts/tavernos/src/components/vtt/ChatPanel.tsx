@@ -24,7 +24,7 @@ interface Open5eMonster {
   document__slug: string;
 }
 
-type MessageType = 'chat' | 'dice' | 'system' | 'whisper';
+type MessageType = 'chat' | 'dice' | 'system' | 'whisper' | 'story';
 
 const MAX_NPC_PORTRAIT_BYTES = 750_000;
 
@@ -47,6 +47,9 @@ interface ChatPanelProps {
   allMaps?: MapRef[];
   /** Default: communications (video + chat; dice messages excluded from chat stream). Use dmTools for the DM drawer. */
   panelVariant?: ChatPanelVariant;
+  /** DM-only: remove a story message from table chat (server enforces). */
+  onDeleteStoryMessage?: (messageId: string) => void;
+  deletingStoryMessageId?: string;
 }
 
 const QUICK_ROLLS = [
@@ -63,6 +66,8 @@ const QUICK_ROLLS = [
 export function ChatPanel({
   messages, onSendMessage, isDm, myCharacter, allCharacters, activeSession, campaignId, onOrderUpdate, onCreateMap, onSwitchMap, allMaps,
   panelVariant = 'communications',
+  onDeleteStoryMessage,
+  deletingStoryMessageId,
 }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const [whisperTo, setWhisperTo] = useState<string>('all');
@@ -158,7 +163,13 @@ export function ChatPanel({
           </div>
         )}
         {chatStreamMessages.map((msg, idx) => (
-          <MessageBubble key={msg.id || idx} msg={msg} />
+          <MessageBubble
+            key={msg.id || idx}
+            msg={msg}
+            isDm={isDm}
+            onDeleteStoryMessage={onDeleteStoryMessage}
+            isDeletingStory={deletingStoryMessageId === msg.id}
+          />
         ))}
         <div ref={bottomRef} />
       </div>

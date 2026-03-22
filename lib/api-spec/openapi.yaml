@@ -369,6 +369,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CampaignWithMembers"
+    delete:
+      operationId: deleteCampaign
+      tags: [campaigns]
+      summary: Delete a campaign (DM only)
+      description: >-
+        Permanently removes the campaign and related sessions, maps, characters in this campaign,
+        invites, and members. Only the campaign owner (DM) may call this.
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Campaign deleted
+        "403":
+          description: Forbidden — not the campaign DM
+        "404":
+          description: Campaign not found
 
   /campaigns/{campaignId}/characters:
     get:
@@ -820,6 +840,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ChatMessage"
+
+  /campaigns/{campaignId}/sessions/{sessionId}/messages/{messageId}:
+    delete:
+      operationId: deleteMessage
+      tags: [messages]
+      summary: Delete a chat message (DM only; story messages only)
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Message deleted
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Message not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
   schemas:
@@ -1798,7 +1856,7 @@ components:
           type: string
         type:
           type: string
-          enum: [chat, dice, system, whisper]
+          enum: [chat, dice, system, whisper, story]
         diceData:
           type: object
           additionalProperties: true
@@ -1821,7 +1879,7 @@ components:
           type: string
         type:
           type: string
-          enum: [chat, dice, system, whisper]
+          enum: [chat, dice, system, whisper, story]
           default: chat
         recipientId:
           type: string

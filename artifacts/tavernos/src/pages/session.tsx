@@ -15,6 +15,7 @@ import {
   useGetSessionAiContext,
   getGetSessionAiContextQueryKey,
   usePostDmStoryAssistant,
+  useDeleteMessage,
   Character,
   GameSession,
   type Token,
@@ -24,6 +25,7 @@ import { MapCanvas } from '@/components/vtt/MapCanvas';
 import { CharacterSheet } from '@/components/vtt/CharacterSheet';
 import { InitiativeBar, type InitiativeCombatant } from '@/components/vtt/InitiativeBar';
 import { ChatPanel } from '@/components/vtt/ChatPanel';
+import { StoryMapOverlay } from '@/components/vtt/StoryMapOverlay';
 import { RollsPanel } from '@/components/vtt/RollsPanel';
 import { DiceRoll } from 'rpg-dice-roller';
 import { LogOut, X, Wifi, WifiOff, Dices, StickyNote, Shield, Swords, MessageSquare, User, ScrollText, Copy, RefreshCw, Sparkles } from 'lucide-react';
@@ -128,6 +130,7 @@ export default function Session() {
     { query: { enabled: !!activeSession?.id, queryKey: messagesQueryKey } }
   );
   const postMessage = usePostMessage();
+  const deleteMessage = useDeleteMessage();
   const updateChar = useUpdateCharacter();
 
   const isDm = campaign?.role === 'dm';
@@ -163,18 +166,7 @@ export default function Session() {
   const [includeStoryContext, setIncludeStoryContext] = useState(true);
   const [placementCombatant, setPlacementCombatant] = useState<InitiativeCombatant | null>(null);
 
-  const storyAssistantMutation = usePostDmStoryAssistant({
-    mutation: {
-      onSuccess: (data) => {
-        setStoryReply(data.reply);
-        setStoryError(null);
-      },
-      onError: (err: unknown) => {
-        setStoryReply(null);
-        setStoryError(err instanceof Error ? err.message : 'Story assistant request failed.');
-      },
-    },
-  });
+  const storyAssistantMutation = usePostDmStoryAssistant();
 
   const [hotbarDiceExpr, setHotbarDiceExpr] = useState('');
   const [hotbarLastRoll, setHotbarLastRoll] = useState<{ total: number; output: string } | null>(null);
@@ -183,9 +175,17 @@ export default function Session() {
   const [showConditions, setShowConditions] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
 
+  const handleDeleteStoryMessage = (messageId: string) => {
+    if (!campaignId || !activeSession?.id) return;
+    deleteMessage.mutate(
+      { campaignId, sessionId: activeSession.id, messageId },
+      { onSuccess: () => void refetchMessages() }
+    );
+  };
+
   const handleSendMessage = (
     content: string,
-    type: 'chat' | 'dice' | 'system' | 'whisper',
+    type: 'chat' | 'dice' | 'system' | 'whisper' | 'story',
     diceData?: { total: number; output: string; expr?: string },
     recipientId?: string
   ) => {
@@ -449,6 +449,10 @@ export default function Session() {
                 onSwitchMap={isDm ? handleSwitchMap : undefined}
                 allMaps={maps ?? []}
                 panelVariant="communications"
+                onDeleteStoryMessage={isDm ? handleDeleteStoryMessage : undefined}
+                deletingStoryMessageId={
+                  deleteMessage.isPending ? deleteMessage.variables?.messageId : undefined
+                }
               />
             </>
           )}
@@ -467,6 +471,7 @@ export default function Session() {
             placementDraft={placementCombatant}
             onPlacementDraftConsumed={() => setPlacementCombatant(null)}
           />
+          <StoryMapOverlay sessionId={activeSession.id} messages={messages || []} />
         </div>
 
         {/* RIGHT PANEL: Character sheet + Rolls */}
@@ -644,14 +649,42 @@ export default function Session() {
                   onClick={() => {
                     if (!campaignId || !activeSession?.id || !storyPrompt.trim()) return;
                     setStoryError(null);
-                    storyAssistantMutation.mutate({
-                      campaignId,
-                      sessionId: activeSession.id,
-                      data: {
-                        message: storyPrompt.trim(),
-                        includeSessionContext: includeStoryContext,
+                    storyAssistantMutation.mutate(
+                      {
+                        campaignId,
+                        sessionId: activeSession.id,
+                        data: {
+                          message: storyPrompt.trim(),
+                          includeSessionContext: includeStoryContext,
+                        },
                       },
-                    });
+                      {
+                        onSuccess: (data) => {
+                          setStoryReply(data.reply);
+                          setStoryError(null);
+                          const reply = data.reply?.trim();
+                          if (!reply) return;
+                          postMessage.mutate(
+                            {
+                              campaignId,
+                              sessionId: activeSession.id,
+                              data: { content: reply, type: 'story' },
+                            },
+                            {
+                              onSuccess: (msg) => {
+                                emit('chat_message', { message: msg });
+                              },
+                            }
+                          );
+                        },
+                        onError: (err: unknown) => {
+                          setStoryReply(null);
+                          setStoryError(
+                            err instanceof Error ? err.message : 'Story assistant request failed.'
+                          );
+                        },
+                      }
+                    );
                   }}
                   disabled={
                     storyAssistantMutation.isPending ||
@@ -687,6 +720,10 @@ export default function Session() {
                 onSwitchMap={handleSwitchMap}
                 allMaps={maps ?? []}
                 panelVariant="dmTools"
+                onDeleteStoryMessage={handleDeleteStoryMessage}
+                deletingStoryMessageId={
+                  deleteMessage.isPending ? deleteMessage.variables?.messageId : undefined
+                }
               />
             </div>
           </div>

@@ -5,6 +5,7 @@ import session from "express-session";
 import { createServer } from "http";
 import { Server as SocketServer } from "socket.io";
 import router from "./routes";
+import { setSocketIo } from "./socket-registry";
 import { logger } from "./lib/logger";
 import { tabIdentityMap } from "./middlewares/auth";
 import { db } from "@workspace/db";
@@ -24,6 +25,8 @@ const io = new SocketServer(httpServer, {
   },
   path: "/socket.io",
 });
+
+setSocketIo(io);
 
 app.use(
   pinoHttp({

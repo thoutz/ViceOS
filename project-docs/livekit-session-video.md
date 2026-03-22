@@ -33,8 +33,11 @@ If any are missing, `POST .../livekit-token` returns **503** and the UI explains
 
 ## Frontend
 
-- **Component:** [`artifacts/tavernos/src/components/vtt/SessionVideoCall.tsx`](../artifacts/tavernos/src/components/vtt/SessionVideoCall.tsx) — `useCreateLivekitToken` mutation on mount; imports `@livekit/components/styles` once.
-- **Integration:** [`artifacts/tavernos/src/components/vtt/ChatPanel.tsx`](../artifacts/tavernos/src/components/vtt/ChatPanel.tsx) — new tab **Video** (icon `Video` from `lucide-react`).
+- **Component:** [`artifacts/tavernos/src/components/vtt/SessionVideoCall.tsx`](../artifacts/tavernos/src/components/vtt/SessionVideoCall.tsx) — imports `@livekit/components/styles` once. **Join gate:** the LiveKit token is requested only after the user clicks **Join table video** (no auto-connect). On successful token, `LiveKitRoom` connects with mic and camera enabled. The room UI uses a local **`SessionVideoConference`** (same behavior as LiveKit’s `VideoConference` grid/focus + chat) with a custom **`SessionVideoControlBar`** instead of the stock prefab control bar. **`onDisconnected`** clears join state so the user sees the join screen again (e.g. after Leave). **`StartAudio`** sits under the conference for browsers that block remote audio until a user gesture.
+- **Toolbar styling:** [`session-video-toolbar.css`](../artifacts/tavernos/src/components/vtt/session-video-toolbar.css) — three clusters: **media** (mic + camera split buttons with red/green state), **utility** (screen share, room chat, disabled “raise hand” placeholder, **More** menu with fullscreen on `[data-vtt-fullscreen-root]`), **hang up** (solid red button with phone icon). [`SessionVideoControlBar.tsx`](../artifacts/tavernos/src/components/vtt/SessionVideoControlBar.tsx) composes LiveKit `TrackToggle`, `MediaDeviceMenu`, `ChatToggle`, `DisconnectButton`, etc.
+- **Dependency:** `@livekit/components-core` is listed in `artifacts/tavernos/package.json` so `SessionVideoConference` / `SessionVideoControlBar` can import `supportsScreenSharing` and shared types without resolution issues.
+- **Layout:** The video strip uses a flex column with `min-h-0` so the LiveKit grid shrinks and `.lk-control-bar` is **`flex-shrink-0`** (Tailwind arbitrary selectors on the wrapper) — avoids clipping the toolbar inside the fixed-height chat panel. The outer shell adds **`vtt-session-video`** and **`data-vtt-fullscreen-root`** for scoped CSS and fullscreen.
+- **Integration:** [`artifacts/tavernos/src/components/vtt/ChatPanel.tsx`](../artifacts/tavernos/src/components/vtt/ChatPanel.tsx) — **Session video** strip above chat (`h-[min(240px,34vh)]`, flex child `SessionVideoCall` with `min-h-0 flex-1`).
 
 ## OpenAPI / codegen
 
@@ -51,4 +54,4 @@ pnpm run typecheck:libs
 
 ## CSS / design
 
-No dashboard layout redesign: only the new Video tab content and LiveKit default component styles (`@livekit/components-styles`).
+No dashboard chrome redesign: LiveKit default prefab styles (`@livekit/components-styles`) plus scoped wrapper classes so the control bar stays visible; join screen uses existing VTT tokens (`VttButton`, borders).

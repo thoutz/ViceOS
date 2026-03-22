@@ -543,6 +543,14 @@ export const GetCampaignResponse = zod
   );
 
 /**
+ * Permanently removes the campaign and related sessions, maps, characters in this campaign, invites, and members. Only the campaign owner (DM) may call this.
+ * @summary Delete a campaign (DM only)
+ */
+export const DeleteCampaignParams = zod.object({
+  campaignId: zod.coerce.string(),
+});
+
+/**
  * @summary List characters in campaign
  */
 export const ListCharactersParams = zod.object({
@@ -1404,7 +1412,7 @@ export const ListMessagesResponseItem = zod.object({
   senderName: zod.string(),
   recipientId: zod.string().optional(),
   content: zod.string(),
-  type: zod.enum(["chat", "dice", "system", "whisper"]),
+  type: zod.enum(["chat", "dice", "system", "whisper", "story"]),
   diceData: zod.record(zod.string(), zod.unknown()).optional(),
   createdAt: zod.date(),
 });
@@ -1423,8 +1431,17 @@ export const postMessageBodyTypeDefault = `chat`;
 export const PostMessageBody = zod.object({
   content: zod.string(),
   type: zod
-    .enum(["chat", "dice", "system", "whisper"])
+    .enum(["chat", "dice", "system", "whisper", "story"])
     .default(postMessageBodyTypeDefault),
   recipientId: zod.string().optional(),
   diceData: zod.record(zod.string(), zod.unknown()).optional(),
+});
+
+/**
+ * @summary Delete a chat message (DM only; story messages only)
+ */
+export const DeleteMessageParams = zod.object({
+  campaignId: zod.coerce.string(),
+  sessionId: zod.coerce.string(),
+  messageId: zod.coerce.string().uuid(),
 });

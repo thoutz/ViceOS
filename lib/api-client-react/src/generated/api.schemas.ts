@@ -498,6 +498,7 @@ export const ChatMessageType = {
   dice: "dice",
   system: "system",
   whisper: "whisper",
+  story: "story",
 } as const;
 
 export type ChatMessageDiceData = { [key: string]: unknown };
@@ -522,6 +523,7 @@ export const PostMessageRequestType = {
   dice: "dice",
   system: "system",
   whisper: "whisper",
+  story: "story",
 } as const;
 
 export type PostMessageRequestDiceData = { [key: string]: unknown };
